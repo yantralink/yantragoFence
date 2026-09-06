@@ -1,42 +1,53 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/network/api_client.dart';
 import 'package:yantrago/models/machine.dart';
-import 'package:yantrago/models/device_state.dart';
 
 /// Dashboard provider — fetches summary data for the dashboard.
 final dashboardProvider = FutureProvider<DashboardSummary>((ref) async {
   final dio = ref.watch(apiClientProvider);
 
-  final machinesResponse = await dio.get('/api/machines');
-  final machines = (machinesResponse.data as List)
+  final machinesResponse = await dio.get('/api/v1/machines');
+  final data = machinesResponse.data;
+  // Handle paginated response { "content": [...] } or plain list
+  final List<dynamic> list = data is Map<String, dynamic>
+      ? data['content'] as List
+      : data as List;
+  final machines = list
       .map((m) => Machine.fromJson(m as Map<String, dynamic>))
       .toList();
 
   int online = 0;
-  int fencingOn = 0;
+  int active = 0;
+  int inStock = 0;
   int fault = 0;
   int offline = 0;
 
   for (final m in machines) {
     switch (m.status) {
-      case 'ONLINE':
-        online++;
+      case 'ACTIVE':
+        active++;
+        if (m.isOnline) online++;
         break;
-      case 'FENCING_ON':
-        fencingOn++;
+      case 'IN_STOCK':
+        inStock++;
         break;
       case 'FAULT':
         fault++;
         break;
-      default:
+      case 'OFFLINE':
         offline++;
+        break;
+      default:
+        if (m.isOnline) online++;
+        else offline++;
     }
   }
 
   return DashboardSummary(
     totalMachines: machines.length,
-    onlineMachines: online + fencingOn,
-    fencingOnMachines: fencingOn,
+    onlineMachines: online,
+    activeMachines: active,
+    inStockMachines: inStock,
     faultMachines: fault,
     offlineMachines: offline,
     machines: machines,
@@ -46,7 +57,8 @@ final dashboardProvider = FutureProvider<DashboardSummary>((ref) async {
 class DashboardSummary {
   final int totalMachines;
   final int onlineMachines;
-  final int fencingOnMachines;
+  final int activeMachines;
+  final int inStockMachines;
   final int faultMachines;
   final int offlineMachines;
   final List<Machine> machines;
@@ -54,7 +66,8 @@ class DashboardSummary {
   const DashboardSummary({
     required this.totalMachines,
     required this.onlineMachines,
-    required this.fencingOnMachines,
+    required this.activeMachines,
+    required this.inStockMachines,
     required this.faultMachines,
     required this.offlineMachines,
     required this.machines,

@@ -41,7 +41,7 @@ class AuthInterceptor extends Interceptor {
         try {
           final dio = Dio();
           final response = await dio.post(
-            '${err.requestOptions.baseUrl}/api/auth/refresh',
+            '${err.requestOptions.baseUrl}/api/v1/auth/refresh',
             data: {'refreshToken': refreshToken},
           );
           if (response.statusCode == 200) {

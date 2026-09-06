@@ -13,13 +13,13 @@ class AuthService {
 
   AuthService(this._dio);
 
-  /// Logs in with email and password.
+  /// Logs in with email (or phone number for customers) and password.
   /// Returns the user and tokens on success.
   Future<AuthResult> login({
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post('/api/auth/login', data: {
+    final response = await _dio.post('/api/v1/auth/login', data: {
       'email': email,
       'password': password,
     });
@@ -38,7 +38,7 @@ class AuthService {
   /// Logs out the current user.
   Future<void> logout() async {
     try {
-      await _dio.post('/api/auth/logout');
+      await _dio.post('/api/v1/auth/logout');
     } finally {
       await SecureStorage.clearAll();
     }
@@ -46,7 +46,7 @@ class AuthService {
 
   /// Gets the current user profile.
   Future<User> getCurrentUser() async {
-    final response = await _dio.get('/api/auth/me');
+    final response = await _dio.get('/api/v1/auth/me');
     return User.fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -58,6 +58,14 @@ class AuthService {
 }
 
 /// Auth result returned on successful login.
+/// Backend response format:
+/// {
+///   "accessToken": "...",
+///   "refreshToken": "...",
+///   "tokenType": "Bearer",
+///   "expiresIn": 900,
+///   "user": { "id": "...", "email": "...", "fullName": "...", "organizationId": "..." }
+/// }
 class AuthResult {
   final User user;
   final String accessToken;

@@ -21,7 +21,7 @@ class MachineCard extends StatelessWidget {
           ),
         ),
         title: Text(machine.name),
-        subtitle: Text(machine.imei),
+        subtitle: Text(machine.machineId.isNotEmpty ? machine.machineId : (machine.imei ?? '')),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -43,9 +43,12 @@ class MachineCard extends StatelessWidget {
 
   Color _statusColor(String status) {
     switch (status) {
+      case 'ACTIVE':
       case 'ONLINE':
       case 'FENCING_ON':
         return Colors.green;
+      case 'IN_STOCK':
+        return Colors.blue;
       case 'FAULT':
         return Colors.red;
       default:

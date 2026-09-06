@@ -32,8 +32,10 @@ class MachineDetailPage extends ConsumerWidget {
                   children: [
                     Text(m.name, style: Theme.of(context).textTheme.headlineSmall),
                     const SizedBox(height: 8),
-                    _InfoRow(label: 'IMEI', value: m.imei),
-                    _InfoRow(label: 'Protocol', value: m.protocolType),
+                    if (m.machineId.isNotEmpty)
+                      _InfoRow(label: 'Machine ID', value: m.machineId),
+                    if (m.imei != null) _InfoRow(label: 'IMEI', value: m.imei!),
+                    if (m.protocolType != null) _InfoRow(label: 'Protocol', value: m.protocolType!),
                     _InfoRow(label: 'Status', value: m.status),
                     if (m.model != null) _InfoRow(label: 'Model', value: m.model!),
                     if (m.simNumber != null) _InfoRow(label: 'SIM', value: m.simNumber!),
@@ -42,7 +44,7 @@ class MachineDetailPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            OnOffButton(machineId: m.id, imei: m.imei),
+            OnOffButton(machineId: m.id, imei: m.imei ?? ''),
             const SizedBox(height: 24),
             const CommandStatusWidget(),
           ],

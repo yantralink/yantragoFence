@@ -5,34 +5,33 @@
 class AppConfig {
   AppConfig._();
 
-  // API base URL — change for different environments
+  // API base URL — production server
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8080',
+    defaultValue: 'https://yantrago.com',
   );
 
   // WebSocket base URL
   static const String wsBaseUrl = String.fromEnvironment(
     'WS_BASE_URL',
-    defaultValue: 'ws://localhost:8080/ws',
+    defaultValue: 'wss://yantrago.com/ws',
   );
 
-  // API endpoints
-  static const String loginEndpoint = '/api/auth/login';
-  static const String refreshEndpoint = '/api/auth/refresh';
-  static const String logoutEndpoint = '/api/auth/logout';
-  static const String meEndpoint = '/api/auth/me';
+  // API endpoints (all under /api/v1/)
+  static const String loginEndpoint = '/api/v1/auth/login';
+  static const String refreshEndpoint = '/api/v1/auth/refresh';
+  static const String logoutEndpoint = '/api/v1/auth/logout';
+  static const String meEndpoint = '/api/v1/auth/me';
 
-  static const String machinesEndpoint = '/api/machines';
-  static const String devicesEndpoint = '/api/devices';
-  static const String commandsEndpoint = '/api/commands';
-  static const String alertsEndpoint = '/api/alerts';
-  static const String locationsEndpoint = '/api/locations';
-  static const String telemetryEndpoint = '/api/telemetry';
-  static const String reportsEndpoint = '/api/reports';
-  static const String settingsEndpoint = '/api/settings';
-  static const String rechargeEndpoint = '/api/recharge';
-  static const String auditEndpoint = '/api/audit';
+  static const String machinesEndpoint = '/api/v1/machines';
+  static const String commandsEndpoint = '/api/v1/commands';
+  static const String alertsEndpoint = '/api/v1/alerts';
+  static const String locationsEndpoint = '/api/v1/locations';
+  static const String telemetryEndpoint = '/api/v1/telemetry';
+  static const String reportsEndpoint = '/api/v1/reports';
+  static const String settingsEndpoint = '/api/v1/settings';
+  static const String rechargeEndpoint = '/api/v1/recharge';
+  static const String auditEndpoint = '/api/v1/audit';
 
   // WebSocket STOMP destinations
   static const String wsTopicLocation = '/topic/locations';

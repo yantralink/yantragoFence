@@ -59,3 +59,10 @@
 
 20. Never commit secrets, passwords, or API keys to the repository.
     Use environment variables and application-prod.yml with file permissions 600.
+
+21. Phase-wise implementation:
+    - All functionality implementation must be done phase by phase, one phase at a time.
+    - After completing one phase, STOP and ask the user to verify the changes.
+    - Explicitly ask the user whether to start the next phase implementation or not.
+    - Do NOT proceed to the next phase until the user confirms.
+    - Each phase should be self-contained, deployable, and testable on its own.

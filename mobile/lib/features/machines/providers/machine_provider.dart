@@ -5,10 +5,16 @@ import 'package:yantrago/models/machine.dart';
 /// Machine list provider — fetches all machines for the organization.
 ///
 /// Per AGENTS.md rule 7: organization_id comes from JWT, never from request body.
+/// Backend returns a paginated response: { "content": [...], ... }
 final machineListProvider = FutureProvider<List<Machine>>((ref) async {
   final dio = ref.watch(apiClientProvider);
-  final response = await dio.get('/api/machines');
-  return (response.data as List)
+  final response = await dio.get('/api/v1/machines');
+  final data = response.data;
+  // Handle paginated response { "content": [...] } or plain list
+  final List<dynamic> list = data is Map<String, dynamic>
+      ? data['content'] as List
+      : data as List;
+  return list
       .map((m) => Machine.fromJson(m as Map<String, dynamic>))
       .toList();
 });
@@ -17,6 +23,6 @@ final machineListProvider = FutureProvider<List<Machine>>((ref) async {
 final machineDetailProvider =
     FutureProvider.family<Machine, String>((ref, id) async {
   final dio = ref.watch(apiClientProvider);
-  final response = await dio.get('/api/machines/$id');
+  final response = await dio.get('/api/v1/machines/$id');
   return Machine.fromJson(response.data as Map<String, dynamic>);
 });

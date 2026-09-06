@@ -34,7 +34,7 @@ class DashboardPage extends ConsumerWidget {
               MachineStatusCard(
                 total: data.totalMachines,
                 online: data.onlineMachines,
-                fencingOn: data.fencingOnMachines,
+                fencingOn: data.activeMachines,
                 fault: data.faultMachines,
                 offline: data.offlineMachines,
               ),
@@ -68,7 +68,7 @@ class DashboardPage extends ConsumerWidget {
                       size: 12,
                     ),
                     title: Text(m.name),
-                    subtitle: Text(m.imei),
+                    subtitle: Text(m.machineId.isNotEmpty ? m.machineId : (m.imei ?? '')),
                     trailing: Text(m.status),
                   )),
             ],

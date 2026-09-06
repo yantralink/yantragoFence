@@ -18,7 +18,7 @@ class CommandNotifier extends StateNotifier<CommandState> {
     required String imei,
     required String commandType,
   }) async {
-    final response = await _dio.post('/api/commands', data: {
+    final response = await _dio.post('/api/v1/commands', data: {
       'machineId': machineId,
       'imei': imei,
       'commandType': commandType,
@@ -29,7 +29,7 @@ class CommandNotifier extends StateNotifier<CommandState> {
 
   /// Fetches command history for a machine.
   Future<void> fetchCommandHistory(String machineId) async {
-    final response = await _dio.get('/api/commands?machineId=$machineId');
+    final response = await _dio.get('/api/v1/commands?machineId=$machineId');
     final commands = (response.data as List)
         .map((c) => Command.fromJson(c as Map<String, dynamic>))
         .toList();

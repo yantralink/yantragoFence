@@ -7,6 +7,9 @@ import 'package:yantrago/features/auth/providers/auth_provider.dart';
 
 /// Login page — full implementation with form validation and auth flow.
 ///
+/// Accepts either email or phone number as the login identifier.
+/// Customers log in with their phone number; admins log in with email.
+///
 /// Per AGENTS.md rule 9: sensitive operations require authorization.
 /// Per AGENTS.md rule 12: production features require validation, error handling, logging.
 class LoginPage extends ConsumerStatefulWidget {
@@ -18,14 +21,14 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _identifierController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -36,7 +39,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     setState(() => _isLoading = true);
 
     await ref.read(authStateProvider.notifier).login(
-          email: _emailController.text.trim(),
+          email: _identifierController.text.trim(),
           password: _passwordController.text,
         );
 
@@ -106,18 +109,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 48),
 
-                  // Email field
+                  // Identifier field (email or phone)
                   TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
+                    controller: _identifierController,
+                    keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.next,
                     autocorrect: false,
                     decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
-                      hintText: 'admin@yantrago.com',
+                      labelText: 'Email or Phone',
+                      prefixIcon: Icon(Icons.person_outlined),
+                      hintText: 'admin@yantrago.com or +91 98765 43210',
                     ),
-                    validator: Validators.email,
+                    validator: Validators.required,
                   ),
                   const SizedBox(height: 16),
 
@@ -163,12 +166,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Forgot password link
-                  TextButton(
-                    onPressed: () {
-                      // TODO: Navigate to forgot password page
-                    },
-                    child: const Text('Forgot Password?'),
+                  // Info text
+                  Text(
+                    'Customers: log in with your phone number.\nAdmins: log in with your email.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
                 ],
               ),

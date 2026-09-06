@@ -1,7 +1,7 @@
 /// User model — represents an authenticated user.
 class User {
   final String id;
-  final String organizationId;
+  final String? organizationId;
   final String email;
   final String fullName;
   final String role;
@@ -10,7 +10,7 @@ class User {
 
   const User({
     required this.id,
-    required this.organizationId,
+    this.organizationId,
     required this.email,
     required this.fullName,
     required this.role,
@@ -21,12 +21,12 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'] as String,
-      organizationId: json['organizationId'] as String,
+      organizationId: json['organizationId'] as String?,
       email: json['email'] as String,
       fullName: json['fullName'] as String? ?? json['name'] as String? ?? '',
       role: json['role'] as String? ?? 'USER',
       phoneNumber: json['phoneNumber'] as String?,
-      active: json['active'] as bool? ?? true,
+      active: json['active'] as bool? ?? json['isActive'] as bool? ?? true,
     );
   }
 
@@ -40,6 +40,7 @@ class User {
         'active': active,
       };
 
-  bool get isAdmin => role == 'ADMIN' || role == 'SUPER_ADMIN';
+  bool get isAdmin => role == 'ADMIN' || role == 'SUPER_ADMIN' || role == 'ORG_ADMIN';
   bool get isSuperAdmin => role == 'SUPER_ADMIN';
+  bool get isCustomer => role == 'CUSTOMER';
 }
