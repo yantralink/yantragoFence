@@ -45,6 +45,22 @@ jobs:
             echo ">>> Android directory already exists"
           fi
 
+      - name: Update Kotlin version for compatibility
+        working-directory: mobile
+        run: |
+          # Flutter 3.24 generates Kotlin 1.7.x but dependencies need 1.9.x
+          # Update ext.kotlin_version in android/build.gradle
+          if grep -q 'ext.kotlin_version' android/build.gradle; then
+            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" android/build.gradle
+          fi
+          # Also update in android/settings.gradle if present
+          if grep -q 'kotlin' android/settings.gradle; then
+            sed -i "s/org.jetbrains.kotlin.android:1.*/org.jetbrains.kotlin.android:1.9.24/" android/settings.gradle 2>/dev/null || true
+          fi
+          echo ">>> Kotlin version updated to 1.9.24"
+          grep -n 'kotlin' android/build.gradle || true
+          grep -n 'kotlin' android/settings.gradle || true
+
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
