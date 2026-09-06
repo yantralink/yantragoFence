@@ -1,14 +1,11 @@
 package com.yantrago.api.security;
 
-import com.yantrago.api.service.JwtService;
 import com.yantrago.api.service.OwnerContextService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -24,7 +21,6 @@ import java.io.IOException;
  * Runs after JwtAuthFilter. Clears the context after the request completes.
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 20)
 public class TenantContextFilter extends OncePerRequestFilter {
 
     private final OwnerContextService ownerContextService;
@@ -40,7 +36,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
         try {
             Claims claims = (Claims) request.getAttribute("jwt.claims");
             if (claims != null) {
-                java.util.UUID orgId = jwtServiceFromClaims(claims);
+                java.util.UUID orgId = extractOrgId(claims);
                 ownerContextService.setOrganizationId(orgId);
             }
             filterChain.doFilter(request, response);
@@ -52,7 +48,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
     /**
      * Extract organizationId from claims. Returns null for super_admin (platform-level).
      */
-    private java.util.UUID jwtServiceFromClaims(Claims claims) {
+    private java.util.UUID extractOrgId(Claims claims) {
         String orgId = claims.get("organizationId", String.class);
         return orgId != null ? java.util.UUID.fromString(orgId) : null;
     }
