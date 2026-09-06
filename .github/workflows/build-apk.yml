@@ -49,17 +49,35 @@ jobs:
         working-directory: mobile
         run: |
           # Flutter 3.24 generates Kotlin 1.7.x but dependencies need 1.9.x
-          # Update ext.kotlin_version in android/build.gradle
+          # Print original files for debugging
+          echo "=== android/build.gradle (before) ==="
+          cat android/build.gradle
+          echo "=== android/settings.gradle (before) ==="
+          cat android/settings.gradle
+
+          # Update ext.kotlin_version in android/build.gradle (older format)
           if grep -q 'ext.kotlin_version' android/build.gradle; then
             sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" android/build.gradle
+            echo ">>> Updated ext.kotlin_version in build.gradle"
           fi
-          # Also update in android/settings.gradle if present
-          if grep -q 'kotlin' android/settings.gradle; then
-            sed -i "s/org.jetbrains.kotlin.android:1.*/org.jetbrains.kotlin.android:1.9.24/" android/settings.gradle 2>/dev/null || true
+
+          # Update plugins block in settings.gradle (newer format)
+          # Format: id "org.jetbrains.kotlin.android" version "1.7.10" apply false
+          if grep -q 'org.jetbrains.kotlin.android' android/settings.gradle; then
+            sed -i 's/org.jetbrains.kotlin.android" version "[^"]*"/org.jetbrains.kotlin.android" version "1.9.24"/' android/settings.gradle
+            echo ">>> Updated kotlin version in settings.gradle plugins block"
           fi
-          echo ">>> Kotlin version updated to 1.9.24"
-          grep -n 'kotlin' android/build.gradle || true
-          grep -n 'kotlin' android/settings.gradle || true
+
+          # Also check app/build.gradle for kotlin version
+          if grep -q 'kotlin_version' android/app/build.gradle 2>/dev/null; then
+            sed -i "s/kotlin_version = .*/kotlin_version = '1.9.24'/" android/app/build.gradle
+            echo ">>> Updated kotlin_version in app/build.gradle"
+          fi
+
+          echo "=== android/build.gradle (after) ==="
+          cat android/build.gradle
+          echo "=== android/settings.gradle (after) ==="
+          cat android/settings.gradle
 
       - name: Install dependencies
         working-directory: mobile
@@ -74,7 +92,16 @@ jobs:
         run: |
           flutter build apk --release \
             --dart-define=API_BASE_URL=https://yantrago.com \
-            --dart-define=WS_BASE_URL=wss://yantrago.com/ws
+            --dart-define=WS_BASE_URL=wss://yantrago.com/ws \
+            --verbose 2>&1 || {
+              echo "=== Build failed, printing gradle files for debug ==="
+              cat android/build.gradle 2>/dev/null
+              echo "---"
+              cat android/settings.gradle 2>/dev/null
+              echo "---"
+              cat android/app/build.gradle 2>/dev/null
+              exit 1
+            }
 
       - name: List built APK
         working-directory: mobile
