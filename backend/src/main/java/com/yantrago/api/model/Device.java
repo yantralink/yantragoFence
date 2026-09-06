@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 })
 public class Device extends BaseEntity {
 
-    @Column(name = "organization_id", nullable = false)
+    @Column(name = "organization_id")
     private java.util.UUID organizationId;
 
     @Column(name = "machine_id")
