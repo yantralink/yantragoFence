@@ -58,15 +58,22 @@ public class AuthController {
         UUID userId = (UUID) authentication.getPrincipal();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
+        String role = authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring(5))
+                .findFirst()
+                .orElse("viewer");
         UserInfoResponse response = new UserInfoResponse(
                 user.getId().toString(),
                 user.getEmail(),
                 user.getFullName(),
                 user.getOrganizationId() != null ? user.getOrganizationId().toString() : null,
+                role,
                 user.getIsActive()
         );
         return ResponseEntity.ok(response);
     }
 
-    public record UserInfoResponse(String id, String email, String fullName, String organizationId, Boolean active) {}
+    public record UserInfoResponse(String id, String email, String fullName, String organizationId, String role, Boolean active) {}
 }
