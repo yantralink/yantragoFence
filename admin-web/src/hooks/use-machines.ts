@@ -11,8 +11,8 @@ export function useMachines() {
   return useQuery<Machine[]>({
     queryKey: ['machines'],
     queryFn: async () => {
-      const { data } = await apiClient.get<Machine[]>('/machines');
-      return data;
+      const { data } = await apiClient.get<{ content: Machine[] }>('/machines');
+      return data.content;
     },
   });
 }

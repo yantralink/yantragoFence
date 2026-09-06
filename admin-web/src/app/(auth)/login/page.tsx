@@ -16,7 +16,16 @@ export default function LoginPage() {
     clearError();
     try {
       await login(email, password);
-      router.push('/dashboard');
+      // Route super_admin to /super-admin/dashboard, others to /dashboard
+      const storedUser = localStorage.getItem('userId');
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const hasSuperAdmin = !payload.organizationId;
+        router.push(hasSuperAdmin ? '/super-admin/dashboard' : '/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
     } catch {
       setLocalError(error || 'Login failed. Please check your credentials.');
     }

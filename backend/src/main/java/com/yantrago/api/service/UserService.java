@@ -3,13 +3,16 @@ package com.yantrago.api.service;
 import com.yantrago.api.dto.user.CreateUserRequest;
 import com.yantrago.api.dto.user.UpdateUserRequest;
 import com.yantrago.api.dto.user.UserDto;
+import com.yantrago.api.model.Role;
 import com.yantrago.api.model.User;
+import com.yantrago.api.repository.RoleRepository;
 import com.yantrago.api.repository.UserRepository;
 import com.yantrago.api.security.TenantGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,18 +30,24 @@ public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     public UserService(UserRepository userRepository,
+                       RoleRepository roleRepository,
                        OwnerContextService ownerContextService,
                        TenantGuard tenantGuard,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       JdbcTemplate jdbcTemplate) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
         this.passwordEncoder = passwordEncoder;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional(readOnly = true)
@@ -60,7 +69,15 @@ public class UserService {
 
     @Transactional
     public UserDto createUser(CreateUserRequest request) {
-        UUID orgId = ownerContextService.getOrganizationId();
+        UUID orgId = ownerContextService.getOrganizationIdOrNull();
+
+        // Super_admin can specify which org to create the user in.
+        // Tenant users can only create users in their own org.
+        if (orgId == null && request.getOrganizationId() != null) {
+            orgId = request.getOrganizationId();
+        } else if (orgId == null) {
+            throw new IllegalArgumentException("organizationId is required when creating users as super_admin");
+        }
 
         if (userRepository.findByEmailAndOrganizationId(request.getEmail(), orgId).isPresent()) {
             throw new IllegalArgumentException("User with this email already exists in this organization");
@@ -76,7 +93,15 @@ public class UserService {
         user.setIsLocked(false);
 
         user = userRepository.save(user);
-        log.info("Created user id={} email={} orgId={}", user.getId(), user.getEmail(), orgId);
+
+        // Assign role if specified
+        String roleName = request.getRoleName() != null ? request.getRoleName() : "viewer";
+        roleRepository.findByName(roleName).ifPresent(role -> {
+            jdbcTemplate.update("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
+                    user.getId(), role.getId());
+        });
+
+        log.info("Created user id={} email={} orgId={} role={}", user.getId(), user.getEmail(), orgId, roleName);
         return toDto(user);
     }
 

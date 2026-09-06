@@ -7,14 +7,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/organizations', label: 'Organizations', icon: '🏢' },
-  { href: '/admins', label: 'Admins', icon: '👤' },
-  { href: '/machines', label: 'Machines', icon: '⚡' },
-  { href: '/customers', label: 'Customers', icon: '👥' },
-  { href: '/reports', label: 'Reports', icon: '📈' },
-  { href: '/audit-logs', label: 'Audit Logs', icon: '📋' },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/super-admin/dashboard', label: 'Dashboard', icon: '📊' },
+  { href: '/super-admin/organizations', label: 'Organizations', icon: '🏢' },
+  { href: '/super-admin/admins', label: 'Admins', icon: '👤' },
+  { href: '/super-admin/machines', label: 'Machines', icon: '⚡' },
+  { href: '/super-admin/customers', label: 'Customers', icon: '👥' },
+  { href: '/super-admin/reports', label: 'Reports', icon: '📈' },
+  { href: '/super-admin/audit-logs', label: 'Audit Logs', icon: '📋' },
+  { href: '/super-admin/settings', label: 'Settings', icon: '⚙️' },
 ];
 
 export default function SuperAdminLayout({

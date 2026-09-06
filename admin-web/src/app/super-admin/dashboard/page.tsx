@@ -1,56 +1,61 @@
 'use client';
 
-import { useMachines } from '@/hooks/use-machines';
+import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/lib/api-client';
 import { Card, StatCard } from '@/components/ui/card';
-import { Chart } from '@/components/charts';
 
-export default function DashboardPage() {
-  const { data: machines, isLoading } = useMachines();
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
 
-  const total = machines?.length ?? 0;
-  const online = machines?.filter((m) => m.status === 'ONLINE' || m.status === 'FENCING_ON').length ?? 0;
-  const fault = machines?.filter((m) => m.status === 'FAULT').length ?? 0;
-  const offline = machines?.filter((m) => m.status === 'OFFLINE' || m.status === 'FENCING_OFF').length ?? 0;
+interface User {
+  id: string;
+  email: string;
+  fullName: string;
+  isActive: boolean;
+}
 
-  const chartData = [
-    { time: '00:00', devices: online },
-    { time: '04:00', devices: Math.max(online - 2, 0) },
-    { time: '08:00', devices: online },
-    { time: '12:00', devices: Math.max(online - 1, 0) },
-    { time: '16:00', devices: online + 1 },
-    { time: '20:00', devices: online },
-  ];
+export default function SuperAdminDashboardPage() {
+  const { data: orgs } = useQuery<Organization[]>({
+    queryKey: ['organizations'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ content: Organization[] }>('/organizations');
+      return data.content;
+    },
+  });
+
+  const { data: users } = useQuery<User[]>({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ content: User[] }>('/users');
+      return data.content;
+    },
+  });
+
+  const totalOrgs = orgs?.length ?? 0;
+  const activeOrgs = orgs?.filter((o) => o.isActive).length ?? 0;
+  const totalUsers = users?.length ?? 0;
+  const activeUsers = users?.filter((u) => u.isActive).length ?? 0;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-
-      {isLoading ? (
-        <div className="text-gray-500">Loading...</div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Total Machines" value={total} icon="⚡" color="text-blue-600" />
-            <StatCard label="Online" value={online} icon="🟢" color="text-green-600" />
-            <StatCard label="Fault" value={fault} icon="🔴" color="text-red-600" />
-            <StatCard label="Offline" value={offline} icon="⚫" color="text-gray-600" />
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Chart
-              title="Online Devices (24h)"
-              data={chartData}
-              xKey="time"
-              yKey="devices"
-              type="area"
-              color="#4caf50"
-            />
-            <Card title="Recent Activity">
-              <p className="text-sm text-gray-500">Activity feed will appear here.</p>
-            </Card>
-          </div>
-        </>
-      )}
+      <h1 className="text-2xl font-bold text-gray-900">Super Admin Dashboard</h1>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Organizations" value={totalOrgs} icon="🏢" color="text-blue-600" />
+        <StatCard label="Active Orgs" value={activeOrgs} icon="✅" color="text-green-600" />
+        <StatCard label="Total Users" value={totalUsers} icon="�" color="text-purple-600" />
+        <StatCard label="Active Users" value={activeUsers} icon="🟢" color="text-green-600" />
+      </div>
+      <Card title="Quick Actions">
+        <div className="space-y-2 text-sm text-gray-600">
+          <p>1. Create an Organization (wholesaler/company)</p>
+          <p>2. Create an Admin User and assign them to the organization</p>
+          <p>3. The admin user can then log in and create customers, machines, and send commands</p>
+        </div>
+      </Card>
     </div>
   );
 }
