@@ -96,13 +96,13 @@ cp "$REDIS_CONF" "${REDIS_CONF}.bak"
 sed -i "s|^# requirepass .*|requirepass ${REDIS_PASS}|" "$REDIS_CONF"
 sed -i "s|^bind 127.0.0.1 -::1|bind 127.0.0.1|" "$REDIS_CONF"
 
-# Security: disable dangerous commands
+# Security: disable dangerous commands (Redis 6 compatible — use rename to safe alternatives)
 echo "" >> "$REDIS_CONF"
 echo "# YantraGO security settings" >> "$REDIS_CONF"
-echo "rename-command FLUSHDB \"\"" >> "$REDIS_CONF"
-echo "rename-command FLUSHALL \"\"" >> "$REDIS_CONF"
-echo "rename-command CONFIG \"\"" >> "$REDIS_CONF"
-echo "rename-command DEBUG \"\"" >> "$REDIS_CONF"
+echo "rename-command FLUSHDB FLUSHDB_DISABLED" >> "$REDIS_CONF"
+echo "rename-command FLUSHALL FLUSHALL_DISABLED" >> "$REDIS_CONF"
+echo "rename-command CONFIG CONFIG_DISABLED" >> "$REDIS_CONF"
+echo "rename-command DEBUG DEBUG_DISABLED" >> "$REDIS_CONF"
 
 # Production settings (reduced for 1GB RAM)
 cat >> "$REDIS_CONF" <<CONF
