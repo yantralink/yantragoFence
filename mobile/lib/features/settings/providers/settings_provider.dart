@@ -18,7 +18,7 @@ class SettingsState {
   final bool notificationsEnabled;
 
   const SettingsState({
-    this.apiUrl = 'http://localhost:8080',
+    this.apiUrl = 'https://yantrago.com',
     this.notificationsEnabled = true,
   });
 

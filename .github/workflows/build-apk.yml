@@ -31,25 +31,39 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Print Flutter version
+        run: flutter --version
+
       - name: Generate Android platform files
         working-directory: mobile
         run: |
           # Create android/ platform directory if it doesn't exist
           if [ ! -d "android" ]; then
-            flutter create --platforms=android --org com.yantrago .
+            echo ">>> Generating Android platform files..."
+            flutter create --platforms=android --org com.yantrago --project-name yantrago .
+          else
+            echo ">>> Android directory already exists"
           fi
 
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
 
-      - name: Analyze code
+      - name: Analyze code (non-blocking)
         working-directory: mobile
         run: flutter analyze --no-fatal-infos || true
 
       - name: Build APK
         working-directory: mobile
-        run: flutter build apk --release --dart-define=API_BASE_URL=https://yantrago.com --dart-define=WS_BASE_URL=wss://yantrago.com/ws
+        run: |
+          flutter build apk --release \
+            --dart-define=API_BASE_URL=https://yantrago.com \
+            --dart-define=WS_BASE_URL=wss://yantrago.com/ws
+
+      - name: List built APK
+        working-directory: mobile
+        run: |
+          ls -la build/app/outputs/flutter-apk/ || echo "APK not found"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

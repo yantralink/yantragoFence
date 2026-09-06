@@ -33,9 +33,6 @@ dependencies:
   # JSON serialization
   json_annotation: ^4.8.0
 
-  # Maps
-  google_maps_flutter: ^2.5.0
-
   # UI
   cupertino_icons: ^1.0.6
 
