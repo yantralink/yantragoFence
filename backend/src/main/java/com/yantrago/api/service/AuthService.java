@@ -4,8 +4,10 @@ import com.yantrago.api.dto.auth.LoginRequest;
 import com.yantrago.api.dto.auth.LoginResponse;
 import com.yantrago.api.dto.auth.RefreshTokenRequest;
 import com.yantrago.api.dto.auth.TokenResponse;
+import com.yantrago.api.model.Organization;
 import com.yantrago.api.model.RefreshToken;
 import com.yantrago.api.model.User;
+import com.yantrago.api.repository.OrganizationRepository;
 import com.yantrago.api.repository.RefreshTokenRepository;
 import com.yantrago.api.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -29,14 +31,17 @@ public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
+    private final OrganizationRepository organizationRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
     private final BCryptPasswordEncoder passwordEncoder;
 
     public AuthService(UserRepository userRepository,
+                       OrganizationRepository organizationRepository,
                        RefreshTokenRepository refreshTokenRepository,
                        JwtService jwtService) {
         this.userRepository = userRepository;
+        this.organizationRepository = organizationRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = new BCryptPasswordEncoder();
@@ -52,6 +57,13 @@ public class AuthService {
         }
         if (user.getIsLocked()) {
             throw new IllegalStateException("Account is locked");
+        }
+        // Check organization is active (if user belongs to one)
+        if (user.getOrganizationId() != null) {
+            Organization org = organizationRepository.findById(user.getOrganizationId()).orElse(null);
+            if (org != null && !org.getIsActive()) {
+                throw new IllegalStateException("Organization is deactivated. Contact your platform administrator.");
+            }
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             log.warn("Failed login attempt for email={}", request.getEmail());

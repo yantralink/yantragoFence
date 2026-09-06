@@ -13,6 +13,9 @@ public class Customer extends BaseEntity {
     @Column(name = "organization_id", nullable = false)
     private java.util.UUID organizationId;
 
+    @Column(name = "user_id")
+    private java.util.UUID userId;
+
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
@@ -36,6 +39,8 @@ public class Customer extends BaseEntity {
 
     public java.util.UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(java.util.UUID organizationId) { this.organizationId = organizationId; }
+    public java.util.UUID getUserId() { return userId; }
+    public void setUserId(java.util.UUID userId) { this.userId = userId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getEmail() { return email; }

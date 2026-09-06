@@ -6,6 +6,7 @@ import java.util.UUID;
 public class MachineDto {
 
     private UUID id;
+    private String machineId;
     private UUID organizationId;
     private UUID customerId;
     private String name;
@@ -16,13 +17,22 @@ public class MachineDto {
     private LocalDateTime lastSeenAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    // Device fields (from joined devices table)
+    private String imei;
+    private String simNumber;
+    private String protocolType;
+    private String firmwareVersion;
+    // Resolved names for display
+    private String organizationName;
+    private String customerName;
 
     public MachineDto() {}
 
-    public MachineDto(UUID id, UUID organizationId, UUID customerId, String name, String serialNumber,
-                      String model, String status, Boolean isOnline, LocalDateTime lastSeenAt,
-                      LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public MachineDto(UUID id, String machineId, UUID organizationId, UUID customerId, String name,
+                      String serialNumber, String model, String status, Boolean isOnline,
+                      LocalDateTime lastSeenAt, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
+        this.machineId = machineId;
         this.organizationId = organizationId;
         this.customerId = customerId;
         this.name = name;
@@ -37,6 +47,8 @@ public class MachineDto {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+    public String getMachineId() { return machineId; }
+    public void setMachineId(String machineId) { this.machineId = machineId; }
     public UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(UUID organizationId) { this.organizationId = organizationId; }
     public UUID getCustomerId() { return customerId; }
@@ -57,4 +69,16 @@ public class MachineDto {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getImei() { return imei; }
+    public void setImei(String imei) { this.imei = imei; }
+    public String getSimNumber() { return simNumber; }
+    public void setSimNumber(String simNumber) { this.simNumber = simNumber; }
+    public String getProtocolType() { return protocolType; }
+    public void setProtocolType(String protocolType) { this.protocolType = protocolType; }
+    public String getFirmwareVersion() { return firmwareVersion; }
+    public void setFirmwareVersion(String firmwareVersion) { this.firmwareVersion = firmwareVersion; }
+    public String getOrganizationName() { return organizationName; }
+    public void setOrganizationName(String organizationName) { this.organizationName = organizationName; }
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
 }

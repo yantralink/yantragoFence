@@ -13,7 +13,10 @@ import java.time.LocalDateTime;
 })
 public class Machine extends BaseEntity {
 
-    @Column(name = "organization_id", nullable = false)
+    @Column(name = "machine_id", nullable = false, unique = true, length = 20, updatable = false)
+    private String machineId;
+
+    @Column(name = "organization_id")
     private java.util.UUID organizationId;
 
     @Column(name = "customer_id")
@@ -37,6 +40,8 @@ public class Machine extends BaseEntity {
     @Column(name = "last_seen_at")
     private LocalDateTime lastSeenAt;
 
+    public String getMachineId() { return machineId; }
+    public void setMachineId(String machineId) { this.machineId = machineId; }
     public java.util.UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(java.util.UUID organizationId) { this.organizationId = organizationId; }
     public java.util.UUID getCustomerId() { return customerId; }

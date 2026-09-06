@@ -16,8 +16,8 @@ interface Organization {
 export default function OrganizationsPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const { data: orgs, isLoading } = useQuery<Organization[]>({
@@ -29,26 +29,81 @@ export default function OrganizationsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (params: { name: string; slug: string }) => {
+    mutationFn: async (params: { name: string }) => {
       const { data } = await apiClient.post<Organization>('/organizations', params);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
-      setShowForm(false);
-      setName('');
-      setSlug('');
-      setError(null);
+      resetForm();
     },
-    onError: (err: any) => {
-      setError(err?.response?.data?.message || 'Failed to create organization');
-    },
+    onError: (err: any) => setError(err?.response?.data?.message || 'Failed to create organization'),
   });
+
+  const updateMutation = useMutation({
+    mutationFn: async (params: { id: string; name: string }) => {
+      const { data } = await apiClient.put<Organization>(`/organizations/${params.id}`, { name: params.name });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      resetForm();
+    },
+    onError: (err: any) => setError(err?.response?.data?.message || 'Failed to update organization'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/organizations/${id}`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['organizations'] }),
+    onError: (err: any) => setError(err?.response?.data?.message || 'Failed to delete organization'),
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.put<Organization>(`/organizations/${id}/activate`);
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['organizations'] }),
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await apiClient.put<Organization>(`/organizations/${id}/deactivate`);
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['organizations'] }),
+  });
+
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setName('');
+    setError(null);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    createMutation.mutate({ name, slug });
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, name });
+    } else {
+      createMutation.mutate({ name });
+    }
+  };
+
+  const handleEdit = (org: Organization) => {
+    setEditingId(org.id);
+    setName(org.name);
+    setShowForm(true);
+    setError(null);
+  };
+
+  const handleDelete = (org: Organization) => {
+    if (confirm(`Delete organization "${org.name}"? This cannot be undone.`)) {
+      deleteMutation.mutate(org.id);
+    }
   };
 
   return (
@@ -56,15 +111,15 @@ export default function OrganizationsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Organizations</h1>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => { resetForm(); setShowForm(true); }}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
         >
-          {showForm ? 'Cancel' : '+ New Organization'}
+          + New Organization
         </button>
       </div>
 
       {showForm && (
-        <Card title="Create Organization">
+        <Card title={editingId ? 'Edit Organization' : 'Create Organization'}>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -74,28 +129,27 @@ export default function OrganizationsPage() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                placeholder="Acme Corp"
+                placeholder="Acme Wholesaler"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Slug</label>
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
-                required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                placeholder="acme-corp"
-              />
+              <p className="mt-1 text-xs text-gray-500">Slug will be auto-generated from the name.</p>
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
-            >
-              {createMutation.isPending ? 'Creating...' : 'Create'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={createMutation.isPending || updateMutation.isPending}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-50"
+              >
+                {editingId ? 'Update' : 'Create'}
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
           </form>
         </Card>
       )}
@@ -111,6 +165,7 @@ export default function OrganizationsPage() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Slug</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -122,6 +177,17 @@ export default function OrganizationsPage() {
                       <span className={org.isActive ? 'text-green-600' : 'text-red-600'}>
                         {org.isActive ? 'Active' : 'Inactive'}
                       </span>
+                    </td>
+                    <td className="px-4 py-2 text-sm">
+                      <div className="flex gap-2">
+                        <button onClick={() => handleEdit(org)} className="text-blue-600 hover:text-blue-800">Edit</button>
+                        {org.isActive ? (
+                          <button onClick={() => deactivateMutation.mutate(org.id)} className="text-orange-600 hover:text-orange-800">Deactivate</button>
+                        ) : (
+                          <button onClick={() => activateMutation.mutate(org.id)} className="text-green-600 hover:text-green-800">Activate</button>
+                        )}
+                        <button onClick={() => handleDelete(org)} className="text-red-600 hover:text-red-800">Delete</button>
+                      </div>
                     </td>
                   </tr>
                 ))}

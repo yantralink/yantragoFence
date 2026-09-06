@@ -132,6 +132,26 @@ public class UserService {
         log.info("Deleted user id={}", id);
     }
 
+    @Transactional
+    public UserDto activateUser(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+        user.setIsActive(true);
+        user = userRepository.save(user);
+        log.info("Activated user id={}", id);
+        return toDto(user);
+    }
+
+    @Transactional
+    public UserDto deactivateUser(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+        user.setIsActive(false);
+        user = userRepository.save(user);
+        log.info("Deactivated user id={}", id);
+        return toDto(user);
+    }
+
     private UserDto toDto(User user) {
         return new UserDto(
                 user.getId(),

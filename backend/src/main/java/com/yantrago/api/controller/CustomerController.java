@@ -13,8 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 /**
- * Customer CRUD endpoints.
- * All endpoints require authentication and enforce tenant isolation.
+ * Customer CRUD + lifecycle endpoints.
+ *
+ * Creating a customer auto-creates a mobile app user account (role=customer).
+ * Org admin can create/edit/delete/activate/deactivate customers and reset their password.
  */
 @RestController
 @RequestMapping("/api/v1/customers")
@@ -50,6 +52,22 @@ public class CustomerController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCustomer(@PathVariable UUID id) {
         customerService.deleteCustomer(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<CustomerDto> activateCustomer(@PathVariable UUID id) {
+        return ResponseEntity.ok(customerService.activateCustomer(id));
+    }
+
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<CustomerDto> deactivateCustomer(@PathVariable UUID id) {
+        return ResponseEntity.ok(customerService.deactivateCustomer(id));
+    }
+
+    @PostMapping("/{id}/reset-password")
+    public ResponseEntity<Void> resetCustomerPassword(@PathVariable UUID id) {
+        customerService.resetCustomerPassword(id);
         return ResponseEntity.noContent().build();
     }
 }
