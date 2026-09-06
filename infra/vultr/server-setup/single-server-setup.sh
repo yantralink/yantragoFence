@@ -20,12 +20,12 @@ set -euo pipefail
 DOMAIN="${YANTRAGO_DOMAIN:-yantrago.com}"
 DB_NAME="yantrago"
 DB_USER="yantrago"
-DB_PASS="${YANTRAGO_DB_PASSWORD:-$(openssl rand -base64 24)}"
-REDIS_PASS="${YANTRAGO_REDIS_PASSWORD:-$(openssl rand -base64 24)}"
+DB_PASS="${YANTRAGO_DB_PASSWORD:-$(openssl rand -hex 16)}"
+REDIS_PASS="${YANTRAGO_REDIS_PASSWORD:-$(openssl rand -hex 16)}"
 RABBIT_USER="yantrago"
-RABBIT_PASS="${YANTRAGO_RABBITMQ_PASSWORD:-$(openssl rand -base64 24)}"
-JWT_ACCESS="${JWT_ACCESS_SECRET:-$(openssl rand -base64 48)}"
-JWT_REFRESH="${JWT_REFRESH_SECRET:-$(openssl rand -base64 48)}"
+RABBIT_PASS="${YANTRAGO_RABBITMQ_PASSWORD:-$(openssl rand -hex 16)}"
+JWT_ACCESS="${JWT_ACCESS_SECRET:-$(openssl rand -hex 32)}"
+JWT_REFRESH="${JWT_REFRESH_SECRET:-$(openssl rand -hex 32)}"
 
 echo "=== YantraGO Single-Server Setup ==="
 echo "Domain: $DOMAIN"
@@ -93,8 +93,8 @@ apt-get install -y redis-server
 
 REDIS_CONF="/etc/redis/redis.conf"
 cp "$REDIS_CONF" "${REDIS_CONF}.bak"
-sed -i "s/^# requirepass .*/requirepass ${REDIS_PASS}/" "$REDIS_CONF"
-sed -i "s/^bind 127.0.0.1 -::1/bind 127.0.0.1/" "$REDIS_CONF"
+sed -i "s|^# requirepass .*|requirepass ${REDIS_PASS}|" "$REDIS_CONF"
+sed -i "s|^bind 127.0.0.1 -::1|bind 127.0.0.1|" "$REDIS_CONF"
 
 # Security: disable dangerous commands
 echo "" >> "$REDIS_CONF"
