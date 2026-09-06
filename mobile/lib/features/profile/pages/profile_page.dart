@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yantrago/core/auth/auth_provider.dart';
+import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/profile/providers/profile_provider.dart';
 
 /// Profile page — shows user profile and logout button.
@@ -51,7 +51,7 @@ class ProfilePage extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.business),
                   title: const Text('Organization'),
-                  subtitle: Text(user.organizationId),
+                  subtitle: Text(user.organizationId ?? 'N/A'),
                 ),
                 if (user.phoneNumber != null)
                   ListTile(

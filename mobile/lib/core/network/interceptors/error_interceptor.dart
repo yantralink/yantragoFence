@@ -46,6 +46,7 @@ class ErrorInterceptor extends Interceptor {
         message = 'SSL certificate error.';
         break;
       case DioExceptionType.unknown:
+      case DioExceptionType.transformTimeout:
         message = err.message ?? 'An unexpected error occurred.';
         break;
     }

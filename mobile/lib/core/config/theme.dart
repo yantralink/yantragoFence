@@ -38,10 +38,10 @@ class AppTheme {
           foregroundColor: Colors.white,
           centerTitle: true,
         ),
-        cardTheme: const CardThemeData(
+        cardTheme: CardTheme(
           color: cardBackground,
           elevation: 2,
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
