@@ -18,18 +18,29 @@ import 'package:yantrago/features/profile/pages/profile_page.dart';
 ///
 /// Per AGENTS.md rule 9: sensitive operations require authorization.
 /// Routes under /app require authentication; /login is public.
+///
+/// IMPORTANT: We do NOT watch authStateProvider here (that would rebuild
+/// the entire GoRouter on every state change, causing an infinite reload
+/// loop). Instead, we use refreshListenable to trigger re-evaluation of
+/// the redirect, and read authState inside the redirect callback.
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
-
   return GoRouter(
     initialLocation: '/splash',
     refreshListenable: _AuthStateListenable(ref),
     redirect: (context, state) {
+      // Read (not watch) auth state inside the redirect
+      final authState = ref.read(authStateProvider);
       final isLoggedIn = authState is Authenticated;
       final goingToLogin = state.matchedLocation == '/login';
       final goingToSplash = state.matchedLocation == '/splash';
 
+      // Allow splash page to stay while auth is being checked
       if (goingToSplash) return null;
+
+      // If auth is still loading (initial check), stay on splash
+      if (authState is AuthInitial || authState is AuthLoading) {
+        return '/splash';
+      }
 
       if (!isLoggedIn && !goingToLogin) {
         return '/login';
