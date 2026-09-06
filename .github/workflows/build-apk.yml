@@ -34,50 +34,15 @@ jobs:
       - name: Print Flutter version
         run: flutter --version
 
-      - name: Generate Android platform files
+      - name: Verify Android platform files
         working-directory: mobile
         run: |
-          # Create android/ platform directory if it doesn't exist
-          if [ ! -d "android" ]; then
+          if [ -d "android" ]; then
+            echo ">>> Android directory exists"
+          else
             echo ">>> Generating Android platform files..."
             flutter create --platforms=android --org com.yantrago --project-name yantrago .
-          else
-            echo ">>> Android directory already exists"
           fi
-
-      - name: Update Kotlin version for compatibility
-        working-directory: mobile
-        run: |
-          # Flutter 3.24 generates Kotlin 1.7.x but dependencies need 1.9.x
-          # Print original files for debugging
-          echo "=== android/build.gradle (before) ==="
-          cat android/build.gradle
-          echo "=== android/settings.gradle (before) ==="
-          cat android/settings.gradle
-
-          # Update ext.kotlin_version in android/build.gradle (older format)
-          if grep -q 'ext.kotlin_version' android/build.gradle; then
-            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.24'/" android/build.gradle
-            echo ">>> Updated ext.kotlin_version in build.gradle"
-          fi
-
-          # Update plugins block in settings.gradle (newer format)
-          # Format: id "org.jetbrains.kotlin.android" version "1.7.10" apply false
-          if grep -q 'org.jetbrains.kotlin.android' android/settings.gradle; then
-            sed -i 's/org.jetbrains.kotlin.android" version "[^"]*"/org.jetbrains.kotlin.android" version "1.9.24"/' android/settings.gradle
-            echo ">>> Updated kotlin version in settings.gradle plugins block"
-          fi
-
-          # Also check app/build.gradle for kotlin version
-          if grep -q 'kotlin_version' android/app/build.gradle 2>/dev/null; then
-            sed -i "s/kotlin_version = .*/kotlin_version = '1.9.24'/" android/app/build.gradle
-            echo ">>> Updated kotlin_version in app/build.gradle"
-          fi
-
-          echo "=== android/build.gradle (after) ==="
-          cat android/build.gradle
-          echo "=== android/settings.gradle (after) ==="
-          cat android/settings.gradle
 
       - name: Install dependencies
         working-directory: mobile
