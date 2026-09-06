@@ -13,12 +13,14 @@ import com.yantrago.api.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Authentication service: login, refresh-token rotation, logout.
@@ -35,16 +37,19 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     public AuthService(UserRepository userRepository,
                        OrganizationRepository organizationRepository,
                        RefreshTokenRepository refreshTokenRepository,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       JdbcTemplate jdbcTemplate) {
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = new BCryptPasswordEncoder();
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional
@@ -74,7 +79,13 @@ public class AuthService {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        String accessToken = jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getOrganizationId(), null);
+        // Fetch user roles for JWT claims
+        String roles = jdbcTemplate.queryForList(
+                "SELECT r.name FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?",
+                String.class, user.getId()
+        ).stream().collect(Collectors.joining(","));
+
+        String accessToken = jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getOrganizationId(), roles);
         String refreshTokenStr = jwtService.generateRefreshToken(user.getId(), user.getEmail(), user.getOrganizationId());
 
         // Persist refresh token hash
@@ -124,7 +135,13 @@ public class AuthService {
         stored.setRevokedAt(LocalDateTime.now());
         refreshTokenRepository.save(stored);
 
-        String newAccessToken = jwtService.generateAccessToken(userId, user.getEmail(), orgId, null);
+        // Fetch user roles for new access token
+        String roles = jdbcTemplate.queryForList(
+                "SELECT r.name FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?",
+                String.class, userId
+        ).stream().collect(Collectors.joining(","));
+
+        String newAccessToken = jwtService.generateAccessToken(userId, user.getEmail(), orgId, roles);
         String newRefreshToken = jwtService.generateRefreshToken(userId, user.getEmail(), orgId);
 
         RefreshToken newStored = persistRefreshToken(newRefreshToken, user);

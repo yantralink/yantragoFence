@@ -16,9 +16,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Extracts JWT from the Authorization: Bearer header, validates it,
@@ -62,12 +64,16 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
             String roles = jwtService.extractRoles(claims);
 
-            List<SimpleGrantedAuthority> authorities = roles != null
-                    ? roles.chars().mapToObj(c -> (char) c)
-                        .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
-                        .toString()
-                        .transform(s -> List.of(new SimpleGrantedAuthority("ROLE_" + s)))
-                    : Collections.emptyList();
+            List<SimpleGrantedAuthority> authorities;
+            if (roles != null && !roles.isBlank()) {
+                authorities = Arrays.stream(roles.split(","))
+                        .map(String::trim)
+                        .filter(r -> !r.isEmpty())
+                        .map(r -> new SimpleGrantedAuthority("ROLE_" + r.toUpperCase()))
+                        .collect(Collectors.toList());
+            } else {
+                authorities = Collections.emptyList();
+            }
 
             // Simplified: store userId as principal, email as credentials name
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
