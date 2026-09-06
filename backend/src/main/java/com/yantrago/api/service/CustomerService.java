@@ -100,7 +100,7 @@ public class CustomerService {
         user.setPhone(request.getPhone());
         user.setIsActive(true);
         user.setIsLocked(false);
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user);
 
         // Assign 'customer' role
         roleRepository.findByName("customer").ifPresent(role -> {
