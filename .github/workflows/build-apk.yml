@@ -108,6 +108,35 @@ jobs:
         run: |
           ls -la build/app/outputs/flutter-apk/ || echo "APK not found"
 
+      - name: Rename APK with version
+        working-directory: mobile
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/yantrago-android.apk
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: android-apk-${{ github.run_number }}
+          name: YantraGO Android APK (Build #${{ github.run_number }})
+          body: |
+            ## YantraGO Android App
+
+            ### Download
+            Download `yantrago-android.apk` below and install on your Android device.
+
+            ### Login
+            - **Super Admin:** superadmin@yantrago.com / password
+            - **Customer:** phone number / yantrago
+
+            ### Server
+            Connects to: https://yantrago.com
+          files: mobile/build/app/outputs/flutter-apk/yantrago-android.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
