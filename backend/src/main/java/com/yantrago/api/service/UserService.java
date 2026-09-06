@@ -92,7 +92,7 @@ public class UserService {
         user.setIsActive(true);
         user.setIsLocked(false);
 
-        User savedUser = userRepository.save(user);
+        User savedUser = userRepository.saveAndFlush(user);
 
         // Assign role if specified
         String roleName = request.getRoleName() != null ? request.getRoleName() : "viewer";
