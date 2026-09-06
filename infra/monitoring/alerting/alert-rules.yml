@@ -1,0 +1,80 @@
+# YantraGO Alert Rules
+
+groups:
+  - name: yantrago-backend
+    rules:
+      - alert: BackendDown
+        expr: up{job="yantrago-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend API is down"
+          description: "Backend API has been down for more than 1 minute."
+
+      - alert: BackendHighMemory
+        expr: jvm_memory_used_bytes{service="backend", area="heap"} / jvm_memory_max_bytes{service="backend", area="heap"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend JVM heap usage > 85%"
+          description: "Backend JVM heap usage has been above 85% for 5 minutes."
+
+      - alert: BackendHighLatency
+        expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{service="backend"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend p95 latency > 2s"
+          description: "Backend API p95 latency has been above 2 seconds for 5 minutes."
+
+  - name: yantrago-gateway
+    rules:
+      - alert: GatewayDown
+        expr: up{job="yantrago-gateway"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Device Gateway is down"
+          description: "Device Gateway has been down for more than 1 minute."
+
+      - alert: GatewayHighMemory
+        expr: jvm_memory_used_bytes{service="gateway", area="heap"} / jvm_memory_max_bytes{service="gateway", area="heap"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Gateway JVM heap usage > 85%"
+          description: "Gateway JVM heap usage has been above 85% for 5 minutes."
+
+  - name: yantrago-infrastructure
+    rules:
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been down for more than 1 minute."
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache has been down for more than 1 minute."
+
+      - alert: RabbitMQDown
+        expr: up{job="rabbitmq"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RabbitMQ is down"
+          description: "RabbitMQ message broker has been down for more than 1 minute."

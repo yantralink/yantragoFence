@@ -1,0 +1,20 @@
+# YantraGO — Redis Server Firewall Rules (UFW)
+# Apply with: sudo bash -c "cat firewall/redis-server.ufw | while read line; do eval \$line; done"
+
+# Reset UFW
+ufw --force reset
+
+# Default policies
+ufw default deny incoming
+ufw default allow outgoing
+
+# SSH
+ufw allow from ${ADMIN_IP:-0.0.0.0/0} to any port 22 proto tcp
+
+# Redis — only from app and gateway servers
+ufw allow from ${APP_SERVER_IP:-10.0.0.0/8} to any port 6379 proto tcp
+ufw allow from ${GATEWAY_SERVER_IP:-10.0.0.0/8} to any port 6379 proto tcp
+
+# Enable
+ufw --force enable
+ufw status verbose

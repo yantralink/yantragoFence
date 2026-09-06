@@ -1,0 +1,26 @@
+# YantraGO — App Server Firewall Rules (UFW)
+# Apply with: sudo bash -c "cat firewall/app-server.ufw | while read line; do eval \$line; done"
+
+# Reset UFW
+ufw --force reset
+
+# Default policies
+ufw default deny incoming
+ufw default allow outgoing
+
+# SSH
+ufw allow from ${ADMIN_IP:-0.0.0.0/0} to any port 22 proto tcp
+
+# HTTP/HTTPS (public — Nginx reverse proxy)
+ufw allow 80/tcp
+ufw allow 443/tcp
+
+# Backend API (internal only — Nginx proxies to it)
+ufw allow from 127.0.0.1 to any port 8080 proto tcp
+
+# Admin Web (internal only — Nginx proxies to it)
+ufw allow from 127.0.0.1 to any port 3001 proto tcp
+
+# Enable
+ufw --force enable
+ufw status verbose

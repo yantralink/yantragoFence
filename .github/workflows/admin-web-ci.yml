@@ -1,0 +1,44 @@
+# Admin Web CI — Next.js build and lint on PR
+name: Admin Web CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'admin-web/**'
+      - '.github/workflows/admin-web-ci.yml'
+
+jobs:
+  build-and-lint:
+    name: Build & Lint (Node 20)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: admin-web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: admin-web
+        run: npm ci
+
+      - name: Type check
+        working-directory: admin-web
+        run: npm run type-check
+
+      - name: Lint
+        working-directory: admin-web
+        run: npm run lint
+
+      - name: Build
+        working-directory: admin-web
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080
+          NEXT_PUBLIC_WS_URL: ws://localhost:8080/ws

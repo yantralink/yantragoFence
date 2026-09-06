@@ -1,0 +1,40 @@
+[Unit]
+Description=YantraGO Device Gateway
+Documentation=https://github.com/yantrago/yantrago
+After=network.target postgresql.service redis-server.service rabbitmq-server.service
+Wants=postgresql.service redis-server.service rabbitmq-server.service
+
+[Service]
+Type=simple
+User=yantrago
+Group=yantrago
+WorkingDirectory=/opt/yantrago/gateway
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -XX:+UseG1GC -jar /opt/yantrago/gateway/app.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Environment
+Environment="SPRING_PROFILES_ACTIVE=prod"
+Environment="SPRING_CONFIG_ADDITIONAL_LOCATION=/opt/yantrago/config/"
+Environment="JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=yantrago-gateway
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/yantrago/logs /opt/yantrago/gateway
+ProtectHome=true
+
+# File descriptor limits for TCP connections
+LimitNOFILE=1000000
+
+[Install]
+WantedBy=multi-user.target

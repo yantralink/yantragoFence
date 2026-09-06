@@ -1,0 +1,42 @@
+{
+  "annotations": { "list": [] },
+  "title": "Device Health",
+  "uid": "device-health",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["yantrago", "devices"],
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Online Devices (by protocol)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "tcp_active_connections", "legendFormat": "Concox" },
+        { "expr": "fencing_tcp_active_connections", "legendFormat": "Fencing" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "title": "Device Events Rate",
+      "type": "graph",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "rate(yantrago_device_events_total[5m])", "legendFormat": "{{event_type}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "id": 3,
+      "title": "Telemetry Forward Rate",
+      "type": "graph",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "rate(yantrago_telemetry_forwarded_total[5m])", "legendFormat": "telemetry" }
+      ],
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
+    }
+  ]
+}

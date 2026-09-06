@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: yantrago-simulator
+
+server:
+  port: 0  # Random port — simulator doesn't need a fixed port
+
+# Simulator configuration
+simulator:
+  # Target gateway host and ports
+  target-host: ${GATEWAY_HOST:localhost}
+  concox-port: 5000
+  jt808-port: 5001
+  fencing-port: 5002
+
+  # Default: single device for manual testing
+  device-count: 1
+
+  # Packet intervals (milliseconds)
+  heartbeat-interval-ms: 10000
+  gps-interval-ms: 30000
+  telemetry-interval-ms: 60000
+
+  # Starting IMEI (each device gets start-imei + index)
+  start-imei: 867010070113452
+
+  # Enabled protocols (comma-separated: concox,jt808,fencing)
+  enabled-protocols: concox,fencing
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      enabled: true
+
+logging:
+  level:
+    com.yantrago.simulator: INFO

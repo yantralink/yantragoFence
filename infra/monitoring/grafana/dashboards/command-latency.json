@@ -1,0 +1,41 @@
+{
+  "annotations": { "list": [] },
+  "title": "Command Latency",
+  "uid": "command-latency",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["yantrago", "commands"],
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Command Dispatch Rate",
+      "type": "graph",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "rate(yantrago_commands_dispatched_total[5m])", "legendFormat": "dispatched" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "title": "Command Result Rate (by status)",
+      "type": "graph",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "rate(yantrago_command_results_total[5m])", "legendFormat": "{{status}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "id": 3,
+      "title": "Command Failure Rate",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "rate(yantrago_command_results_total{status=\"FAILED\"}[5m])" }
+      ],
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
+    }
+  ]
+}

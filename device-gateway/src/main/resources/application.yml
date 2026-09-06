@@ -1,0 +1,61 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: yantrago-gateway
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/yantrago}
+    username: ${DB_USERNAME:yantrago}
+    password: ${DB_PASSWORD:yantrago}
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+# TCP server ports
+tcp:
+  server:
+    port: 5000  # Concox V5 / BR05
+
+jt808:
+  tcp:
+    enabled: true
+    port: 5001  # JT808-2013 (T98)
+
+fencing:
+  tcp:
+    enabled: true
+    port: 5002  # YantraGO fencing protocol
+
+# JT1076 RTP receiver (dashcam video)
+jt1076:
+  rtp:
+    enabled: false
+    port: 5003
+
+# Actuator / Prometheus
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: yantrago-gateway
+
+logging:
+  level:
+    com.yantrago.gateway: INFO
+    com.yantrago.gateway.tcp: DEBUG

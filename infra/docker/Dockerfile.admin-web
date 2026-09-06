@@ -1,0 +1,46 @@
+# YantraGO Admin Web (Next.js) — Multi-stage Dockerfile
+# Build: docker build -f infra/docker/Dockerfile.admin-web -t yantrago-admin-web .
+# Run:   docker run -p 3001:3001 yantrago-admin-web
+
+# ===== Stage 1: Build =====
+FROM node:20-alpine AS builder
+
+WORKDIR /build
+
+# Copy package files
+COPY admin-web/package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY admin-web/ ./
+
+# Build the Next.js app
+RUN npm run build
+
+# ===== Stage 2: Runtime =====
+FROM node:20-alpine
+
+RUN addgroup -S yantrago && adduser -S yantrago -G yantrago
+
+WORKDIR /app
+
+# Copy built artifacts
+COPY --from=builder /build/.next ./.next
+COPY --from=builder /build/public ./public
+COPY --from=builder /build/package*.json ./
+COPY --from=builder /build/node_modules ./node_modules
+COPY --from=builder /build/next.config.* ./
+
+RUN chown -R yantrago:yantrago /app
+
+USER yantrago
+
+EXPOSE 3001
+
+ENV NODE_ENV=production
+ENV PORT=3001
+ENV HOSTNAME=0.0.0.0
+
+CMD ["npm", "start"]

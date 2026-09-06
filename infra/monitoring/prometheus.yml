@@ -1,0 +1,35 @@
+# Prometheus configuration for YantraGO
+# Scrape metrics from backend API and device gateway
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert-rules.yml"
+
+scrape_configs:
+  # Backend API (Spring Boot Actuator + Micrometer Prometheus)
+  - job_name: "yantrago-backend"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["backend:8080"]
+        labels:
+          service: "backend"
+    # For local dev (when backend runs outside Docker):
+    # - targets: ["host.docker.internal:8080"]
+
+  # Device Gateway (Spring Boot Actuator + Micrometer Prometheus)
+  - job_name: "yantrago-gateway"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["gateway:8081"]
+        labels:
+          service: "gateway"
+    # For local dev (when gateway runs outside Docker):
+    # - targets: ["host.docker.internal:8081"]
+
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

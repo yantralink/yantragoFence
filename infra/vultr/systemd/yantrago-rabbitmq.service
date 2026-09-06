@@ -1,0 +1,16 @@
+[Unit]
+Description=YantraGO RabbitMQ Service Override
+After=network.target
+
+[Service]
+# YantraGO RabbitMQ configuration
+# Note: RabbitMQ installs its own systemd unit. This file provides
+# overrides for production use. Place in /etc/systemd/system/
+# and run: systemctl daemon-reload
+
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

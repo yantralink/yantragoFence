@@ -1,0 +1,29 @@
+[Unit]
+Description=YantraGO Admin Web (Next.js)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=yantrago
+Group=yantrago
+WorkingDirectory=/opt/yantrago/admin-web
+Environment="NODE_ENV=production"
+Environment="PORT=3001"
+Environment="NEXT_PUBLIC_API_URL=https://yantrago.com/api"
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=yantrago-admin-web
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/yantrago/admin-web
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

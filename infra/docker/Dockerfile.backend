@@ -1,0 +1,51 @@
+# YantraGO Backend API — Multi-stage Dockerfile
+# Build: docker build -f infra/docker/Dockerfile.backend -t yantrago-backend .
+# Run:   docker run -p 8080:8080 yantrago-backend
+
+# ===== Stage 1: Build =====
+FROM eclipse-temurin:17-jdk-alpine AS builder
+
+WORKDIR /build
+
+# Copy Gradle wrapper and build files
+COPY gradle/ ./gradle/
+COPY gradlew ./gradlew
+COPY settings.gradle.kts ./
+COPY build.gradle.kts ./
+
+# Copy module build files
+COPY shared/build.gradle.kts ./shared/build.gradle.kts
+COPY backend/build.gradle.kts ./backend/build.gradle.kts
+COPY device-gateway/build.gradle.kts ./device-gateway/build.gradle.kts
+COPY simulator/build.gradle.kts ./simulator/build.gradle.kts
+
+# Download dependencies (cached layer)
+RUN ./gradlew :backend:dependencies --no-daemon || true
+
+# Copy source code
+COPY shared/src ./shared/src
+COPY backend/src ./backend/src
+
+# Build the backend JAR (skip tests for faster builds)
+RUN ./gradlew :backend:bootJar -x test --no-daemon
+
+# ===== Stage 2: Runtime =====
+FROM eclipse-temurin:17-jre-alpine
+
+RUN addgroup -S yantrago && adduser -S yantrago -G yantrago
+
+WORKDIR /app
+
+# Copy the built JAR
+COPY --from=builder /build/backend/build/libs/*-SNAPSHOT.jar app.jar
+
+# Create log directory
+RUN mkdir -p /app/logs && chown -R yantrago:yantrago /app
+
+USER yantrago
+
+EXPOSE 8080
+
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

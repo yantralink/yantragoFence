@@ -1,0 +1,82 @@
+# Load Test — manual trigger: run simulator against staging
+name: Load Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      device-count:
+        description: 'Number of devices to simulate'
+        required: true
+        default: '100'
+        type: choice
+        options:
+          - '1'
+          - '100'
+          - '1000'
+          - '10000'
+      protocol:
+        description: 'Protocol to test'
+        required: true
+        default: 'fencing'
+        type: choice
+        options:
+          - 'fencing'
+          - 'concox'
+          - 'jt808'
+          - 'concox,fencing'
+      duration:
+        description: 'Test duration (seconds)'
+        required: true
+        default: '300'
+        type: string
+
+jobs:
+  load-test:
+    name: Run Device Simulator
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build simulator
+        run: ./gradlew :simulator:bootJar -x test --no-daemon
+
+      - name: Run load test
+        run: |
+          timeout ${{ inputs.duration }} java -jar simulator/build/libs/*-SNAPSHOT.jar \
+            --simulator.target-host=${{ secrets.STAGING_HOST }} \
+            --simulator.device-count=${{ inputs.device-count }} \
+            --simulator.enabled-protocols=${{ inputs.protocol }} \
+            --simulator.heartbeat-interval-ms=10000 \
+            --simulator.gps-interval-ms=30000 \
+            --simulator.telemetry-interval-ms=60000 || true
+
+      - name: Collect results
+        if: always()
+        run: |
+          echo "Load test completed"
+          echo "Devices: ${{ inputs.device-count }}"
+          echo "Protocol: ${{ inputs.protocol }}"
+          echo "Duration: ${{ inputs.duration }}s"
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-logs
+          path: |
+            simulator/logs/
+          retention-days: 7

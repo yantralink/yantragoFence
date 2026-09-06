@@ -1,0 +1,24 @@
+# YantraGO — Gateway Server Firewall Rules (UFW)
+# Apply with: sudo bash -c "cat firewall/gateway-server.ufw | while read line; do eval \$line; done"
+
+# Reset UFW
+ufw --force reset
+
+# Default policies
+ufw default deny incoming
+ufw default allow outgoing
+
+# SSH
+ufw allow from ${ADMIN_IP:-0.0.0.0/0} to any port 22 proto tcp
+
+# TCP device ports (public — devices connect directly)
+ufw allow 5000/tcp comment "Concox V5"
+ufw allow 5001/tcp comment "JT808"
+ufw allow 5002/tcp comment "Fencing"
+
+# Actuator (internal only)
+ufw allow from ${APP_SERVER_IP:-10.0.0.0/8} to any port 8081 proto tcp
+
+# Enable
+ufw --force enable
+ufw status verbose

@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/yantrago
+    username: yantrago
+    password: yantrago
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+logging:
+  level:
+    com.yantrago.gateway: DEBUG
+    com.yantrago.gateway.tcp: TRACE
