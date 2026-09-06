@@ -10,7 +10,7 @@ import type { LoginRequest, LoginResponse, User } from '@/types';
  */
 export const authService = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const { data } = await apiClient.post<LoginResponse>('/api/auth/login', credentials);
+    const { data } = await apiClient.post<LoginResponse>('/auth/login', credentials);
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
     localStorage.setItem('userId', data.user.id);
@@ -20,7 +20,7 @@ export const authService = {
 
   async logout(): Promise<void> {
     try {
-      await apiClient.post('/api/auth/logout');
+      await apiClient.post('/auth/logout');
     } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
@@ -30,7 +30,7 @@ export const authService = {
   },
 
   async getCurrentUser(): Promise<User> {
-    const { data } = await apiClient.get<User>('/api/auth/me');
+    const { data } = await apiClient.get<User>('/auth/me');
     return data;
   },
 

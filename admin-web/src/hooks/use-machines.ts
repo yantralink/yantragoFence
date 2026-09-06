@@ -11,7 +11,7 @@ export function useMachines() {
   return useQuery<Machine[]>({
     queryKey: ['machines'],
     queryFn: async () => {
-      const { data } = await apiClient.get<Machine[]>('/api/machines');
+      const { data } = await apiClient.get<Machine[]>('/machines');
       return data;
     },
   });
@@ -21,7 +21,7 @@ export function useMachine(id: string) {
   return useQuery<Machine>({
     queryKey: ['machine', id],
     queryFn: async () => {
-      const { data } = await apiClient.get<Machine>(`/api/machines/${id}`);
+      const { data } = await apiClient.get<Machine>(`/machines/${id}`);
       return data;
     },
     enabled: !!id,
@@ -36,7 +36,7 @@ export function useSendCommand() {
     { machineId: string; imei: string; commandType: string }
   >({
     mutationFn: async (params) => {
-      const { data } = await apiClient.post<Command>('/api/commands', params);
+      const { data } = await apiClient.post<Command>('/commands', params);
       return data;
     },
     onSuccess: () => {
