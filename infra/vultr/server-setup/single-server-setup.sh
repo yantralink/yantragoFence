@@ -60,8 +60,8 @@ systemctl start postgresql
 
 echo ">>> Creating database and user..."
 sudo -u postgres psql <<SQL
-CREATE DATABASE ${DB_NAME};
-CREATE USER ${DB_USER} WITH ENCRYPTED PASSWORD '${DB_PASS}';
+SELECT 'CREATE DATABASE ${DB_NAME}' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${DB_NAME}')\gexec
+DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${DB_USER}') THEN CREATE USER ${DB_USER} WITH ENCRYPTED PASSWORD '${DB_PASS}'; END IF; END \$\$;
 GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};
 ALTER DATABASE ${DB_NAME} OWNER TO ${DB_USER};
 SQL
@@ -119,14 +119,20 @@ systemctl restart redis-server
 
 # ─── 5. RabbitMQ 3 ───────────────────────────────────────────────────
 echo ">>> Installing RabbitMQ..."
-cat <<EOF > /etc/apt/sources.list.d/rabbitmq.list
+# Try the official RabbitMQ repo first; fall back to Ubuntu default if unreachable
+if curl -fsSL --connect-timeout 10 https://ppa1.rabbitmq.com/rabbitmq/rabbitmq-signing-key-public.asc | apt-key add - 2>/dev/null; then
+    cat <<EOF > /etc/apt/sources.list.d/rabbitmq.list
 deb https://ppa1.rabbitmq.com/rabbitmq/rabbitmq-erlang/deb/ubuntu $(lsb_release -cs) main
 deb https://ppa1.rabbitmq.com/rabbitmq/rabbitmq-server/deb/ubuntu $(lsb_release -cs) main
 EOF
-
-curl -fsSL https://ppa1.rabbitmq.com/rabbitmq/rabbitmq-signing-key-public.asc | apt-key add -
-apt-get update
-apt-get install -y rabbitmq-server
+    apt-get update
+    apt-get install -y rabbitmq-server
+else
+    echo ">>> RabbitMQ official repo unreachable — using Ubuntu default packages..."
+    rm -f /etc/apt/sources.list.d/rabbitmq.list
+    apt-get update
+    apt-get install -y rabbitmq-server
+fi
 
 rabbitmq-plugins enable rabbitmq_management
 
