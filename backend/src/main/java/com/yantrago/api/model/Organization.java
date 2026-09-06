@@ -3,6 +3,8 @@ package com.yantrago.api.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "organizations", indexes = {
@@ -16,6 +18,7 @@ public class Organization extends BaseEntity {
     @Column(name = "slug", nullable = false, unique = true, length = 100)
     private String slug;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "white_label_config", columnDefinition = "jsonb")
     private String whiteLabelConfig;
 
