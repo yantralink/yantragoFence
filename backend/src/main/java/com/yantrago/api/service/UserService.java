@@ -92,17 +92,17 @@ public class UserService {
         user.setIsActive(true);
         user.setIsLocked(false);
 
-        user = userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
         // Assign role if specified
         String roleName = request.getRoleName() != null ? request.getRoleName() : "viewer";
         roleRepository.findByName(roleName).ifPresent(role -> {
             jdbcTemplate.update("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
-                    user.getId(), role.getId());
+                    savedUser.getId(), role.getId());
         });
 
-        log.info("Created user id={} email={} orgId={} role={}", user.getId(), user.getEmail(), orgId, roleName);
-        return toDto(user);
+        log.info("Created user id={} email={} orgId={} role={}", savedUser.getId(), savedUser.getEmail(), orgId, roleName);
+        return toDto(savedUser);
     }
 
     @Transactional
