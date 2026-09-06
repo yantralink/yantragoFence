@@ -139,10 +139,8 @@ public class AuthService {
     private RefreshToken persistRefreshToken(String rawToken, User user) {
         RefreshToken token = new RefreshToken();
         token.setUserId(user.getId());
-        token.setOrganizationId(user.getOrganizationId() != null ? user.getOrganizationId() : UUID.randomUUID());
-        // For super_admin (null org), we still need a non-null org_id due to the NOT NULL constraint.
-        // This is a known limitation — super_admin refresh tokens use a placeholder org_id.
-        // TODO: consider making refresh_tokens.organization_id nullable for super_admin support.
+        token.setOrganizationId(user.getOrganizationId());
+        // organization_id is nullable for super_admin (platform-level, no organization).
         token.setTokenHash(jwtService.hashToken(rawToken));
         token.setExpiresAt(LocalDateTime.now().plusSeconds(jwtService.getRefreshTtlSeconds()));
         return refreshTokenRepository.save(token);
