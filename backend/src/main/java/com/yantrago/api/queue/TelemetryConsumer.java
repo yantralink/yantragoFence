@@ -1,5 +1,6 @@
 package com.yantrago.api.queue;
 
+import com.yantrago.api.service.DeviceResolverService;
 import com.yantrago.api.service.TelemetryService;
 import com.yantrago.api.websocket.TelemetryBroadcastService;
 import com.yantrago.shared.queue.QueueNames;
@@ -19,6 +20,8 @@ import java.util.UUID;
  * Consumes TelemetryMessage from the gateway and persists voltage, battery,
  * and GSM readings via TelemetryService (batch insert into partitioned tables).
  *
+ * Per AGENTS.md rule 7: organization_id is resolved from the devices table, not
+ * from the message payload or JWT (no HTTP context in RabbitMQ consumer).
  * Per AGENTS.md rule 18: time-series tables use batch inserts.
  */
 @Component
@@ -28,11 +31,14 @@ public class TelemetryConsumer {
 
     private final TelemetryService telemetryService;
     private final TelemetryBroadcastService telemetryBroadcastService;
+    private final DeviceResolverService deviceResolverService;
 
     public TelemetryConsumer(TelemetryService telemetryService,
-                             TelemetryBroadcastService telemetryBroadcastService) {
+                             TelemetryBroadcastService telemetryBroadcastService,
+                             DeviceResolverService deviceResolverService) {
         this.telemetryService = telemetryService;
         this.telemetryBroadcastService = telemetryBroadcastService;
+        this.deviceResolverService = deviceResolverService;
     }
 
     @RabbitListener(queues = QueueNames.TELEMETRY_QUEUE)
@@ -42,24 +48,30 @@ public class TelemetryConsumer {
                 message.getVoltage(), message.getBattery(), message.getGsmSignal());
 
         try {
+            // Resolve device metadata (org_id, machine_id, imei) from devices table.
+            // RabbitMQ consumers have no HTTP/JWT context, so we cannot use OwnerContextService.
+            DeviceResolverService.DeviceInfo deviceInfo = deviceResolverService.resolve(message.getDeviceId());
+            if (deviceInfo == null || deviceInfo.organizationId() == null) {
+                log.warn("Cannot persist telemetry: device not found or missing org_id for deviceId={}",
+                        message.getDeviceId());
+                return;
+            }
+
+            UUID orgId = deviceInfo.organizationId();
+            UUID machineId = deviceInfo.machineId();
+            String imei = deviceInfo.imei() != null ? deviceInfo.imei() : message.getImei();
+
             LocalDateTime recordedAt = message.getTimestamp() != null
                     ? LocalDateTime.ofInstant(message.getTimestamp(), ZoneOffset.UTC)
                     : LocalDateTime.now();
 
-            UUID id = UUID.randomUUID();
-            // organizationId and machineId would be resolved by the service layer
-            // from the device lookup. For now, we pass the deviceId and let the
-            // service resolve the org/machine. The batch insert expects:
+            // Batch insert expects rows as:
             // [id, orgId, deviceId, machineId, imei, value, recordedAt, receivedAt]
-
-            // We batch a single message into a list for the batch insert API.
-            // In high-volume production, the consumer would accumulate messages
-            // and flush in batches (similar to LocationPersistenceService).
 
             if (message.getVoltage() != null) {
                 List<Object[]> voltageRows = new ArrayList<>();
                 voltageRows.add(new Object[]{
-                        id, null, message.getDeviceId(), null, message.getImei(),
+                        UUID.randomUUID(), orgId, message.getDeviceId(), machineId, imei,
                         message.getVoltage(), recordedAt, LocalDateTime.now()
                 });
                 telemetryService.storeVoltageReadings(voltageRows);
@@ -68,7 +80,7 @@ public class TelemetryConsumer {
             if (message.getBattery() != null) {
                 List<Object[]> batteryRows = new ArrayList<>();
                 batteryRows.add(new Object[]{
-                        UUID.randomUUID(), null, message.getDeviceId(), null, message.getImei(),
+                        UUID.randomUUID(), orgId, message.getDeviceId(), machineId, imei,
                         message.getBattery(), recordedAt, LocalDateTime.now()
                 });
                 telemetryService.storeBatteryReadings(batteryRows);
@@ -77,7 +89,7 @@ public class TelemetryConsumer {
             if (message.getGsmSignal() != null) {
                 List<Object[]> gsmRows = new ArrayList<>();
                 gsmRows.add(new Object[]{
-                        UUID.randomUUID(), null, message.getDeviceId(), null, message.getImei(),
+                        UUID.randomUUID(), orgId, message.getDeviceId(), machineId, imei,
                         message.getGsmSignal(), recordedAt, LocalDateTime.now()
                 });
                 telemetryService.storeGsmReadings(gsmRows);
@@ -86,9 +98,8 @@ public class TelemetryConsumer {
             log.debug("Persisted telemetry for device={}", message.getDeviceId());
 
             // Broadcast to WebSocket subscribers via /topic/telemetry/{machineId}
-            // machineId is null for now (would be resolved from device binding in production)
             telemetryBroadcastService.broadcastTelemetry(
-                    null, message.getDeviceId(),
+                    machineId, message.getDeviceId(),
                     message.getVoltage(), message.getBattery(), message.getGsmSignal()
             );
         } catch (Exception e) {

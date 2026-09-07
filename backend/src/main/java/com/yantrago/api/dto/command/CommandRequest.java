@@ -15,7 +15,8 @@ public class CommandRequest {
     private UUID machineId;
 
     @NotBlank
-    @Pattern(regexp = "ON|OFF", message = "Command type must be ON or OFF")
+    @Pattern(regexp = "ON|OFF|FENCING_ON|FENCING_OFF",
+             message = "Command type must be ON, OFF, FENCING_ON, or FENCING_OFF")
     private String commandType;
 
     public UUID getMachineId() { return machineId; }

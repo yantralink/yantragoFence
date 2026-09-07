@@ -16,7 +16,7 @@ import java.util.Set;
  * Per AGENTS.md rule 6: all commands must be auditable via machine_commands + command_attempts.
  *
  * Valid transitions:
- *   PENDING → QUEUED, FAILED
+ *   PENDING → QUEUED, SENT, FAILED
  *   QUEUED  → SENT, FAILED
  *   SENT    → ACK, FAILED, TIMEOUT (→ FAILED)
  *   ACK     → DONE, FAILED
@@ -36,7 +36,7 @@ public class CommandStateMachine {
 
     static {
         TRANSITIONS = new EnumMap<>(CommandState.class);
-        TRANSITIONS.put(CommandState.PENDING, EnumSet.of(CommandState.QUEUED, CommandState.FAILED));
+        TRANSITIONS.put(CommandState.PENDING, EnumSet.of(CommandState.QUEUED, CommandState.SENT, CommandState.FAILED));
         TRANSITIONS.put(CommandState.QUEUED, EnumSet.of(CommandState.SENT, CommandState.FAILED));
         TRANSITIONS.put(CommandState.SENT, EnumSet.of(CommandState.ACK, CommandState.FAILED));
         TRANSITIONS.put(CommandState.ACK, EnumSet.of(CommandState.DONE, CommandState.FAILED));

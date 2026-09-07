@@ -6,6 +6,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -52,16 +53,17 @@ public class LocationBroadcastService {
         }
 
         String destination = "/topic/location/" + machineId;
-        Map<String, Object> payload = Map.of(
-                "machineId", machineId.toString(),
-                "deviceId", deviceId != null ? deviceId.toString() : null,
-                "latitude", latitude,
-                "longitude", longitude,
-                "speed", speed,
-                "course", course,
-                "recordedAt", recordedAt != null ? recordedAt.toString() : null,
-                "timestamp", LocalDateTime.now().toString()
-        );
+        // Use HashMap because Map.of() does not allow null values, and
+        // speed/course/deviceId/recordedAt may be null.
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("machineId", machineId.toString());
+        payload.put("deviceId", deviceId != null ? deviceId.toString() : null);
+        payload.put("latitude", latitude);
+        payload.put("longitude", longitude);
+        payload.put("speed", speed);
+        payload.put("course", course);
+        payload.put("recordedAt", recordedAt != null ? recordedAt.toString() : null);
+        payload.put("timestamp", LocalDateTime.now().toString());
 
         messagingTemplate.convertAndSend(destination, payload);
         log.debug("Broadcasted location to {} lat={} lon={}", destination, latitude, longitude);

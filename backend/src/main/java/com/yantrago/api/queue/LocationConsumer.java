@@ -1,5 +1,6 @@
 package com.yantrago.api.queue;
 
+import com.yantrago.api.service.DeviceResolverService;
 import com.yantrago.api.service.LocationService;
 import com.yantrago.api.websocket.LocationBroadcastService;
 import com.yantrago.shared.queue.LocationMessage;
@@ -18,6 +19,8 @@ import java.time.ZoneOffset;
  * - Adds to location_history buffer (batch insert via LocationPersistenceService)
  *
  * Per AGENTS.md rule 4: device communication is asynchronous via RabbitMQ.
+ * Per AGENTS.md rule 7: organization_id is resolved from the devices table, not from
+ * the message payload or JWT (there is no HTTP context in a RabbitMQ consumer).
  * Per AGENTS.md rule 18: time-series tables use batch inserts.
  */
 @Component
@@ -27,11 +30,14 @@ public class LocationConsumer {
 
     private final LocationService locationService;
     private final LocationBroadcastService locationBroadcastService;
+    private final DeviceResolverService deviceResolverService;
 
     public LocationConsumer(LocationService locationService,
-                            LocationBroadcastService locationBroadcastService) {
+                            LocationBroadcastService locationBroadcastService,
+                            DeviceResolverService deviceResolverService) {
         this.locationService = locationService;
         this.locationBroadcastService = locationBroadcastService;
+        this.deviceResolverService = deviceResolverService;
     }
 
     @RabbitListener(queues = QueueNames.LOCATION_QUEUE)
@@ -41,13 +47,24 @@ public class LocationConsumer {
                 message.getSpeed(), message.getCourse());
 
         try {
+            // Resolve device metadata (org_id, machine_id, imei) from devices table.
+            // RabbitMQ consumers have no HTTP/JWT context, so we cannot use OwnerContextService.
+            DeviceResolverService.DeviceInfo deviceInfo = deviceResolverService.resolve(message.getDeviceId());
+            if (deviceInfo == null || deviceInfo.organizationId() == null) {
+                log.warn("Cannot persist location: device not found or missing org_id for deviceId={}",
+                        message.getDeviceId());
+                return;
+            }
+
             LocalDateTime recordedAt = message.getTimestamp() != null
                     ? LocalDateTime.ofInstant(message.getTimestamp(), ZoneOffset.UTC)
                     : LocalDateTime.now();
 
             locationService.updateLocation(
                     message.getDeviceId(),
-                    null, // machineId resolved by service from device binding
+                    deviceInfo.organizationId(),
+                    deviceInfo.machineId(),
+                    deviceInfo.imei(),
                     message.getLatitude(),
                     message.getLongitude(),
                     message.getSpeed(),
@@ -58,9 +75,8 @@ public class LocationConsumer {
             log.debug("Persisted location for device={}", message.getDeviceId());
 
             // Broadcast to WebSocket subscribers via /topic/location/{machineId}
-            // machineId is null for now (would be resolved from device binding in production)
             locationBroadcastService.broadcastLocation(
-                    null, message.getDeviceId(),
+                    deviceInfo.machineId(), message.getDeviceId(),
                     message.getLatitude(), message.getLongitude(),
                     message.getSpeed(), message.getCourse(),
                     recordedAt

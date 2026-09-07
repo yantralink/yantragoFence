@@ -4,6 +4,7 @@ import com.yantrago.api.dto.command.CommandRequest;
 import com.yantrago.api.dto.command.CommandResponse;
 import com.yantrago.api.dto.command.CommandStatusDto;
 import com.yantrago.api.model.CommandAttempt;
+import com.yantrago.api.model.Device;
 import com.yantrago.api.model.Machine;
 import com.yantrago.api.model.MachineCommand;
 import com.yantrago.api.queue.CommandProducer;
@@ -73,17 +74,26 @@ public class CommandService {
                 .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + request.getMachineId()));
         tenantGuard.validateTenantAccess(machine.getOrganizationId());
 
-        // Find device bound to this machine (if any)
-        UUID deviceId = deviceRepository.findByOrganizationIdAndImei(orgId, machine.getSerialNumber())
-                .map(d -> d.getId())
-                .orElse(null);
+        // Normalize command type: FENCING_ON -> ON, FENCING_OFF -> OFF
+        String commandType = request.getCommandType();
+        if ("FENCING_ON".equals(commandType)) commandType = "ON";
+        if ("FENCING_OFF".equals(commandType)) commandType = "OFF";
+
+        // Find device bound to this machine via devices.machine_id (not serial_number)
+        Device device = deviceRepository.findByMachineId(machine.getId()).orElse(null);
+        UUID deviceId = device != null ? device.getId() : null;
+        String imei = device != null ? device.getImei() : null;
+
+        if (imei == null || imei.isBlank()) {
+            throw new IllegalArgumentException("No device with IMEI bound to machine: " + machine.getId());
+        }
 
         MachineCommand command = new MachineCommand();
         command.setOrganizationId(orgId);
         command.setMachineId(machine.getId());
         command.setDeviceId(deviceId);
         command.setIssuedBy(issuedBy);
-        command.setCommandType(request.getCommandType());
+        command.setCommandType(commandType);
         command.setStatus(CommandStateMachine.CommandState.PENDING.name());
         command.setAttemptCount(0);
         command.setMaxAttempts(3);
@@ -95,7 +105,6 @@ public class CommandService {
         // Publish command to RabbitMQ for the device gateway to consume.
         // Per AGENTS.md rule 4: device communication is asynchronous via RabbitMQ.
         // Per AGENTS.md rule 5: never assume success until ack is received.
-        String imei = machine.getSerialNumber();
         commandProducer.sendCommand(command.getId(), command.getMachineId(), imei, command.getCommandType());
 
         return toResponse(command);

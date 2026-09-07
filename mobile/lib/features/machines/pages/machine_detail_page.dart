@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/widgets/on_off_button.dart';
+import 'package:yantrago/features/machines/widgets/location_card.dart';
 import 'package:yantrago/features/commands/widgets/command_status_widget.dart';
 
 /// Machine detail page — shows machine info and ON/OFF controls.
@@ -43,6 +44,8 @@ class MachineDetailPage extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            LocationCard(machineId: m.id),
             const SizedBox(height: 24),
             OnOffButton(machineId: m.id, imei: m.imei ?? ''),
             const SizedBox(height: 24),

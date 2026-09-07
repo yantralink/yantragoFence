@@ -6,6 +6,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -45,14 +46,15 @@ public class TelemetryBroadcastService {
         }
 
         String destination = "/topic/telemetry/" + machineId;
-        Map<String, Object> payload = Map.of(
-                "machineId", machineId.toString(),
-                "deviceId", deviceId != null ? deviceId.toString() : null,
-                "voltage", voltage,
-                "battery", battery,
-                "gsmSignal", gsmSignal,
-                "timestamp", LocalDateTime.now().toString()
-        );
+        // Use HashMap because Map.of() does not allow null values, and
+        // voltage/battery/gsmSignal may be null.
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("machineId", machineId.toString());
+        payload.put("deviceId", deviceId != null ? deviceId.toString() : null);
+        payload.put("voltage", voltage);
+        payload.put("battery", battery);
+        payload.put("gsmSignal", gsmSignal);
+        payload.put("timestamp", LocalDateTime.now().toString());
 
         messagingTemplate.convertAndSend(destination, payload);
         log.debug("Broadcasted telemetry to {} voltage={} battery={}", destination, voltage, battery);

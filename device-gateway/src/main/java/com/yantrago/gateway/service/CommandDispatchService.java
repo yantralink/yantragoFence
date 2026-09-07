@@ -2,6 +2,7 @@ package com.yantrago.gateway.service;
 
 import com.yantrago.gateway.queue.CommandResultProducer;
 import com.yantrago.gateway.tcp.DeviceConnectionRegistry;
+import com.yantrago.gateway.tcp.concox.ConcoxV5ProtocolHandler;
 import com.yantrago.shared.queue.CommandMessage;
 import com.yantrago.shared.queue.CommandResultMessage;
 import org.slf4j.Logger;
@@ -29,13 +30,22 @@ public class CommandDispatchService {
 
     private static final Logger log = LoggerFactory.getLogger(CommandDispatchService.class);
 
+    // BR05 relay control commands (SMS-compatible ASCII strings)
+    // DYD=00: Oil and electricity connected (relay ON → machine ON)
+    // DYD=01: Oil and electricity disconnected (relay OFF → machine OFF)
+    private static final String RELAY_ON_COMMAND = "DYD=00";
+    private static final String RELAY_OFF_COMMAND = "DYD=01";
+
     private final DeviceConnectionRegistry connectionRegistry;
     private final CommandResultProducer commandResultProducer;
+    private final ConcoxV5ProtocolHandler concoxV5ProtocolHandler;
 
     public CommandDispatchService(DeviceConnectionRegistry connectionRegistry,
-                                    CommandResultProducer commandResultProducer) {
+                                    CommandResultProducer commandResultProducer,
+                                    ConcoxV5ProtocolHandler concoxV5ProtocolHandler) {
         this.connectionRegistry = connectionRegistry;
         this.commandResultProducer = commandResultProducer;
+        this.concoxV5ProtocolHandler = concoxV5ProtocolHandler;
     }
 
     /**
@@ -78,7 +88,7 @@ public class CommandDispatchService {
             commandResultProducer.publishCommandResult(new CommandResultMessage(
                     commandId, CommandResultMessage.STATUS_SENT, 1, null, Instant.now()
             ));
-            log.info("Command sent to device: commandId={} imei={}", commandId, imei);
+            log.info("Command sent to device: commandId={} imei={} type={}", commandId, imei, commandType);
         } else {
             commandResultProducer.publishCommandResult(new CommandResultMessage(
                     commandId, CommandResultMessage.STATUS_FAILED, 1,
@@ -89,24 +99,27 @@ public class CommandDispatchService {
     }
 
     /**
-     * Builds a command packet for the given command type.
-     * Currently supports ON/OFF commands for Concox V5 protocol.
+     * Builds a 0x80 Online Instruction command packet for the BR05/Concox V5 protocol.
      *
-     * In production, this would delegate to the appropriate protocol handler
-     * based on the device's protocol type.
+     * ON  → DYD=00 (relay connected → machine ON)
+     * OFF → DYD=01 (relay disconnected → machine OFF)
+     *
+     * The packet is built by ConcoxV5ProtocolHandler.buildCommandPacket() which
+     * constructs the full 0x80 packet with server flags, ASCII command content,
+     * language, serial number, and CRC.
      */
     private byte[] buildCommandPacket(String commandType) {
-        // Concox V5 command format: the command content string
-        // For ON/OFF relay control, the command content is protocol-specific.
-        // The ConcoxV5ProtocolHandler.buildCommandPacket() method builds the full packet.
-        // In a full implementation, we'd inject the protocol handler and call it.
-        // For now, we return a placeholder — Phase 13 will wire the fencing protocol.
-        if ("ON".equals(commandType) || "OFF".equals(commandType)) {
-            // Placeholder: in production, delegate to ConcoxV5ProtocolHandler.buildCommandPacket()
-            // or FencingEncoder.buildOnCommand() / buildOffCommand()
-            log.debug("Building command packet for type={}", commandType);
-            return new byte[]{0x78, 0x78, 0x05, (byte) 0x80, 0x00, 0x01, 0x00, 0x00, 0x0D, 0x0A};
+        String smsCommand;
+        if ("ON".equals(commandType) || "FENCING_ON".equals(commandType)) {
+            smsCommand = RELAY_ON_COMMAND;
+        } else if ("OFF".equals(commandType) || "FENCING_OFF".equals(commandType)) {
+            smsCommand = RELAY_OFF_COMMAND;
+        } else {
+            log.warn("Unknown command type: {}", commandType);
+            return null;
         }
-        return null;
+
+        log.debug("Building 0x80 command packet: type={} smsCommand={}", commandType, smsCommand);
+        return concoxV5ProtocolHandler.buildCommandPacket(smsCommand);
     }
 }

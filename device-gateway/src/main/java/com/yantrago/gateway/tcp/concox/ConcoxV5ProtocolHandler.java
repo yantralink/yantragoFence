@@ -205,37 +205,65 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
         }
     }
 
+    /**
+     * Builds a 0x80 Online Instruction packet per the BR05 protocol.
+     *
+     * Packet structure (per BR05 protocol doc):
+     *   Start: 0x78 0x78
+     *   Length: 1 byte = protocol(1) + server_flag(4) + content(N) + language(2) + serial(2) + crc(2)
+     *   Protocol: 0x80
+     *   Server flags: 4 bytes (binary, returned by terminal in reply)
+     *   Command content: M bytes (ASCII, compatible with SMS commands)
+     *   Language: 2 bytes (0x01 = Chinese, 0x02 = English)
+     *   Serial number: 2 bytes
+     *   CRC: 2 bytes
+     *   Stop: 0x0D 0x0A
+     *
+     * @param commandContent the ASCII command string (e.g. "DYD=00" for relay ON, "DYD=01" for relay OFF)
+     * @return the complete packet bytes ready to send over TCP
+     */
     public byte[] buildCommandPacket(String commandContent) {
         byte[] contentBytes = commandContent.getBytes(StandardCharsets.US_ASCII);
         int serial = serialCounter.getAndIncrement() & 0xFFFF;
 
-        // Length = protocol(1) + content(N) + serial(2) + crc(2)
-        int length = 1 + contentBytes.length + 2 + 2;
+        // Information content = server_flag(4) + content(N) + language(2)
+        int infoContentLen = 4 + contentBytes.length + 2;
 
-        // Packet: start(2) + length(1) + protocol(1) + content(N) + serial(2) + crc(2) + stop(2)
+        // Length = protocol(1) + info_content(N+6) + serial(2) + crc(2) = N + 11
+        int length = 1 + infoContentLen + 2 + 2;
+
+        // Total packet = start(2) + length_byte(1) + [protocol(1) + info_content + serial(2) + crc(2)] + stop(2)
+        //             = 2 + 1 + length + 2 = N + 16
         byte[] packet = new byte[2 + 1 + length + 2];
-        // Wait: length field in protocol = protocol(1) + content(N) + serial(2) + crc(2)
-        // But the length byte value = protocol(1) + content(N) + serial(2)  (CRC is included in length)
-        // Actually per BR05 spec: Length = Protocol Number + Content + Serial Number + Error Check
-        // So length = 1 + N + 2 + 2 = N + 5
-        // Total packet = start(2) + length_byte(1) + [protocol(1) + content(N) + serial(2) + crc(2)] + stop(2)
-        //             = 2 + 1 + (N + 5) + 2 = N + 10
 
-        packet = new byte[contentBytes.length + 10];
         packet[0] = 0x78;
         packet[1] = 0x78;
-        packet[2] = (byte) (contentBytes.length + 5); // length = 1 (protocol) + N (content) + 2 (serial) + 2 (crc)
+        packet[2] = (byte) length;
         packet[3] = (byte) 0x80; // Protocol number
-        System.arraycopy(contentBytes, 0, packet, 4, contentBytes.length);
-        packet[4 + contentBytes.length] = (byte) ((serial >> 8) & 0xFF);
-        packet[4 + contentBytes.length + 1] = (byte) (serial & 0xFF);
 
-        // CRC-ITU over bytes from index 2 to (4 + contentBytes.length + 2) exclusive
-        int crc = calculateCrc16(packet, 2, 4 + contentBytes.length + 2);
-        packet[4 + contentBytes.length + 2] = (byte) ((crc >> 8) & 0xFF);
-        packet[4 + contentBytes.length + 3] = (byte) (crc & 0xFF);
-        packet[4 + contentBytes.length + 4] = 0x0D;
-        packet[4 + contentBytes.length + 5] = 0x0A;
+        int pos = 4;
+        // Server flags: 4 bytes (all zeros — terminal returns these in reply)
+        packet[pos++] = 0x00;
+        packet[pos++] = 0x00;
+        packet[pos++] = 0x00;
+        packet[pos++] = 0x00;
+        // Command content (ASCII)
+        System.arraycopy(contentBytes, 0, packet, pos, contentBytes.length);
+        pos += contentBytes.length;
+        // Language: 0x02 = English
+        packet[pos++] = 0x00;
+        packet[pos++] = 0x02;
+        // Serial number
+        packet[pos++] = (byte) ((serial >> 8) & 0xFF);
+        packet[pos++] = (byte) (serial & 0xFF);
+
+        // CRC-ITU over bytes from index 2 to pos (exclusive)
+        int crc = calculateCrc16(packet, 2, pos);
+        packet[pos++] = (byte) ((crc >> 8) & 0xFF);
+        packet[pos++] = (byte) (crc & 0xFF);
+        // Stop bytes
+        packet[pos++] = 0x0D;
+        packet[pos++] = 0x0A;
 
         return packet;
     }
