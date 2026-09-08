@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:yantrago/core/services/reverse_geocoding_service.dart';
+import 'package:go_router/go_router.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/models/machine_location.dart';
 
 /// Location card — shows the machine's current GPS location with a location
-/// icon and a reverse-geocoded address. Tapping the address opens Google Maps.
+/// icon and a reverse-geocoded address. Tapping the card opens an in-app
+/// Google Map showing the machine's location.
 ///
 /// Displays:
 /// - Location icon (left)
 /// - Multi-line detailed address (reverse geocoded from lat/lon)
-/// - Tap to open in Google Maps
+/// - Tap to open in-app map
 ///
 /// If no location data is available, shows "No location data" with a
 /// disabled icon. If reverse geocoding fails, shows the raw coordinates.
@@ -52,6 +52,7 @@ class LocationCard extends ConsumerWidget {
               addressLines: [
                 '${loc.latitude.toStringAsFixed(6)}, ${loc.longitude.toStringAsFixed(6)}'
               ],
+              machineId: machineId,
               isGeocoding: true,
             ),
             error: (_, __) => _LocationContent(
@@ -59,6 +60,7 @@ class LocationCard extends ConsumerWidget {
               addressLines: [
                 '${loc.latitude.toStringAsFixed(6)}, ${loc.longitude.toStringAsFixed(6)}'
               ],
+              machineId: machineId,
             ),
             data: (addr) {
               final lines = addr != null
@@ -69,6 +71,7 @@ class LocationCard extends ConsumerWidget {
               return _LocationContent(
                 location: loc,
                 addressLines: lines,
+                machineId: machineId,
               );
             },
           );
@@ -82,29 +85,18 @@ class LocationCard extends ConsumerWidget {
 class _LocationContent extends StatelessWidget {
   final MachineLocation location;
   final List<String> addressLines;
+  final String machineId;
   final bool isGeocoding;
 
   const _LocationContent({
     required this.location,
     required this.addressLines,
+    required this.machineId,
     this.isGeocoding = false,
   });
 
-  Future<void> _openInMap(BuildContext context) async {
-    final lat = location.latitude;
-    final lon = location.longitude;
-    // Google Maps URL — works on Android, iOS, and web
-    final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lon';
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open map')),
-        );
-      }
-    }
+  void _openInAppMap(BuildContext context) {
+    context.push('/app/machines/$machineId/location');
   }
 
   @override
@@ -114,7 +106,7 @@ class _LocationContent extends StatelessWidget {
         addressLines.first != '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
 
     return InkWell(
-      onTap: () => _openInMap(context),
+      onTap: () => _openInAppMap(context),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -173,7 +165,7 @@ class _LocationContent extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Tap to open in map',
+                          'Tap to view on map',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w500,
@@ -201,7 +193,6 @@ class _LocationContent extends StatelessWidget {
 class _NoLocation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return const Padding(
       padding: EdgeInsets.all(16),
       child: Row(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/dashboard/providers/dashboard_provider.dart';
 import 'package:yantrago/features/dashboard/widgets/machine_status_card.dart';
 import 'package:yantrago/features/dashboard/widgets/battery_widget.dart';
@@ -19,9 +20,10 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardProvider);
+    final user = ref.watch(currentUserProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard')),
+      appBar: AppBar(title: Text(user?.organizationName ?? 'YantraGO')),
       body: summary.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Error: $err')),

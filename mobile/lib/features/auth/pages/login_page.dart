@@ -50,7 +50,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (state is AuthError) {
       _showErrorSnackBar(state.message);
     } else if (state is Authenticated) {
-      context.go('/app/dashboard');
+      context.go('/app/machines');
     }
   }
 

@@ -5,26 +5,26 @@
 class Command {
   final String id;
   final String machineId;
-  final String imei;
+  final String? deviceId;
+  final String? imei;
   final String commandType;
   final String status;
-  final String? createdBy;
-  final String? resultMessage;
-  final DateTime? sentAt;
-  final DateTime? ackedAt;
+  final int attemptCount;
+  final int maxAttempts;
+  final String? lastError;
   final DateTime? completedAt;
   final DateTime createdAt;
 
   const Command({
     required this.id,
     required this.machineId,
-    required this.imei,
+    this.deviceId,
+    this.imei,
     required this.commandType,
     required this.status,
-    this.createdBy,
-    this.resultMessage,
-    this.sentAt,
-    this.ackedAt,
+    this.attemptCount = 0,
+    this.maxAttempts = 3,
+    this.lastError,
     this.completedAt,
     required this.createdAt,
   });
@@ -33,13 +33,13 @@ class Command {
     return Command(
       id: json['id'] as String,
       machineId: json['machineId'] as String,
-      imei: json['imei'] as String,
+      deviceId: json['deviceId'] as String?,
+      imei: json['imei'] as String?,
       commandType: json['commandType'] as String,
       status: json['status'] as String? ?? 'PENDING',
-      createdBy: json['createdBy'] as String?,
-      resultMessage: json['resultMessage'] as String?,
-      sentAt: json['sentAt'] != null ? DateTime.tryParse(json['sentAt'] as String) : null,
-      ackedAt: json['ackedAt'] != null ? DateTime.tryParse(json['ackedAt'] as String) : null,
+      attemptCount: (json['attemptCount'] as num?)?.toInt() ?? 0,
+      maxAttempts: (json['maxAttempts'] as num?)?.toInt() ?? 3,
+      lastError: json['lastError'] as String?,
       completedAt: json['completedAt'] != null ? DateTime.tryParse(json['completedAt'] as String) : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );

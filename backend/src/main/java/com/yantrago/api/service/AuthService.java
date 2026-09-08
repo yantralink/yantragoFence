@@ -63,11 +63,15 @@ public class AuthService {
         if (user.getIsLocked()) {
             throw new IllegalStateException("Account is locked");
         }
-        // Check organization is active (if user belongs to one)
+        // Check organization is active (if user belongs to one) and fetch name for branding
+        String organizationName = null;
         if (user.getOrganizationId() != null) {
             Organization org = organizationRepository.findById(user.getOrganizationId()).orElse(null);
             if (org != null && !org.getIsActive()) {
                 throw new IllegalStateException("Organization is deactivated. Contact your platform administrator.");
+            }
+            if (org != null) {
+                organizationName = org.getName();
             }
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
@@ -96,7 +100,8 @@ public class AuthService {
                 user.getId().toString(),
                 user.getEmail(),
                 user.getFullName(),
-                user.getOrganizationId() != null ? user.getOrganizationId().toString() : null
+                user.getOrganizationId() != null ? user.getOrganizationId().toString() : null,
+                organizationName
         );
 
         log.info("User {} logged in successfully", user.getEmail());

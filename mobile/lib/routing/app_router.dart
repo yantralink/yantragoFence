@@ -5,13 +5,10 @@ import 'package:yantrago/core/auth/auth_state.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/auth/pages/splash_page.dart';
 import 'package:yantrago/features/auth/pages/login_page.dart';
-import 'package:yantrago/features/dashboard/pages/dashboard_page.dart';
 import 'package:yantrago/features/machines/pages/machine_list_page.dart';
 import 'package:yantrago/features/machines/pages/machine_detail_page.dart';
-import 'package:yantrago/features/map/pages/machine_map_page.dart';
+import 'package:yantrago/features/machines/pages/machine_location_map_page.dart';
 import 'package:yantrago/features/alerts/pages/alerts_page.dart';
-import 'package:yantrago/features/settings/pages/settings_page.dart';
-import 'package:yantrago/features/history/pages/activity_history_page.dart';
 import 'package:yantrago/features/profile/pages/profile_page.dart';
 
 /// App router — GoRouter with auth guards.
@@ -47,7 +44,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (isLoggedIn && goingToLogin) {
-        return '/app/dashboard';
+        return '/app/machines';
       }
 
       return null;
@@ -65,10 +62,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => _AppShell(child: child),
         routes: [
           GoRoute(
-            path: '/app/dashboard',
-            builder: (context, state) => const DashboardPage(),
-          ),
-          GoRoute(
             path: '/app/machines',
             builder: (context, state) => const MachineListPage(),
           ),
@@ -79,20 +72,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: '/app/map',
-            builder: (context, state) => const MachineMapPage(),
+            path: '/app/machines/:id/location',
+            builder: (context, state) => MachineLocationMapPage(
+              machineId: state.pathParameters['id']!,
+            ),
           ),
           GoRoute(
             path: '/app/alerts',
             builder: (context, state) => const AlertsPage(),
-          ),
-          GoRoute(
-            path: '/app/history',
-            builder: (context, state) => const ActivityHistoryPage(),
-          ),
-          GoRoute(
-            path: '/app/settings',
-            builder: (context, state) => const SettingsPage(),
           ),
           GoRoute(
             path: '/app/profile',
@@ -124,9 +111,7 @@ class _AppShell extends StatelessWidget {
   const _AppShell({required this.child});
 
   static const _routes = [
-    '/app/dashboard',
     '/app/machines',
-    '/app/map',
     '/app/alerts',
     '/app/profile',
   ];
@@ -149,19 +134,9 @@ class _AppShell extends StatelessWidget {
         onDestinationSelected: (i) => context.go(_routes[i]),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.devices_outlined),
             selectedIcon: Icon(Icons.devices),
             label: 'Machines',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Map',
           ),
           NavigationDestination(
             icon: Icon(Icons.notifications_outlined),

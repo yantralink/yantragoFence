@@ -57,6 +57,7 @@ mobile/.flutter-plugins-dependencies
 mobile/ios/Pods/
 mobile/android/.gradle/
 mobile/android/app/build/
+mobile/android/build/
 
 # Coverage reports
 *.jacoco
@@ -64,3 +65,6 @@ coverage/
 
 # Docker
 docker-compose.override.yml
+
+# Intermediate extraction output
+docs/br05_extracted/

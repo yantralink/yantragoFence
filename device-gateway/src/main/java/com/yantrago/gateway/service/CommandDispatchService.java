@@ -31,10 +31,11 @@ public class CommandDispatchService {
     private static final Logger log = LoggerFactory.getLogger(CommandDispatchService.class);
 
     // BR05 relay control commands (SMS-compatible ASCII strings)
-    // DYD=00: Oil and electricity connected (relay ON → machine ON)
-    // DYD=01: Oil and electricity disconnected (relay OFF → machine OFF)
-    private static final String RELAY_ON_COMMAND = "DYD=00";
-    private static final String RELAY_OFF_COMMAND = "DYD=01";
+    // Note: BR05 relay is inverted (low-side switch) — "cut fuel" closes the relay, "restore" opens it.
+    // Turn ON  (machine ON)  → RELAY,1# → relay closes → LED/machine ON
+    // Turn OFF (machine OFF) → RELAY,0# → relay opens  → LED/machine OFF
+    private static final String RELAY_ON_COMMAND = "RELAY,1#";
+    private static final String RELAY_OFF_COMMAND = "RELAY,0#";
 
     private final DeviceConnectionRegistry connectionRegistry;
     private final CommandResultProducer commandResultProducer;

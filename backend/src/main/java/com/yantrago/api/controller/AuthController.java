@@ -4,7 +4,9 @@ import com.yantrago.api.dto.auth.LoginRequest;
 import com.yantrago.api.dto.auth.LoginResponse;
 import com.yantrago.api.dto.auth.RefreshTokenRequest;
 import com.yantrago.api.dto.auth.TokenResponse;
+import com.yantrago.api.model.Organization;
 import com.yantrago.api.model.User;
+import com.yantrago.api.repository.OrganizationRepository;
 import com.yantrago.api.repository.UserRepository;
 import com.yantrago.api.service.AuthService;
 import jakarta.validation.Valid;
@@ -28,10 +30,13 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserRepository userRepository;
+    private final OrganizationRepository organizationRepository;
 
-    public AuthController(AuthService authService, UserRepository userRepository) {
+    public AuthController(AuthService authService, UserRepository userRepository,
+                          OrganizationRepository organizationRepository) {
         this.authService = authService;
         this.userRepository = userRepository;
+        this.organizationRepository = organizationRepository;
     }
 
     @PostMapping("/login")
@@ -64,16 +69,23 @@ public class AuthController {
                 .map(a -> a.substring(5))
                 .findFirst()
                 .orElse("viewer");
+        String organizationName = null;
+        if (user.getOrganizationId() != null) {
+            organizationName = organizationRepository.findById(user.getOrganizationId())
+                    .map(Organization::getName)
+                    .orElse(null);
+        }
         UserInfoResponse response = new UserInfoResponse(
                 user.getId().toString(),
                 user.getEmail(),
                 user.getFullName(),
                 user.getOrganizationId() != null ? user.getOrganizationId().toString() : null,
+                organizationName,
                 role,
                 user.getIsActive()
         );
         return ResponseEntity.ok(response);
     }
 
-    public record UserInfoResponse(String id, String email, String fullName, String organizationId, String role, Boolean active) {}
+    public record UserInfoResponse(String id, String email, String fullName, String organizationId, String organizationName, String role, Boolean active) {}
 }

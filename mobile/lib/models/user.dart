@@ -2,6 +2,7 @@
 class User {
   final String id;
   final String? organizationId;
+  final String? organizationName;
   final String email;
   final String fullName;
   final String role;
@@ -11,6 +12,7 @@ class User {
   const User({
     required this.id,
     this.organizationId,
+    this.organizationName,
     required this.email,
     required this.fullName,
     required this.role,
@@ -22,6 +24,7 @@ class User {
     return User(
       id: json['id'] as String,
       organizationId: json['organizationId'] as String?,
+      organizationName: json['organizationName'] as String?,
       email: json['email'] as String,
       fullName: json['fullName'] as String? ?? json['name'] as String? ?? '',
       role: json['role'] as String? ?? 'USER',
@@ -33,6 +36,7 @@ class User {
   Map<String, dynamic> toJson() => {
         'id': id,
         'organizationId': organizationId,
+        'organizationName': organizationName,
         'email': email,
         'fullName': fullName,
         'role': role,

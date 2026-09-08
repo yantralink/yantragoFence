@@ -29,6 +29,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       final user = await _authService.getCurrentUser();
       await SecureStorage.setUserId(user.id);
       await SecureStorage.setOrgId(user.organizationId);
+      await SecureStorage.setOrgName(user.organizationName);
       state = Authenticated(user);
     } catch (_) {
       // Token is invalid or expired

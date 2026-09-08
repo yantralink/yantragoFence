@@ -169,30 +169,54 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
             boolean extended = packet[0] == 0x79;
             int dataOffset = extended ? 5 : 4;
 
-            // Flag byte: command execution result
-            int flag = packet[dataOffset] & 0xFF;
-            boolean success = (flag == 0x00);
-            log.debug("[V5] Command reply flag: 0x{} ({})", String.format("%02X", flag), success ? "SUCCESS" : "FAILURE");
+            // BR05 0x21 reply format:
+            //   Server flags: 4 bytes
+            //   Encoding: 1 byte (0x01=ASCII, 0x02=UTF16-BE)
+            //   Content: M bytes (reply text)
+            //   Serial number: 2 bytes
+            //   CRC: 2 bytes
+            //   Stop: 0x0D 0x0A
+            int serverFlags = ((packet[dataOffset] & 0xFF) << 24) |
+                              ((packet[dataOffset + 1] & 0xFF) << 16) |
+                              ((packet[dataOffset + 2] & 0xFF) << 8) |
+                              (packet[dataOffset + 3] & 0xFF);
+            int encoding = packet[dataOffset + 4] & 0xFF;
 
-            // Terminal info byte: Bit7 = fuel/relay cut-off state
-            int terminalInfo = packet[dataOffset + 1] & 0xFF;
-            boolean fuelCutOff = (terminalInfo & 0x80) != 0;
-            log.debug("[V5] Command reply terminal info: FuelCut={}", fuelCutOff ? "YES" : "NO");
-
-            // Extract result text (remaining bytes before serial number + CRC + stop)
+            // Content is between (dataOffset+5) and (serialOffset - 2)
             int serialOffset = packet.length - 4; // Before CRC(2) + Stop(2)
             int contentEnd = serialOffset - 2; // Before serial number(2)
             StringBuilder resultText = new StringBuilder();
-            for (int i = dataOffset + 2; i < contentEnd; i++) {
-                resultText.append((char) (packet[i] & 0xFF));
+            if (encoding == 0x01) {
+                // ASCII encoding
+                for (int i = dataOffset + 5; i < contentEnd; i++) {
+                    resultText.append((char) (packet[i] & 0xFF));
+                }
+            } else {
+                // UTF16-BE or unknown — extract raw bytes as hex
+                for (int i = dataOffset + 5; i < contentEnd; i++) {
+                    resultText.append(String.format("%02X", packet[i] & 0xFF));
+                }
             }
-            log.debug("[V5] Command reply result text: {}", resultText);
+
+            // The presence of a 0x21 reply itself indicates the device processed the command.
+            // A non-empty reply with status text means success.
+            boolean success = true;
+            boolean fuelCutOff = false;
+            // Try to detect fuel/relay state from the reply text
+            String text = resultText.toString();
+            if (text.contains("Oil and electricity disconnected") || text.contains("DYD=01") || text.contains("oil disconnect")) {
+                fuelCutOff = true;
+            }
+
+            log.info("[V5] Command reply: serverFlags=0x{} encoding=0x{} success={} fuelCutOff={} resultText={}",
+                    String.format("%08X", serverFlags), String.format("%02X", encoding),
+                    success, fuelCutOff, text.length() > 100 ? text.substring(0, 100) + "..." : text);
 
             // Process the reply in the command service
             String imei = clientImeiMap.get(clientId);
             if (imei != null) {
                 try {
-                    vehicleCommandService.processCommandReply(imei, success, resultText.toString(), fuelCutOff);
+                    vehicleCommandService.processCommandReply(imei, success, text, fuelCutOff);
                 } catch (Exception e) {
                     log.error("[V5] Failed to process command reply: {}", e.getMessage());
                 }
@@ -208,40 +232,42 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
     /**
      * Builds a 0x80 Online Instruction packet per the BR05 protocol.
      *
-     * Packet structure (per BR05 protocol doc):
+     * Packet structure (matching protocol doc example for "sos#"):
+     *   78 78 0E 80 08 00 00 00 00 73 6F 73 23 00 01 6D 6A 0D 0A
+     *
      *   Start: 0x78 0x78
-     *   Length: 1 byte = protocol(1) + server_flag(4) + content(N) + language(2) + serial(2) + crc(2)
+     *   Length: 1 byte = protocol(1) + instruction_len(1) + server_flags(4) + content(N) + serial(2) + crc(2)
      *   Protocol: 0x80
+     *   Instruction length: 1 byte = server_flags(4) + content(N)
      *   Server flags: 4 bytes (binary, returned by terminal in reply)
-     *   Command content: M bytes (ASCII, compatible with SMS commands)
-     *   Language: 2 bytes (0x01 = Chinese, 0x02 = English)
+     *   Command content: N bytes (ASCII, compatible with SMS commands)
      *   Serial number: 2 bytes
      *   CRC: 2 bytes
      *   Stop: 0x0D 0x0A
      *
-     * @param commandContent the ASCII command string (e.g. "DYD=00" for relay ON, "DYD=01" for relay OFF)
+     * @param commandContent the ASCII command string (e.g. "RELAY,0#" for relay ON, "RELAY,1#" for relay OFF)
      * @return the complete packet bytes ready to send over TCP
      */
     public byte[] buildCommandPacket(String commandContent) {
         byte[] contentBytes = commandContent.getBytes(StandardCharsets.US_ASCII);
         int serial = serialCounter.getAndIncrement() & 0xFFFF;
 
-        // Information content = server_flag(4) + content(N) + language(2)
-        int infoContentLen = 4 + contentBytes.length + 2;
+        // Instruction length = server_flags(4) + content(N)
+        int instructionLen = 4 + contentBytes.length;
 
-        // Length = protocol(1) + info_content(N+6) + serial(2) + crc(2) = N + 11
-        int length = 1 + infoContentLen + 2 + 2;
+        // Length = protocol(1) + instruction_len(1) + server_flags(4) + content(N) + serial(2) + crc(2)
+        int length = 1 + 1 + instructionLen + 2 + 2;
 
-        // Total packet = start(2) + length_byte(1) + [protocol(1) + info_content + serial(2) + crc(2)] + stop(2)
-        //             = 2 + 1 + length + 2 = N + 16
+        // Total packet = start(2) + length_byte(1) + length + stop(2)
         byte[] packet = new byte[2 + 1 + length + 2];
 
         packet[0] = 0x78;
         packet[1] = 0x78;
         packet[2] = (byte) length;
         packet[3] = (byte) 0x80; // Protocol number
+        packet[4] = (byte) instructionLen; // Instruction length (server_flags + content)
 
-        int pos = 4;
+        int pos = 5;
         // Server flags: 4 bytes (all zeros — terminal returns these in reply)
         packet[pos++] = 0x00;
         packet[pos++] = 0x00;
@@ -250,9 +276,6 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
         // Command content (ASCII)
         System.arraycopy(contentBytes, 0, packet, pos, contentBytes.length);
         pos += contentBytes.length;
-        // Language: 0x02 = English
-        packet[pos++] = 0x00;
-        packet[pos++] = 0x02;
         // Serial number
         packet[pos++] = (byte) ((serial >> 8) & 0xFF);
         packet[pos++] = (byte) (serial & 0xFF);

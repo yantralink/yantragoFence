@@ -31,6 +31,7 @@ class AuthService {
     await SecureStorage.setRefreshToken(result.refreshToken);
     await SecureStorage.setUserId(result.user.id);
     await SecureStorage.setOrgId(result.user.organizationId);
+    await SecureStorage.setOrgName(result.user.organizationName);
 
     return result;
   }

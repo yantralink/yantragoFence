@@ -18,7 +18,12 @@ class MachineDetailPage extends ConsumerWidget {
     final machine = ref.watch(machineDetailProvider(machineId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Machine Details')),
+      appBar: AppBar(
+        title: machine.maybeWhen(
+          data: (m) => Text(m.name),
+          orElse: () => const Text('Machine Details'),
+        ),
+      ),
       body: machine.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Error: $err')),

@@ -6,7 +6,7 @@ import 'package:yantrago/features/auth/providers/auth_provider.dart';
 
 /// Splash page — shown on app start while checking existing auth session.
 ///
-/// The GoRouter redirect handles navigation to /login or /app/dashboard
+/// The GoRouter redirect handles navigation to /login or /app/machines
 /// when auth state changes. This page just shows a loading indicator.
 /// We use a small delay to ensure the auth check has time to run.
 class SplashPage extends ConsumerStatefulWidget {
@@ -35,7 +35,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
 
     if (state is Authenticated) {
       _navigated = true;
-      context.go('/app/dashboard');
+      context.go('/app/machines');
     } else if (state is Unauthenticated || state is AuthError) {
       _navigated = true;
       context.go('/login');
@@ -51,7 +51,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       if (_navigated || !mounted) return;
       if (next is Authenticated) {
         _navigated = true;
-        context.go('/app/dashboard');
+        context.go('/app/machines');
       } else if (next is Unauthenticated || next is AuthError) {
         _navigated = true;
         context.go('/login');

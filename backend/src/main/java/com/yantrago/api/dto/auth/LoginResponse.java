@@ -34,14 +34,16 @@ public class LoginResponse {
         private String email;
         private String fullName;
         private String organizationId;
+        private String organizationName;
 
         public UserInfo() {}
 
-        public UserInfo(String id, String email, String fullName, String organizationId) {
+        public UserInfo(String id, String email, String fullName, String organizationId, String organizationName) {
             this.id = id;
             this.email = email;
             this.fullName = fullName;
             this.organizationId = organizationId;
+            this.organizationName = organizationName;
         }
 
         public String getId() { return id; }
@@ -52,5 +54,7 @@ public class LoginResponse {
         public void setFullName(String fullName) { this.fullName = fullName; }
         public String getOrganizationId() { return organizationId; }
         public void setOrganizationId(String organizationId) { this.organizationId = organizationId; }
+        public String getOrganizationName() { return organizationName; }
+        public void setOrganizationName(String organizationName) { this.organizationName = organizationName; }
     }
 }

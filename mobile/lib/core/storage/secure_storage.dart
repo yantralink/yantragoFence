@@ -15,6 +15,7 @@ class SecureStorage {
   static const _keyRefreshToken = 'refresh_token';
   static const _keyUserId = 'user_id';
   static const _keyOrgId = 'org_id';
+  static const _keyOrgName = 'org_name';
 
   static Future<String?> getAccessToken() => _storage.read(key: _keyAccessToken);
   static Future<void> setAccessToken(String? token) async {
@@ -49,6 +50,15 @@ class SecureStorage {
       await _storage.delete(key: _keyOrgId);
     } else {
       await _storage.write(key: _keyOrgId, value: id);
+    }
+  }
+
+  static Future<String?> getOrgName() => _storage.read(key: _keyOrgName);
+  static Future<void> setOrgName(String? name) async {
+    if (name == null) {
+      await _storage.delete(key: _keyOrgName);
+    } else {
+      await _storage.write(key: _keyOrgName, value: name);
     }
   }
 
