@@ -50,7 +50,7 @@ public class NotificationPreferenceController {
         return ResponseEntity.ok(preferenceService.getEventCatalog());
     }
 
-    @GetMapping("/{userId}")
+    @GetMapping("/{userId:[a-fA-F0-9-]+}")
     @PreAuthorize("hasAuthority('notification_preference:read') or hasRole('super_admin')")
     public ResponseEntity<List<NotificationPreferenceDto>> getUserPreferences(@PathVariable UUID userId) {
         return ResponseEntity.ok(preferenceService.getUserPreferences(userId));

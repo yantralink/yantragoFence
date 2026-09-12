@@ -47,8 +47,14 @@ public class NotificationController {
 
     /**
      * Gets a single notification. Tenant-guarded.
+     *
+     * Note: The {id} path variable is constrained to UUID format to avoid
+     * conflicts with sub-path controllers like NotificationPreferenceController
+     * (/api/v1/notifications/preferences) and NotificationInboxController
+     * (/api/v1/notifications/inbox). Without the regex, "preferences" and
+     * "inbox" would be caught by this handler and fail UUID parsing.
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[a-fA-F0-9-]+}")
     @PreAuthorize("hasAuthority('notification:read') or hasRole('super_admin')")
     public ResponseEntity<NotificationDto> getNotification(@PathVariable UUID id) {
         return ResponseEntity.ok(notificationService.getNotification(id));
@@ -58,7 +64,7 @@ public class NotificationController {
      * Dispatches a PENDING notification via its configured channel.
      * Admin-only. Push delivery remains OFF in Phase 3.
      */
-    @PostMapping("/{id}/dispatch")
+    @PostMapping("/{id:[a-fA-F0-9-]+}/dispatch")
     @PreAuthorize("hasAuthority('notification:write') or hasRole('super_admin')")
     public ResponseEntity<NotificationDto> dispatchNotification(@PathVariable UUID id) {
         return ResponseEntity.ok(notificationService.dispatchNotification(id));

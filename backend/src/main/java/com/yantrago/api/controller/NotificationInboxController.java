@@ -47,7 +47,7 @@ public class NotificationInboxController {
         return ResponseEntity.ok(inboxService.listMyNotifications(pageable, unreadOnly, alertType));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[a-fA-F0-9-]+}")
     @PreAuthorize("hasAuthority('notification:read') or hasRole('super_admin')")
     public ResponseEntity<NotificationInboxDto> getNotification(@PathVariable UUID id) {
         return ResponseEntity.ok(inboxService.getNotification(id));
@@ -59,7 +59,7 @@ public class NotificationInboxController {
         return ResponseEntity.ok(Map.of("unreadCount", inboxService.countUnread()));
     }
 
-    @PostMapping("/{id}/read")
+    @PostMapping("/{id:[a-fA-F0-9-]+}/read")
     @PreAuthorize("hasAuthority('notification:mark_read') or hasRole('super_admin')")
     public ResponseEntity<NotificationInboxDto> markAsRead(@PathVariable UUID id) {
         return ResponseEntity.ok(inboxService.markAsRead(id));
@@ -71,7 +71,7 @@ public class NotificationInboxController {
         return ResponseEntity.ok(Map.of("markedRead", inboxService.markAllAsRead()));
     }
 
-    @PostMapping("/{id}/acknowledge")
+    @PostMapping("/{id:[a-fA-F0-9-]+}/acknowledge")
     @PreAuthorize("hasAuthority('notification:mark_read') or hasRole('super_admin')")
     public ResponseEntity<NotificationInboxDto> acknowledge(@PathVariable UUID id) {
         return ResponseEntity.ok(inboxService.acknowledge(id));
