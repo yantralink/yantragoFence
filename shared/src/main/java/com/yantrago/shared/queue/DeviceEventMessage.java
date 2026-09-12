@@ -16,10 +16,12 @@ public class DeviceEventMessage implements Serializable {
     public static final String EVENT_LOGIN = "LOGIN";
     public static final String EVENT_HEARTBEAT = "HEARTBEAT";
     public static final String EVENT_DISCONNECT = "DISCONNECT";
+    public static final String EVENT_ALARM = "ALARM";
 
     private UUID deviceId;
     private String imei;
     private String eventType;
+    private Integer alarmCode;  // BR05 alarm code (0x00–0x23), null for non-alarm events
     private Instant timestamp;
 
     public DeviceEventMessage() {
@@ -29,6 +31,15 @@ public class DeviceEventMessage implements Serializable {
         this.deviceId = deviceId;
         this.imei = imei;
         this.eventType = eventType;
+        this.timestamp = timestamp;
+    }
+
+    public DeviceEventMessage(UUID deviceId, String imei, String eventType,
+                              Integer alarmCode, Instant timestamp) {
+        this.deviceId = deviceId;
+        this.imei = imei;
+        this.eventType = eventType;
+        this.alarmCode = alarmCode;
         this.timestamp = timestamp;
     }
 
@@ -54,6 +65,14 @@ public class DeviceEventMessage implements Serializable {
 
     public void setEventType(String eventType) {
         this.eventType = eventType;
+    }
+
+    public Integer getAlarmCode() {
+        return alarmCode;
+    }
+
+    public void setAlarmCode(Integer alarmCode) {
+        this.alarmCode = alarmCode;
     }
 
     public Instant getTimestamp() {

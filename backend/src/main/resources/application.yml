@@ -57,6 +57,8 @@ spring:
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
     virtual-host: /
+    publisher-confirm-type: correlated    # Phase 1 fix: enable publisher confirms
+    publisher-returns: true               # Phase 1 fix: detect unroutable messages
 
   # Mail (SMTP) — optional, defaults disabled
   mail:
@@ -93,6 +95,15 @@ push:
   fcm:
     server:
       key: ${FCM_SERVER_KEY:}
+    service-account: ${FCM_SERVICE_ACCOUNT:}   # Firebase service account JSON (env var)
+    project-id: ${FCM_PROJECT_ID:}              # Firebase project ID (env var)
+    ttl-seconds: ${FCM_TTL_SECONDS:86400}       # 24-hour TTL for stale-event cancellation
+  scheduler:
+    check-interval-ms: ${PUSH_SCHEDULER_INTERVAL:15000}  # 15 seconds
+    batch-size: ${PUSH_SCHEDULER_BATCH:50}
+    lease-seconds: ${PUSH_SCHEDULER_LEASE:60}
+  token:
+    encryption-key: ${PUSH_TOKEN_ENCRYPTION_KEY:}   # AES-GCM key for token at-rest encryption
   expo:
     api:
       url: ${EXPO_API_URL:}
@@ -108,6 +119,34 @@ sms:
       sid: ${TWILIO_ACCOUNT_SID:}
     auth:
       token: ${TWILIO_AUTH_TOKEN:}
+
+# Alert detection (Phase 2)
+alert:
+  offline:
+    enabled: ${ALERT_OFFLINE_ENABLED:true}
+    grace-minutes: ${ALERT_OFFLINE_GRACE_MINUTES:15}    # reconnect grace before marking offline
+    check-interval-ms: ${ALERT_OFFLINE_CHECK_MS:60000}  # 1 minute
+    batch-size: ${ALERT_OFFLINE_BATCH_SIZE:100}
+    lease-seconds: ${ALERT_OFFLINE_LEASE_SECONDS:30}
+  expiry:
+    enabled: ${ALERT_EXPIRY_ENABLED:true}
+    check-interval-ms: ${ALERT_EXPIRY_CHECK_MS:300000}  # 5 minutes
+    milestones-days: ${ALERT_EXPIRY_MILESTONES:7,3,1,0} # days before/after expiry
+    batch-size: ${ALERT_EXPIRY_BATCH_SIZE:100}
+    lease-seconds: ${ALERT_EXPIRY_LEASE_SECONDS:30}
+
+# Notification feature switches (Phase 6)
+# Per notification plan N11: feature switches separately control each event family
+# and push dispatch. Disabling push preserves inbox and incident processing.
+notification:
+  push:
+    enabled: ${NOTIFICATION_PUSH_ENABLED:false}         # global push kill switch (off until Phase 5 validated)
+  event-families:
+    enabled: ${NOTIFICATION_EVENT_FAMILIES:}            # comma-separated list (empty = all enabled)
+    # e.g. "LOW_BATTERY,VOLTAGE_DROP" to enable only those; empty or "*" = all
+  storm:
+    max-per-minute: ${NOTIFICATION_STORM_MAX_PER_MIN:10}        # per-user push limit per minute
+    max-per-type-per-hour: ${NOTIFICATION_STORM_MAX_PER_TYPE:5}  # per-user per-alert-type per hour
 
 # Actuator
 management:

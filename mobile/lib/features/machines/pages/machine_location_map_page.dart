@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
@@ -44,7 +45,7 @@ class _MachineLocationMapPageState
       if (mounted) {
         setState(() => _markerIconBase64 = base64Str);
       }
-    } catch (e) {
+    } catch (_) {
       // If icon fails to load, map will use default marker
     }
   }
@@ -63,30 +64,19 @@ class _MachineLocationMapPageState
         ),
       ),
       body: location.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.location_off, size: 48, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text('No location data available',
-                  style: Theme.of(context).textTheme.titleMedium),
-            ],
-          ),
+        loading: () =>
+            AppStatePanel.loading(message: 'Loading location…'),
+        error: (_, __) => AppStatePanel.empty(
+          title: 'No location data available',
+          message: 'This machine has not reported its GPS coordinates yet.',
+          icon: Icons.location_off,
         ),
         data: (loc) {
           if (loc == null) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.location_off, size: 48, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No location data available',
-                      style: TextStyle(color: Colors.grey)),
-                ],
-              ),
+            return AppStatePanel.empty(
+              title: 'No location data available',
+              message: 'This machine has not reported its GPS coordinates yet.',
+              icon: Icons.location_off,
             );
           }
 
@@ -106,71 +96,15 @@ class _MachineLocationMapPageState
             ..loadHtmlString(html);
 
           return Column(
-            children: [
+            children: <Widget>[
               Expanded(
                 child: WebViewWidget(controller: controller),
               ),
               // Address bar below the map
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: address.when(
-                  loading: () => const Row(
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      SizedBox(width: 12),
-                      Text('Resolving address...'),
-                    ],
-                  ),
-                  error: (_, __) => Text(
-                    '${loc.latitude.toStringAsFixed(6)}, '
-                    '${loc.longitude.toStringAsFixed(6)}',
-                  ),
-                  data: (addr) {
-                    final lines = addr != null
-                        ? addr.toDetailLines()
-                        : [
-                            '${loc.latitude.toStringAsFixed(6)}, '
-                                '${loc.longitude.toStringAsFixed(6)}'
-                          ];
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.location_on,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 20),
-                            const SizedBox(width: 8),
-                            Text('Current Location',
-                                style:
-                                    Theme.of(context).textTheme.labelMedium),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        ...lines.map((line) => Text(line,
-                            style:
-                                Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ))),
-                      ],
-                    );
-                  },
-                ),
+              _AddressBar(
+                latitude: loc.latitude,
+                longitude: loc.longitude,
+                address: address,
               ),
             ],
           );
@@ -226,5 +160,98 @@ class _MachineLocationMapPageState
 </body>
 </html>
 ''';
+  }
+}
+
+/// Address bar below the map — shows reverse-geocoded address or coordinates.
+class _AddressBar extends StatelessWidget {
+  final double latitude;
+  final double longitude;
+  final AsyncValue<dynamic> address;
+
+  const _AddressBar({
+    required this.latitude,
+    required this.longitude,
+    required this.address,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: address.when(
+        loading: () => Row(
+          children: <Widget>[
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 12),
+            Text('Resolving address…',
+                style: text.bodyMedium?.copyWith(color: colors.onSurfaceVariant)),
+          ],
+        ),
+        error: (_, __) => _AddressContent(
+          label: 'Current Location',
+          lines: <String>[
+            '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}'
+          ],
+        ),
+        data: (addr) {
+          final lines = addr != null
+              ? addr.toDetailLines()
+              : <String>[
+                  '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}'
+                ];
+          return _AddressContent(label: 'Current Location', lines: lines);
+        },
+      ),
+    );
+  }
+}
+
+class _AddressContent extends StatelessWidget {
+  final String label;
+  final List<String> lines;
+
+  const _AddressContent({required this.label, required this.lines});
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Icon(Icons.location_on, color: colors.primary, size: 20),
+            const SizedBox(width: 8),
+            Text(label, style: text.labelMedium),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ...lines.map((line) => Text(
+              line,
+              style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+            )),
+      ],
+    );
   }
 }

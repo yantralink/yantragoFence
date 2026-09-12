@@ -1153,11 +1153,11 @@ After the six phases are verified, consider quiet hours with explicit critical e
 
 | Notification phase | Status | User verification/next-phase approval |
 |--------------------|--------|---------------------------------------|
-| 1 — Reliable alert foundation | Not started | Required before Phase 2 |
-| 2 — Rule/offline/expiry sources | Not started | Required before Phase 3 |
-| 3 — Inbox/preferences/APIs | Not started | Required before Phase 4 |
-| 4 — Mobile inbox | Not started | Required before Phase 5 |
-| 5 — Real FCM push | Not started | Required before Phase 6 |
-| 6 — Production rollout validation | Not started | Required before any expansion |
+| 1 — Reliable alert foundation | Implemented (pending deployment) | Required before Phase 2 |
+| 2 — Rule/offline/expiry sources | Implemented (pending deployment) | Required before Phase 3 |
+| 3 — Recipient inbox, preferences and APIs | Implemented (pending deployment) | Required before Phase 4 |
+| 4 — Mobile inbox and alert experience | Implemented (pending deployment) | Required before Phase 5 |
+| 5 — Real FCM push | Implemented (pending deployment) | Required before Phase 6 |
+| 6 — Production rollout validation | Implemented (pending staging validation) | Required before any expansion |
 
 **Current action completed by this document:** planning only. No database migration, dependency installation, backend/mobile/gateway implementation, provider setup, deployment, or notification send is part of the current task.

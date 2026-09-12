@@ -34,6 +34,7 @@ class AlertServiceTest {
     private OwnerContextService ownerContextService;
     private TenantGuard tenantGuard;
     private PermissionEvaluator permissionEvaluator;
+    private RecipientResolutionService recipientResolutionService;
     private AlertService alertService;
 
     private final UUID orgId = UUID.randomUUID();
@@ -47,7 +48,9 @@ class AlertServiceTest {
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = mock(TenantGuard.class);
         permissionEvaluator = mock(PermissionEvaluator.class);
-        alertService = new AlertService(alertRepository, ownerContextService, tenantGuard, permissionEvaluator);
+        recipientResolutionService = mock(RecipientResolutionService.class);
+        alertService = new AlertService(alertRepository, ownerContextService, tenantGuard,
+                permissionEvaluator, recipientResolutionService);
     }
 
     private Alert createAlert(UUID org, boolean acknowledged) {
@@ -122,6 +125,7 @@ class AlertServiceTest {
     void getAlert_shouldValidateTenantAccess() {
         Alert alert = createAlert(orgId, false);
         when(alertRepository.findById(alertId)).thenReturn(Optional.of(alert));
+        when(permissionEvaluator.hasAnyRole("admin", "org_admin", "super_admin")).thenReturn(true);
 
         alertService.getAlert(alertId);
 
@@ -134,6 +138,7 @@ class AlertServiceTest {
         Alert alert = createAlert(orgId, false);
         when(alertRepository.findById(alertId)).thenReturn(Optional.of(alert));
         when(permissionEvaluator.getCurrentUserId()).thenReturn(userId);
+        when(permissionEvaluator.hasAnyRole("admin", "org_admin", "super_admin")).thenReturn(true);
         when(alertRepository.save(any(Alert.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AlertDto result = alertService.acknowledgeAlert(alertId);
@@ -158,6 +163,7 @@ class AlertServiceTest {
         Alert alert = createAlert(orgId, false);
         when(alertRepository.findById(alertId)).thenReturn(Optional.of(alert));
         when(permissionEvaluator.getCurrentUserId()).thenReturn(userId);
+        when(permissionEvaluator.hasAnyRole("admin", "org_admin", "super_admin")).thenReturn(true);
         when(alertRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // Simulate cross-tenant access denied
@@ -166,5 +172,33 @@ class AlertServiceTest {
 
         assertThrows(SecurityException.class, () -> alertService.acknowledgeAlert(alertId));
         verify(alertRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("acknowledgeAlert should reject customer without assignment access")
+    void acknowledgeAlert_shouldRejectCustomerWithoutAssignment() {
+        Alert alert = createAlert(orgId, false);
+        when(alertRepository.findById(alertId)).thenReturn(Optional.of(alert));
+        when(permissionEvaluator.getCurrentUserId()).thenReturn(userId);
+        when(permissionEvaluator.hasAnyRole("admin", "org_admin", "super_admin")).thenReturn(false);
+        when(recipientResolutionService.revalidateAccess(orgId, machineId, userId)).thenReturn(false);
+
+        assertThrows(SecurityException.class, () -> alertService.acknowledgeAlert(alertId));
+        verify(alertRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("getAlert should allow customer with assignment access")
+    void getAlert_shouldAllowCustomerWithAssignment() {
+        Alert alert = createAlert(orgId, false);
+        when(alertRepository.findById(alertId)).thenReturn(Optional.of(alert));
+        when(permissionEvaluator.getCurrentUserId()).thenReturn(userId);
+        when(permissionEvaluator.hasAnyRole("admin", "org_admin", "super_admin")).thenReturn(false);
+        when(recipientResolutionService.revalidateAccess(orgId, machineId, userId)).thenReturn(true);
+
+        AlertDto result = alertService.getAlert(alertId);
+
+        assertNotNull(result);
+        assertEquals(alertId, result.getId());
     }
 }

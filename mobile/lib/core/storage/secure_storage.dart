@@ -16,6 +16,8 @@ class SecureStorage {
   static const _keyUserId = 'user_id';
   static const _keyOrgId = 'org_id';
   static const _keyOrgName = 'org_name';
+  static const _keyFcmToken = 'fcm_token';
+  static const _keyFcmTokenRegistered = 'fcm_token_registered';
 
   static Future<String?> getAccessToken() => _storage.read(key: _keyAccessToken);
   static Future<void> setAccessToken(String? token) async {
@@ -64,5 +66,25 @@ class SecureStorage {
 
   static Future<void> clearAll() async {
     await _storage.deleteAll();
+  }
+
+  // FCM token storage (Phase 5)
+  static Future<String?> getFcmToken() => _storage.read(key: _keyFcmToken);
+  static Future<void> setFcmToken(String? token) async {
+    if (token == null) {
+      await _storage.delete(key: _keyFcmToken);
+    } else {
+      await _storage.write(key: _keyFcmToken, value: token);
+    }
+  }
+
+  static Future<bool> isFcmTokenRegistered() async {
+    final val = await _storage.read(key: _keyFcmTokenRegistered);
+    return val == 'true';
+  }
+
+  static Future<void> setFcmTokenRegistered(bool registered) async {
+    await _storage.write(
+        key: _keyFcmTokenRegistered, value: registered ? 'true' : 'false');
   }
 }

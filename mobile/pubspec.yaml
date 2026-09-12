@@ -40,6 +40,11 @@ dependencies:
   # URL launcher (open maps, links)
   url_launcher: ^6.2.0
 
+  # Push notifications (Phase 5)
+  firebase_core: ^3.6.0
+  firebase_messaging: ^15.1.0
+  flutter_local_notifications: ^17.2.0
+
   # UI
   cupertino_icons: ^1.0.6
 

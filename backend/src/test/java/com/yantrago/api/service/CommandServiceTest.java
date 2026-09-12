@@ -77,8 +77,13 @@ class CommandServiceTest {
         machine.setOrganizationId(orgId);
         machine.setSerialNumber("IMEI123456");
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
-        when(deviceRepository.findByOrganizationIdAndImei(orgId, "IMEI123456"))
-                .thenReturn(Optional.empty());
+        com.yantrago.api.model.Device device = new com.yantrago.api.model.Device();
+        device.setId(UUID.randomUUID());
+        device.setOrganizationId(orgId);
+        device.setImei("IMEI123456");
+        device.setMachineId(machineId);
+        when(deviceRepository.findByMachineId(machineId))
+                .thenReturn(Optional.of(device));
 
         MachineCommand savedCommand = new MachineCommand();
         savedCommand.setId(commandId);
@@ -133,8 +138,13 @@ class CommandServiceTest {
         machine.setOrganizationId(orgId);
         machine.setSerialNumber("IMEI123");
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
-        when(deviceRepository.findByOrganizationIdAndImei(orgId, "IMEI123"))
-                .thenReturn(Optional.empty());
+        com.yantrago.api.model.Device device2 = new com.yantrago.api.model.Device();
+        device2.setId(UUID.randomUUID());
+        device2.setOrganizationId(orgId);
+        device2.setImei("IMEI123");
+        device2.setMachineId(machineId);
+        when(deviceRepository.findByMachineId(machineId))
+                .thenReturn(Optional.of(device2));
 
         MachineCommand saved = new MachineCommand();
         saved.setId(commandId);

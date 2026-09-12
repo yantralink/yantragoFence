@@ -98,22 +98,31 @@ public class ConcoxV5TcpServer {
             socket.setSoTimeout(60000); // 60s timeout
 
             byte[] buffer = new byte[1024];
+            // Accumulation buffer for TCP fragmentation — IoT SIMs often split
+            // a single protocol packet across multiple TCP segments.
+            java.io.ByteArrayOutputStream accum = new java.io.ByteArrayOutputStream();
             int bytesRead;
 
             while (running && (bytesRead = in.read(buffer)) != -1) {
-                byte[] data = new byte[bytesRead];
-                System.arraycopy(buffer, 0, data, 0, bytesRead);
+                // Append new bytes to the accumulation buffer
+                accum.write(buffer, 0, bytesRead);
+
+                byte[] allData = accum.toByteArray();
 
                 // Log raw hex data for debugging
                 StringBuilder hex = new StringBuilder();
                 for (int i = 0; i < bytesRead; i++) {
-                    hex.append(String.format("%02X ", data[i]));
+                    hex.append(String.format("%02X ", buffer[i]));
                 }
                 log.debug("[TCP] Raw data from {} ({} bytes): {}", clientId, bytesRead, hex);
 
-                // Parse and handle packets
-                byte[][] packets = extractPackets(data);
-                log.debug("[TCP] Extracted {} packets from {} bytes", packets.length, bytesRead);
+                // Parse and handle packets from the accumulated buffer
+                ExtractResult result = extractPacketsWithConsumed(allData);
+                byte[][] packets = result.packets;
+                int consumed = result.consumed;
+                log.debug("[TCP] Extracted {} packets from {} accumulated bytes, consumed {}",
+                        packets.length, allData.length, consumed);
+
                 for (byte[] packet : packets) {
                     packetsProcessedCounter.increment();
                     byte[] response = protocolRouter.handlePacket(packet, clientId);
@@ -126,9 +135,20 @@ public class ConcoxV5TcpServer {
                     }
                 }
 
+                // Keep unconsumed bytes (partial packet) for the next read
+                if (consumed < allData.length) {
+                    byte[] leftover = new byte[allData.length - consumed];
+                    System.arraycopy(allData, consumed, leftover, 0, leftover.length);
+                    accum.reset();
+                    accum.write(leftover, 0, leftover.length);
+                    log.debug("[TCP] Retained {} partial bytes for next read from {}", leftover.length, clientId);
+                } else {
+                    accum.reset();
+                }
+
                 // Register connection after first packet (login) so we have the IMEI mapping
                 if (!registered) {
-                    handler = protocolRouter.findHandler(data);
+                    handler = protocolRouter.findHandler(allData);
                     if (handler != null) {
                         String imei = handler.getImeiForClient(clientId);
                         if (imei != null) {
@@ -157,8 +177,21 @@ public class ConcoxV5TcpServer {
         }
     }
 
-    private byte[][] extractPackets(byte[] data) {
-        // Find all packets starting with 0x78 0x78 or 0x79 0x79
+    /**
+     * Result of packet extraction — includes extracted packets and the number
+     * of bytes consumed from the input. Leftover bytes (partial packet) must
+     * be retained by the caller for the next read.
+     */
+    private static class ExtractResult {
+        final byte[][] packets;
+        final int consumed;
+        ExtractResult(byte[][] packets, int consumed) {
+            this.packets = packets;
+            this.consumed = consumed;
+        }
+    }
+
+    private ExtractResult extractPacketsWithConsumed(byte[] data) {
         java.util.List<byte[]> packets = new java.util.ArrayList<>();
 
         int i = 0;
@@ -170,7 +203,10 @@ public class ConcoxV5TcpServer {
                 boolean extended = data[i] == 0x79;
                 int lengthOffset = extended ? 5 : 2; // 0x79 has 2-byte length, 0x78 has 1-byte
 
-                if (i + lengthOffset >= data.length) break;
+                if (i + lengthOffset >= data.length) {
+                    // Partial packet — not enough bytes for length field
+                    break;
+                }
 
                 int packetLength;
                 if (extended) {
@@ -188,13 +224,19 @@ public class ConcoxV5TcpServer {
                     packets.add(packet);
                     i += totalLength;
                 } else {
+                    // Partial packet — not enough bytes yet, wait for more data
                     break;
                 }
             } else {
+                // Skip non-start byte
                 i++;
             }
         }
 
-        return packets.toArray(new byte[0][]);
+        return new ExtractResult(packets.toArray(new byte[0][]), i);
+    }
+
+    private byte[][] extractPackets(byte[] data) {
+        return extractPacketsWithConsumed(data).packets;
     }
 }

@@ -9,6 +9,7 @@ import com.yantrago.gateway.service.DeviceMappingCacheService;
 import com.yantrago.gateway.service.GpsIngestService;
 import com.yantrago.gateway.service.VehicleCommandService;
 import com.yantrago.shared.queue.DeviceEventMessage;
+import com.yantrago.shared.queue.TelemetryMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -144,8 +145,25 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
             boolean charging = (terminalInfo & 0x04) != 0;
             boolean gpsTracking = (terminalInfo & 0x40) != 0;
             boolean fuelCutOff = (terminalInfo & 0x80) != 0;
-            log.debug("[V5] ACC: {}, Charging: {}, GPS: {}, FuelCut: {}",
-                accOn ? "ON" : "OFF", charging ? "Yes" : "No", gpsTracking ? "ON" : "OFF", fuelCutOff ? "YES" : "NO");
+
+            // Parse Voltage Level byte (infoOffset + 1) — internal battery 7-level enum
+            Integer batteryPct = null;
+            if (packet.length > infoOffset + 1) {
+                int voltageLevel = packet[infoOffset + 1] & 0xFF;
+                batteryPct = BatteryLevelMapper.toPercentage(voltageLevel);
+            }
+
+            // Parse GSM Signal Level byte (infoOffset + 2)
+            Integer gsmSignal = null;
+            if (packet.length > infoOffset + 2) {
+                int gsmLevel = packet[infoOffset + 2] & 0xFF;
+                gsmSignal = BatteryLevelMapper.toGsmSignal(gsmLevel);
+            }
+
+            log.debug("[V5] Heartbeat: ACC={}, Charging={}, GPS={}, FuelCut={}, Battery={}%, GSM={}",
+                accOn ? "ON" : "OFF", charging ? "Yes" : "No",
+                gpsTracking ? "ON" : "OFF", fuelCutOff ? "YES" : "NO",
+                batteryPct, gsmSignal);
 
             // Sync lock state from heartbeat Bit7
             String imei = clientImeiMap.get(clientId);
@@ -154,6 +172,11 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
                     vehicleCommandService.updateLockStateFromHeartbeat(imei, fuelCutOff);
                     deviceHeartbeatService.recordHeartbeat(imei);
                     publishDeviceEvent(imei, DeviceEventMessage.EVENT_HEARTBEAT);
+
+                    // Forward battery/GSM telemetry from heartbeat — heartbeats are the
+                    // primary source of battery level data since 0x22 GPS packets do not
+                    // include voltage level or terminal info bytes.
+                    forwardTelemetryFromHeartbeat(imei, batteryPct, gsmSignal, charging);
                 } catch (Exception e) {
                     log.error("[V5] Failed to sync lock state from heartbeat: {}", e.getMessage());
                 }
@@ -351,31 +374,29 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
                         ((packet[dataOffset + 24] & 0xFF) << 8) |
                         (packet[dataOffset + 25] & 0xFF);
 
-            // ACC status
+            // ACC status (0x22 packet includes ACC byte but NOT Terminal Info)
             int acc = packet[dataOffset + 26] & 0xFF;
+            boolean ignitionOn = (acc & 0x01) != 0;
 
-            // Terminal info byte (next byte after ACC)
-            int terminalInfo = 0;
-            if (packet.length > dataOffset + 27) {
-                terminalInfo = packet[dataOffset + 27] & 0xFF;
-            }
-            boolean ignitionOn = (acc & 0x01) != 0 || (terminalInfo & 0x02) != 0;
-            boolean externalPowerConnected = (terminalInfo & 0x04) == 0; // Bit2: 0=charging, 1=not charging
-            boolean sosPressed = (terminalInfo & 0x01) != 0; // Bit0: SOS
-            boolean vibrationDetected = (terminalInfo & 0x08) != 0; // Bit3: vibration
-            boolean relayOn = (terminalInfo & 0x80) != 0; // Bit7: fuel/relay cut-off
+            // Per BR05 protocol: the 0x22 GPS positioning packet ends with
+            // ACC (1 byte) + Reporting Mode (1 byte). It does NOT include
+            // Terminal Information, Voltage Level, or GSM Signal bytes.
+            // Battery/charging/SOS/vibration/relay status are only available
+            // from heartbeat (0x13) and alarm (0x26) packets.
+            // Previously this code read terminalInfo from dataOffset+27 which
+            // was past the 0x22 packet boundary — that has been removed.
+            Boolean externalPowerConnected = null;
+            Boolean sosPressed = null;
+            Boolean vibrationDetected = null;
+            Boolean relayOn = null;
 
             log.debug("[V5] GPS: {}, {} | Speed: {} km/h | Satellites: {} | GPS Located: {}",
                 String.format("%.6f", latitude), String.format("%.6f", longitude), speed, satelliteCount, gpsLocated ? "Yes" : "No");
             log.debug("[V5] Time: 20{}-{}-{} {}:{}:{} | Course: {}°",
                 String.format("%02d", year), String.format("%02d", month), String.format("%02d", day),
                 String.format("%02d", hour), String.format("%02d", minute), String.format("%02d", second), course);
-            log.debug("[V5] Ignition: {} | ExtPower: {} | SOS: {} | Vibration: {} | Relay: {}",
-                ignitionOn ? "ON" : "OFF",
-                externalPowerConnected ? "Connected" : "Disconnected",
-                sosPressed ? "YES" : "no",
-                vibrationDetected ? "YES" : "no",
-                relayOn ? "ON" : "OFF");
+            log.debug("[V5] Ignition: {} | Terminal info not available in 0x22 packet",
+                ignitionOn ? "ON" : "OFF");
 
             // Forward to HTTP API with hardware status fields
             if (gpsLocated) {
@@ -393,23 +414,186 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
     }
 
     private byte[] handleAlarmPacket(byte[] packet, String clientId) {
-        // Similar to location packet but with alarm type
         log.info("[V5] Alarm packet received from: {}", clientId);
-        // Parse alarm type and forward location
-        return null;
+        try {
+            boolean extended = packet[0] == 0x79;
+            int dataOffset = extended ? 5 : 4;
+
+            // Per BR05 spec, the 0x26 alarm packet requires at least 32 bytes of
+            // information content (datetime 6 + sats 1 + lat 4 + lng 4 + speed 1 +
+            // course 2 + lbsLen 1 + mcc 2 + mnc 1 + lac 2 + cellId 3 + terminalInfo 1 +
+            // voltageLevel 1 + gsmSignal 1 + alarmLang 2) after the header.
+            // Validate minimum length before parsing to avoid ArrayIndexOutOfBoundsException.
+            int minInfoLen = 32;
+            if (packet.length < dataOffset + minInfoLen) {
+                log.warn("[V5] Alarm packet too short: {} bytes (need at least {}), skipping",
+                        packet.length, dataOffset + minInfoLen);
+                return null;
+            }
+
+            // Date Time: 6 bytes (YY MM DD HH MM SS)
+            int year = packet[dataOffset] & 0xFF;
+            int month = packet[dataOffset + 1] & 0xFF;
+            int day = packet[dataOffset + 2] & 0xFF;
+            int hour = packet[dataOffset + 3] & 0xFF;
+            int minute = packet[dataOffset + 4] & 0xFF;
+            int second = packet[dataOffset + 5] & 0xFF;
+
+            // GPS Satellites: 1 byte
+            int gpsInfo = packet[dataOffset + 6] & 0xFF;
+            int satelliteCount = gpsInfo & 0x0F;
+
+            // Latitude: 4 bytes (divide by 1800000)
+            int latRaw = ((packet[dataOffset + 7] & 0xFF) << 24) |
+                        ((packet[dataOffset + 8] & 0xFF) << 16) |
+                        ((packet[dataOffset + 9] & 0xFF) << 8) |
+                        (packet[dataOffset + 10] & 0xFF);
+
+            // Longitude: 4 bytes (divide by 1800000)
+            int lngRaw = ((packet[dataOffset + 11] & 0xFF) << 24) |
+                        ((packet[dataOffset + 12] & 0xFF) << 16) |
+                        ((packet[dataOffset + 13] & 0xFF) << 8) |
+                        (packet[dataOffset + 14] & 0xFF);
+
+            // Speed: 1 byte
+            int speed = packet[dataOffset + 15] & 0xFF;
+
+            // Course & Status: 2 bytes
+            int courseStatus = ((packet[dataOffset + 16] & 0xFF) << 8) |
+                              (packet[dataOffset + 17] & 0xFF);
+            int course = courseStatus & 0x03FF;
+            boolean gpsLocated = (courseStatus & 0x0400) != 0;
+            boolean eastLongitude = (courseStatus & 0x0800) == 0;
+            boolean northLatitude = (courseStatus & 0x1000) != 0;
+
+            double latitude = latRaw / 1800000.0;
+            double longitude = lngRaw / 1800000.0;
+            if (!northLatitude) latitude = -latitude;
+            if (!eastLongitude) longitude = -longitude;
+
+            // LBS Data
+            int mcc = ((packet[dataOffset + 19] & 0xFF) << 8) | (packet[dataOffset + 20] & 0xFF);
+            int mnc = packet[dataOffset + 21] & 0xFF;
+            int lac = ((packet[dataOffset + 22] & 0xFF) << 8) | (packet[dataOffset + 23] & 0xFF);
+            int cellId = ((packet[dataOffset + 24] & 0xFF) << 16) |
+                        ((packet[dataOffset + 25] & 0xFF) << 8) |
+                        (packet[dataOffset + 26] & 0xFF);
+
+            // Terminal Information: 1 byte (at dataOffset + 27)
+            int terminalInfo = packet[dataOffset + 27] & 0xFF;
+            boolean ignitionOn = (terminalInfo & 0x02) != 0;
+            boolean charging = (terminalInfo & 0x04) != 0;
+            boolean sosPressed = (terminalInfo & 0x01) != 0;
+            boolean vibrationDetected = (terminalInfo & 0x08) != 0;
+            boolean relayOn = (terminalInfo & 0x80) != 0;
+
+            // Voltage Level: 1 byte (at dataOffset + 28) — internal battery 7-level enum
+            int voltageLevel = packet[dataOffset + 28] & 0xFF;
+            Integer batteryPct = BatteryLevelMapper.toPercentage(voltageLevel);
+
+            // GSM Signal Level: 1 byte (at dataOffset + 29)
+            int gsmLevel = packet[dataOffset + 29] & 0xFF;
+            Integer gsmSignal = BatteryLevelMapper.toGsmSignal(gsmLevel);
+
+            // Alarm type/language: 2 bytes (at dataOffset + 30)
+            int alarmCode = packet[dataOffset + 30] & 0xFF;
+            int language = packet[dataOffset + 31] & 0xFF;
+
+            log.info("[V5] Alarm: code=0x{}, Battery={}%, GSM={}, Charging={}, GPS={}, SOS={}, Vibration={}",
+                String.format("%02X", alarmCode), batteryPct, gsmSignal,
+                charging ? "Yes" : "No", gpsLocated ? "Yes" : "No",
+                sosPressed ? "YES" : "no", vibrationDetected ? "YES" : "no");
+            log.debug("[V5] Alarm GPS: {}, {} | Speed: {} km/h | Course: {}°",
+                String.format("%.6f", latitude), String.format("%.6f", longitude), speed, course);
+
+            String imei = clientImeiMap.get(clientId);
+            if (imei != null) {
+                // Forward telemetry (battery + GSM) from alarm packet
+                forwardTelemetryFromHeartbeat(imei, batteryPct, gsmSignal, charging);
+
+                // Forward location if GPS located
+                if (gpsLocated) {
+                    forwardToHttpApi(latitude, longitude, speed, course,
+                        year, month, day, hour, minute, second, imei,
+                        ignitionOn, charging, sosPressed, vibrationDetected, relayOn,
+                        satelliteCount, mcc, mnc);
+                }
+
+                // Publish alarm event for backend alert generation
+                publishAlarmEvent(imei, alarmCode);
+            }
+
+            return buildResponse(packet, (byte) 0x26);
+        } catch (Exception e) {
+            log.error("[V5] Error parsing alarm packet", e);
+            return null;
+        }
     }
 
     private byte[] handleInfoPacket(byte[] packet, String clientId) {
-        log.info("[V5] Info packet from: {}", clientId);
-        // Handle voltage, etc.
+        String imei = clientImeiMap.get(clientId);
+
+        // 0x94 (Information Transmission) packet structure per BR05 protocol:
+        //   [0-1]   Start bits (79 79 for extended)
+        //   [2-3]   Length (2 bytes, big-endian for extended)
+        //   [4]     Protocol number (0x94)
+        //   [5]     Information type (0x00 = external voltage, 0x02 = altitude, etc.)
+        //   [6-7]   Information content (voltage value for type 0x00)
+        //   [8-9]   Message sequence number
+        //   [10-11] CRC
+        //   [12-13] Stop bits (0x0D 0x0A)
+        //
+        // For external voltage (type 0x00):
+        //   Bytes [6-7] form a 2-byte hex value. Convert to decimal, divide by 100.
+        //   Example: 0x04C6 = 1222 → 12.22V
+        //   (Per BR05 protocol document: "0X04, 0X9F, 049F → 1183 → 11.83V")
+
+        if (packet.length < 8) {
+            log.warn("[V5] Info packet too short: {} bytes, skipping", packet.length);
+            return null;
+        }
+
+        int infoType = packet[5] & 0xFF;
+
+        // Only parse external voltage (type 0x00). Other types (altitude, bluetooth
+        // fuel, temperature, tire pressure) are not needed for this device.
+        if (infoType != 0x00) {
+            log.debug("[V5] Info packet: unsupported info type 0x{}, skipping", String.format("%02X", infoType));
+            return null;
+        }
+
+        try {
+            // Extract voltage: 2-byte big-endian value at bytes [6-7]
+            int voltageRaw = ((packet[6] & 0xFF) << 8) | (packet[7] & 0xFF);
+            double voltage = voltageRaw / 100.0;
+
+            log.info("[V5] Info packet: external voltage from imei={} voltage={}V (raw=0x{})",
+                    imei, voltage, String.format("%04X", voltageRaw));
+
+            // Forward voltage to backend via RabbitMQ
+            if (imei != null) {
+                String deviceIdStr = deviceMappingCacheService.getDeviceIdByImei(imei);
+                if (deviceIdStr != null) {
+                    UUID deviceId = UUID.fromString(deviceIdStr);
+                    gpsIngestService.forwardVoltage(deviceId, imei, voltage);
+                } else {
+                    log.warn("[V5] No device mapping for IMEI: {}, skipping voltage forward", imei);
+                }
+            } else {
+                log.warn("[V5] No IMEI for clientId: {}, skipping voltage forward", clientId);
+            }
+        } catch (Exception e) {
+            log.error("[V5] Failed to parse voltage from info packet: imei={} err={}", imei, e.getMessage());
+        }
+
         return null;
     }
 
     private void forwardToHttpApi(double lat, double lng, int speed, int course,
                                    int year, int month, int day, int hour, int minute, int second,
                                    String imei,
-                                   boolean ignitionOn, boolean externalPowerConnected,
-                                   boolean sosPressed, boolean vibrationDetected, boolean relayOn,
+                                   boolean ignitionOn, Boolean externalPowerConnected,
+                                   Boolean sosPressed, Boolean vibrationDetected, Boolean relayOn,
                                    int satelliteCount, int mcc, int mnc) {
         try {
             String deviceId = imei != null ? deviceMappingCacheService.getDeviceIdByImei(imei) : null;
@@ -437,7 +621,13 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
             request.setVibrationDetected(vibrationDetected);
             request.setRelayOn(relayOn);
             request.setGpsSatelliteCount(satelliteCount);
-            request.setGsmSignalStrength(mnc);
+            // GSM signal strength is NOT available from the 0x22 GPS or 0x26 alarm
+            // packet's LBS section — the MNC field is the Mobile Network Code, not
+            // signal strength. GSM signal level is only available from the heartbeat
+            // (0x13) and alarm (0x26) Terminal Info area, forwarded separately via
+            // forwardTelemetryFromHeartbeat(). Set to null here to avoid storing
+            // the MNC as a fake GSM signal value.
+            request.setGsmSignalStrength(null);
 
             gpsIngestService.ingest(request);
             log.debug("[V5] Forwarded to GpsIngestService directly for device: {}", deviceId);
@@ -478,6 +668,64 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
             deviceEventProducer.publishDeviceEvent(event);
         } catch (Exception e) {
             log.error("[V5] Failed to publish device event: imei={} type={} err={}", imei, eventType, e.getMessage());
+        }
+    }
+
+    /**
+     * Forwards battery and GSM telemetry extracted from a heartbeat or alarm
+     * packet to the backend via RabbitMQ. Heartbeats are the primary source
+     * of battery level data since the 0x22 GPS packet does not include the
+     * voltage level or terminal info bytes.
+     *
+     * Per AGENTS.md rule 4: device communication is asynchronous via RabbitMQ.
+     * Per AGENTS.md rule 17: use shared message contracts (TelemetryMessage).
+     */
+    private void forwardTelemetryFromHeartbeat(String imei, Integer batteryPct,
+                                                Integer gsmSignal, boolean charging) {
+        try {
+            String deviceIdStr = deviceMappingCacheService.getDeviceIdByImei(imei);
+            if (deviceIdStr == null) {
+                log.warn("[V5] No device mapping for IMEI: {}, skipping telemetry", imei);
+                return;
+            }
+            UUID deviceId = UUID.fromString(deviceIdStr);
+
+            gpsIngestService.forwardTelemetry(
+                    deviceId, imei,
+                    batteryPct != null ? batteryPct.doubleValue() : null,
+                    gsmSignal,
+                    charging
+            );
+
+            log.debug("[V5] Forwarded heartbeat/alarm telemetry: imei={} battery={}%, gsm={}, charging={}",
+                    imei, batteryPct, gsmSignal, charging);
+        } catch (Exception e) {
+            log.error("[V5] Failed to forward heartbeat telemetry: imei={} err={}", imei, e.getMessage());
+        }
+    }
+
+    /**
+     * Publishes an alarm event to the backend via RabbitMQ so the backend
+     * can map the BR05 alarm code to an alert type (e.g. 0x0E →
+     * EXTERNAL_POWER_LOW, 0x19 → INTERNAL_BATTERY_LOW) and generate
+     * canonical alerts and notifications.
+     *
+     * Per AGENTS.md rule 5: never assume a device command succeeded until
+     * acknowledgement is received. Alarm events are device-initiated, not
+     * commands, so this rule applies to command replies, not alarms.
+     * Per AGENTS.md rule 17: use shared message contracts (DeviceEventMessage).
+     */
+    private void publishAlarmEvent(String imei, int alarmCode) {
+        try {
+            String deviceIdStr = deviceMappingCacheService.getDeviceIdByImei(imei);
+            UUID deviceId = deviceIdStr != null ? UUID.fromString(deviceIdStr) : null;
+            DeviceEventMessage event = new DeviceEventMessage(
+                    deviceId, imei, DeviceEventMessage.EVENT_ALARM, alarmCode, Instant.now()
+            );
+            deviceEventProducer.publishDeviceEvent(event);
+            log.info("[V5] Published alarm event: imei={} code=0x{}", imei, String.format("%02X", alarmCode));
+        } catch (Exception e) {
+            log.error("[V5] Failed to publish alarm event: imei={} err={}", imei, e.getMessage());
         }
     }
 

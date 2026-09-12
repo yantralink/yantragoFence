@@ -46,12 +46,16 @@ dependencies {
     // API docs
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
 
+    // Firebase Admin SDK for FCM push delivery (Phase 5)
+    implementation("com.google.firebase:firebase-admin:9.4.3")
+
     // Shared library
     implementation(project(":shared"))
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.amqp:spring-rabbit-test")
+    testImplementation("org.mockito:mockito-inline:5.2.0")
 }
 
 tasks.withType<Test> {

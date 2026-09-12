@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/models/machine_location.dart';
 
 /// Location card — shows the machine's current GPS location with a location
 /// icon and a reverse-geocoded address. Tapping the card opens an in-app
-/// Google Map showing the machine's location.
+/// map showing the machine's location.
 ///
 /// Displays:
 /// - Location icon (left)
@@ -26,30 +28,17 @@ class LocationCard extends ConsumerWidget {
     final location = ref.watch(machineLocationProvider(machineId));
     final address = ref.watch(machineAddressProvider(machineId));
 
-    return Card(
+    return AppSurfaceCard(
       child: location.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Icon(Icons.location_on, color: Colors.grey),
-              SizedBox(width: 12),
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ],
-          ),
-        ),
-        error: (err, _) => _NoLocation(),
+        loading: () => _LoadingLocation(),
+        error: (_, __) => _NoLocation(),
         data: (loc) {
           if (loc == null) return _NoLocation();
 
           return address.when(
             loading: () => _LocationContent(
               location: loc,
-              addressLines: [
+              addressLines: <String>[
                 '${loc.latitude.toStringAsFixed(6)}, ${loc.longitude.toStringAsFixed(6)}'
               ],
               machineId: machineId,
@@ -57,7 +46,7 @@ class LocationCard extends ConsumerWidget {
             ),
             error: (_, __) => _LocationContent(
               location: loc,
-              addressLines: [
+              addressLines: <String>[
                 '${loc.latitude.toStringAsFixed(6)}, ${loc.longitude.toStringAsFixed(6)}'
               ],
               machineId: machineId,
@@ -65,7 +54,7 @@ class LocationCard extends ConsumerWidget {
             data: (addr) {
               final lines = addr != null
                   ? addr.toDetailLines()
-                  : [
+                  : <String>[
                       '${loc.latitude.toStringAsFixed(6)}, ${loc.longitude.toStringAsFixed(6)}'
                     ];
               return _LocationContent(
@@ -101,9 +90,11 @@ class _LocationContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasAddress = addressLines.isNotEmpty &&
-        addressLines.first != '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final bool hasAddress = addressLines.isNotEmpty &&
+        addressLines.first !=
+            '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
 
     return InkWell(
       onTap: () => _openInAppMap(context),
@@ -112,13 +103,13 @@ class _LocationContent extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: <Widget>[
             // Location icon
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Icon(
                 Icons.location_on,
-                color: theme.colorScheme.primary,
+                color: colors.primary,
                 size: 28,
               ),
             ),
@@ -127,11 +118,11 @@ class _LocationContent extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   Text(
                     'Current Location',
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                      color: colors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -144,30 +135,30 @@ class _LocationContent extends StatelessWidget {
                           ),
                         ),
                       )),
-                  if (isGeocoding) ...[
+                  if (isGeocoding) ...<Widget>[
                     const SizedBox(height: 4),
                     Text(
-                      'Resolving address...',
+                      'Resolving address…',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                        color: colors.onSurfaceVariant,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],
-                  if (hasAddress && !isGeocoding) ...[
+                  if (hasAddress && !isGeocoding) ...<Widget>[
                     const SizedBox(height: 6),
                     Row(
-                      children: [
+                      children: <Widget>[
                         Icon(
                           Icons.map_outlined,
                           size: 14,
-                          color: theme.colorScheme.primary,
+                          color: colors.primary,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           'Tap to view on map',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.primary,
+                            color: colors.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -178,12 +169,34 @@ class _LocationContent extends StatelessWidget {
               ),
             ),
             // Chevron
-            const Padding(
-              padding: EdgeInsets.only(top: 2),
-              child: Icon(Icons.chevron_right, color: Colors.grey),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Shown while location is being fetched.
+class _LoadingLocation extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.location_on, color: colors.onSurfaceVariant),
+          const SizedBox(width: 12),
+          const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ],
       ),
     );
   }
@@ -193,16 +206,19 @@ class _LocationContent extends StatelessWidget {
 class _NoLocation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.all(16),
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.all(16),
       child: Row(
-        children: [
-          Icon(Icons.location_off, color: Colors.grey),
-          SizedBox(width: 12),
+        children: <Widget>[
+          Icon(Icons.location_off, color: colors.onSurfaceVariant),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               'No location data available',
-              style: TextStyle(color: Colors.grey),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
             ),
           ),
         ],

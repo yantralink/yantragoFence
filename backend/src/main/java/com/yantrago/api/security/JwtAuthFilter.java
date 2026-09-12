@@ -63,16 +63,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             UUID userId = jwtService.extractUserId(claims);
             String email = claims.getSubject();
             String roles = jwtService.extractRoles(claims);
+            String permissions = jwtService.extractPermissions(claims);
 
-            List<SimpleGrantedAuthority> authorities;
+            List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+
+            // Add role-based authorities (ROLE_ prefix)
             if (roles != null && !roles.isBlank()) {
-                authorities = Arrays.stream(roles.split(","))
+                Arrays.stream(roles.split(","))
                         .map(String::trim)
                         .filter(r -> !r.isEmpty())
                         .map(r -> new SimpleGrantedAuthority("ROLE_" + r.toUpperCase()))
-                        .collect(Collectors.toList());
-            } else {
-                authorities = Collections.emptyList();
+                        .forEach(authorities::add);
+            }
+
+            // Add permission-based authorities (no prefix — e.g. "notification:read")
+            // These are checked by @PreAuthorize("hasAuthority('notification:read')")
+            if (permissions != null && !permissions.isBlank()) {
+                Arrays.stream(permissions.split(","))
+                        .map(String::trim)
+                        .filter(p -> !p.isEmpty())
+                        .map(SimpleGrantedAuthority::new)
+                        .forEach(authorities::add);
             }
 
             // Simplified: store userId as principal, email as credentials name

@@ -83,7 +83,15 @@ public class CustomerService {
 
     @Transactional
     public CustomerDto createCustomer(CreateCustomerRequest request) {
-        UUID orgId = ownerContextService.getOrganizationId();
+        // Org admins: orgId comes from JWT (rule 7/8).
+        // Super admin: orgId comes from the request body (platform-level user managing multiple orgs).
+        UUID orgId = ownerContextService.getOrganizationIdOrNull();
+        if (orgId == null) {
+            orgId = request.getOrganizationId();
+            if (orgId == null) {
+                throw new IllegalArgumentException("organizationId is required when creating a customer as super_admin");
+            }
+        }
 
         // Check for duplicate phone in same org
         customerRepository.findByOrganizationIdAndPhone(orgId, request.getPhone())

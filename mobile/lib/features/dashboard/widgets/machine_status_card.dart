@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/widgets/app_surface_card.dart';
+
 /// Machine status card — summary of machine counts by status.
+///
+/// Composes [AppSurfaceCard] and centralized semantic colors. Each count
+/// is shown with a colored dot and label; color is never the sole
+/// indicator (the label always accompanies it).
 class MachineStatusCard extends StatelessWidget {
   final int total;
   final int online;
@@ -19,64 +26,119 @@ class MachineStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Machine Status', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _StatusChip(label: 'Total', count: total, color: Colors.blue),
-                _StatusChip(label: 'Online', count: online, color: Colors.green),
-                _StatusChip(label: 'Fencing', count: fencingOn, color: Colors.orange),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _StatusChip(label: 'Fault', count: fault, color: Colors.red),
-                _StatusChip(label: 'Offline', count: offline, color: Colors.grey),
-              ],
-            ),
-          ],
-        ),
+    final AppSemanticColors? semantic =
+        Theme.of(context).extension<AppSemanticColors>();
+    final TextTheme text = Theme.of(context).textTheme;
+    final ColorScheme colors = Theme.of(context).colorScheme;
+
+    return AppSurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('Machine Status', style: text.titleMedium),
+          const SizedBox(height: 16),
+          Row(
+            children: <Widget>[
+              _Count(
+                label: 'Total',
+                count: total,
+                tone: StatusTone.info,
+                semantic: semantic,
+                text: text,
+                colors: colors,
+              ),
+              const SizedBox(width: 8),
+              _Count(
+                label: 'Online',
+                count: online,
+                tone: StatusTone.success,
+                semantic: semantic,
+                text: text,
+                colors: colors,
+              ),
+              const SizedBox(width: 8),
+              _Count(
+                label: 'Fencing',
+                count: fencingOn,
+                tone: StatusTone.warning,
+                semantic: semantic,
+                text: text,
+                colors: colors,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: <Widget>[
+              _Count(
+                label: 'Fault',
+                count: fault,
+                tone: StatusTone.danger,
+                semantic: semantic,
+                text: text,
+                colors: colors,
+              ),
+              const SizedBox(width: 8),
+              _Count(
+                label: 'Offline',
+                count: offline,
+                tone: StatusTone.neutral,
+                semantic: semantic,
+                text: text,
+                colors: colors,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class _StatusChip extends StatelessWidget {
+class _Count extends StatelessWidget {
   final String label;
   final int count;
-  final Color color;
+  final StatusTone tone;
+  final AppSemanticColors? semantic;
+  final TextTheme text;
+  final ColorScheme colors;
 
-  const _StatusChip({
+  const _Count({
     required this.label,
     required this.count,
-    required this.color,
+    required this.tone,
+    required this.semantic,
+    required this.text,
+    required this.colors,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color foreground = semantic?.tone(tone) ?? colors.primary;
+    final Color background = semantic?.toneSoft(tone) ?? foreground.withValues(alpha: 0.12);
     return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              Text('$count', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-              Text(label, style: TextStyle(fontSize: 12, color: color)),
-            ],
-          ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: <Widget>[
+            Text(
+              '$count',
+              style: text.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: foreground,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: text.bodySmall?.copyWith(color: foreground),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

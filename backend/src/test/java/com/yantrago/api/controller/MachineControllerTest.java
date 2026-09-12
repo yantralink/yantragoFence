@@ -6,6 +6,7 @@ import com.yantrago.api.config.WebMvcConfig;
 import com.yantrago.api.dto.machine.CreateMachineRequest;
 import com.yantrago.api.dto.machine.MachineDto;
 import com.yantrago.api.dto.machine.MachineStatusDto;
+import com.yantrago.api.dto.machine.TelemetryLatestDto;
 import com.yantrago.api.dto.machine.UpdateMachineRequest;
 import com.yantrago.api.security.AuditLogInterceptor;
 import com.yantrago.api.security.JwtAuthFilter;
@@ -80,7 +81,7 @@ class MachineControllerTest {
 
     @Test
     void getMachine_shouldReturnMachine_whenExists() throws Exception {
-        MachineDto dto = new MachineDto(machineId, orgId, null, "Tractor-01",
+        MachineDto dto = new MachineDto(machineId, null, orgId, null, "Tractor-01",
                 "IMEI123456", "Model-X", "ACTIVE", false, null, LocalDateTime.now(), null);
         when(machineService.getMachine(machineId)).thenReturn(dto);
 
@@ -97,7 +98,8 @@ class MachineControllerTest {
         CreateMachineRequest request = new CreateMachineRequest();
         // name is @NotBlank — leaving it null should trigger validation
         request.setSerialNumber("IMEI123");
-        request.setStatus("ACTIVE");
+        request.setImei("IMEI123456");
+        request.setProtocolType("CONCOX_V5");
 
         // Without auth, should get 401 before validation kicks in
         mockMvc.perform(post("/api/v1/machines")
@@ -108,7 +110,7 @@ class MachineControllerTest {
 
     @Test
     void listMachines_shouldReturnPagedResult() throws Exception {
-        MachineDto dto = new MachineDto(machineId, orgId, null, "Tractor-01",
+        MachineDto dto = new MachineDto(machineId, null, orgId, null, "Tractor-01",
                 "IMEI123456", "Model-X", "ACTIVE", true, LocalDateTime.now(), LocalDateTime.now(), null);
         Page<MachineDto> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1);
         when(machineService.listMachines(any())).thenReturn(page);
@@ -133,5 +135,37 @@ class MachineControllerTest {
         MachineStatusDto result = machineService.getMachineStatus(machineId);
         org.junit.jupiter.api.Assertions.assertEquals("ACTIVE", result.getStatus());
         org.junit.jupiter.api.Assertions.assertTrue(result.getIsOnline());
+    }
+
+    @Test
+    void getLatestTelemetry_shouldReturnTelemetry() throws Exception {
+        TelemetryLatestDto telemetryDto = new TelemetryLatestDto(
+                60.0, true, 3, 12.22, LocalDateTime.now()
+        );
+        when(machineService.getLatestTelemetry(machineId)).thenReturn(telemetryDto);
+
+        TelemetryLatestDto result = machineService.getLatestTelemetry(machineId);
+        org.junit.jupiter.api.Assertions.assertEquals(60.0, result.getBatteryPct());
+        org.junit.jupiter.api.Assertions.assertTrue(result.getCharging());
+        org.junit.jupiter.api.Assertions.assertEquals(3, result.getGsmSignal());
+        org.junit.jupiter.api.Assertions.assertEquals(12.22, result.getVoltage());
+    }
+
+    @Test
+    void getLatestTelemetry_shouldReturnNulls_whenNoData() throws Exception {
+        TelemetryLatestDto telemetryDto = new TelemetryLatestDto(null, null, null, null, null);
+        when(machineService.getLatestTelemetry(machineId)).thenReturn(telemetryDto);
+
+        TelemetryLatestDto result = machineService.getLatestTelemetry(machineId);
+        org.junit.jupiter.api.Assertions.assertNull(result.getBatteryPct());
+        org.junit.jupiter.api.Assertions.assertNull(result.getCharging());
+        org.junit.jupiter.api.Assertions.assertNull(result.getGsmSignal());
+        org.junit.jupiter.api.Assertions.assertNull(result.getLastTelemetryAt());
+    }
+
+    @Test
+    void getLatestTelemetry_shouldReturn401_withoutAuth() throws Exception {
+        mockMvc.perform(get("/api/v1/machines/{id}/telemetry/latest", machineId))
+                .andExpect(status().isUnauthorized());
     }
 }

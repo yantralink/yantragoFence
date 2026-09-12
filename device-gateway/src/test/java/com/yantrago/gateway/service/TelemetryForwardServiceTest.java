@@ -149,4 +149,83 @@ class TelemetryForwardServiceTest {
         assertEquals(77.5946, captor.getValue().getLongitude());
         assertEquals(45.0, captor.getValue().getSpeed());
     }
+
+    @Test
+    @DisplayName("forwardTelemetry (interface method) should publish battery and GSM from heartbeat")
+    void forwardTelemetry_interface_shouldPublishBatteryAndGsm() {
+        telemetryForwardService.forwardTelemetry(deviceId, imei, 60.0, 3, true);
+
+        ArgumentCaptor<TelemetryMessage> captor = ArgumentCaptor.forClass(TelemetryMessage.class);
+        verify(telemetryProducer).publishTelemetry(captor.capture());
+        assertEquals(deviceId, captor.getValue().getDeviceId());
+        assertEquals(imei, captor.getValue().getImei());
+        // BR05 does not provide voltage in volts — only a 7-level enum mapped to percentage
+        assertNull(captor.getValue().getVoltage());
+        assertEquals(60.0, captor.getValue().getBattery());
+        assertEquals(3, captor.getValue().getGsmSignal());
+    }
+
+    @Test
+    @DisplayName("forwardTelemetry (interface method) should skip when deviceId is null")
+    void forwardTelemetry_interface_shouldSkipWhenDeviceIdIsNull() {
+        telemetryForwardService.forwardTelemetry(null, imei, 60.0, 3, true);
+
+        verify(telemetryProducer, never()).publishTelemetry(any());
+    }
+
+    @Test
+    @DisplayName("ingest should use batteryLevel from request instead of faking 100.0")
+    void ingest_shouldUseBatteryLevelFromRequest() {
+        GpsIngestRequest request = new GpsIngestRequest();
+        request.setDeviceId(deviceId.toString());
+        request.setExternalPowerConnected(true);
+        request.setBatteryLevel(60); // 60% from heartbeat voltage level byte
+
+        telemetryForwardService.ingest(request);
+
+        ArgumentCaptor<TelemetryMessage> captor = ArgumentCaptor.forClass(TelemetryMessage.class);
+        verify(telemetryProducer).publishTelemetry(captor.capture());
+        // Should use the real battery level (60.0), not a fake 100.0
+        assertEquals(60.0, captor.getValue().getBattery());
+    }
+
+    @Test
+    @DisplayName("ingest should send null battery when batteryLevel is not set (no heartbeat received)")
+    void ingest_shouldSendNullBatteryWhenNotSet() {
+        GpsIngestRequest request = new GpsIngestRequest();
+        request.setDeviceId(deviceId.toString());
+        request.setExternalPowerConnected(true);
+        // batteryLevel not set — no heartbeat received yet
+
+        telemetryForwardService.ingest(request);
+
+        ArgumentCaptor<TelemetryMessage> captor = ArgumentCaptor.forClass(TelemetryMessage.class);
+        verify(telemetryProducer).publishTelemetry(captor.capture());
+        // Should be null, not a fake 100.0
+        assertNull(captor.getValue().getBattery());
+    }
+
+    @Test
+    @DisplayName("forwardVoltage should publish telemetry message with voltage only")
+    void forwardVoltage_shouldPublishVoltageOnly() {
+        telemetryForwardService.forwardVoltage(deviceId, imei, 12.22);
+
+        ArgumentCaptor<TelemetryMessage> captor = ArgumentCaptor.forClass(TelemetryMessage.class);
+        verify(telemetryProducer).publishTelemetry(captor.capture());
+        assertEquals(deviceId, captor.getValue().getDeviceId());
+        assertEquals(imei, captor.getValue().getImei());
+        assertEquals(12.22, captor.getValue().getVoltage());
+        // Battery/GSM/charging should be null so backend COALESCE preserves existing values
+        assertNull(captor.getValue().getBattery());
+        assertNull(captor.getValue().getGsmSignal());
+        assertNull(captor.getValue().getCharging());
+    }
+
+    @Test
+    @DisplayName("forwardVoltage should skip when deviceId is null")
+    void forwardVoltage_shouldSkipWhenDeviceIdIsNull() {
+        telemetryForwardService.forwardVoltage(null, imei, 12.22);
+
+        verify(telemetryProducer, never()).publishTelemetry(any());
+    }
 }

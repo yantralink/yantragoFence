@@ -61,15 +61,21 @@ public class TelemetryForwardService implements GpsIngestService {
                 ? Instant.ofEpochMilli(request.getSentAt())
                 : Instant.now();
 
-        // Forward telemetry (voltage, battery, GSM signal)
+        // Forward telemetry (voltage, battery, GSM signal, charging)
+        // Per BR05 protocol: battery percentage comes from the voltage level byte
+        // in heartbeat/alarm packets, not from the GPS packet. The GPS packet (0x22)
+        // does not include battery data. We forward whatever the protocol handler
+        // extracted; if battery is null (no heartbeat received yet), we do not fake it.
+        Double batteryValue = request.getBatteryLevel() != null
+                ? request.getBatteryLevel().doubleValue() : null;
         TelemetryMessage telemetryMessage = new TelemetryMessage(
                 deviceId,
                 null, // IMEI not in GpsIngestRequest; would be resolved from device mapping
-                null, // voltage — would be extracted from info packets
-                request.getExternalPowerConnected() != null && request.getExternalPowerConnected()
-                        ? 100.0 : null, // battery approximation
+                null, // voltage in volts — BR05 does not provide this, only a 7-level enum
+                batteryValue,
                 request.getGsmSignalStrength() != null
                         ? request.getGsmSignalStrength() : null,
+                request.getExternalPowerConnected(), // charging status from Terminal Info Bit2
                 timestamp
         );
         telemetryProducer.publishTelemetry(telemetryMessage);
@@ -100,6 +106,53 @@ public class TelemetryForwardService implements GpsIngestService {
                 deviceId, imei, voltage, battery, gsmSignal, Instant.now()
         );
         telemetryProducer.publishTelemetry(message);
+    }
+
+    /**
+     * Forwards a telemetry-only reading (battery, GSM, charging) extracted from
+     * heartbeat or alarm packets. Implements GpsIngestService.forwardTelemetry.
+     *
+     * Per AGENTS.md rule 4: device communication is asynchronous via RabbitMQ.
+     * Per AGENTS.md rule 17: use shared message contracts (TelemetryMessage).
+     */
+    @Override
+    public void forwardTelemetry(UUID deviceId, String imei,
+                                  Double batteryPct, Integer gsmSignal, Boolean charging) {
+        if (deviceId == null) {
+            log.warn("Skipping telemetry forward: deviceId is null");
+            return;
+        }
+        // BR05 does not provide voltage in volts — only a 7-level enum mapped to percentage.
+        // We pass null for voltage and use batteryPct for the battery field.
+        TelemetryMessage message = new TelemetryMessage(
+                deviceId, imei, null, batteryPct, gsmSignal, charging, Instant.now()
+        );
+        telemetryProducer.publishTelemetry(message);
+        log.debug("Forwarded heartbeat/alarm telemetry: deviceId={} battery={}%, gsm={}, charging={}",
+                deviceId, batteryPct, gsmSignal, charging);
+    }
+
+    /**
+     * Forwards an external voltage reading extracted from the 0x94 info packet
+     * (information type 0x00 = external voltage). Only the voltage field is
+     * populated; battery/GSM/charging remain null so the backend's COALESCE
+     * logic does not overwrite existing values from heartbeat packets.
+     *
+     * Per AGENTS.md rule 4: device communication is asynchronous via RabbitMQ.
+     * Per AGENTS.md rule 17: use shared message contracts (TelemetryMessage).
+     */
+    @Override
+    public void forwardVoltage(UUID deviceId, String imei, Double voltage) {
+        if (deviceId == null) {
+            log.warn("Skipping voltage forward: deviceId is null");
+            return;
+        }
+        TelemetryMessage message = new TelemetryMessage(
+                deviceId, imei, voltage, null, null, null, Instant.now()
+        );
+        telemetryProducer.publishTelemetry(message);
+        log.info("Forwarded external voltage telemetry: deviceId={} imei={} voltage={}V",
+                deviceId, imei, voltage);
     }
 
     /**

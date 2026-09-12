@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 import { Card } from '@/components/ui/card';
+import { useAuth } from '@/hooks/use-auth';
 
 interface Customer {
   id: string;
@@ -25,10 +26,18 @@ interface Machine {
   name: string;
   status: string;
   customerId?: string | null;
+  organizationId?: string | null;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 export default function CustomersPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -37,7 +46,20 @@ export default function CustomersPage() {
   const [address, setAddress] = useState('');
   const [machineSearch, setMachineSearch] = useState('');
   const [selectedMachineId, setSelectedMachineId] = useState('');
+  const [selectedOrgId, setSelectedOrgId] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Detect super_admin: JWT has no organizationId
+  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const isSuperAdmin = (() => {
+    if (!token) return false;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return !payload.organizationId;
+    } catch {
+      return false;
+    }
+  })();
 
   const { data: customers, isLoading } = useQuery<Customer[]>({
     queryKey: ['customers'],
@@ -53,6 +75,15 @@ export default function CustomersPage() {
       const { data } = await apiClient.get<{ content: Machine[] }>('/machines');
       return data.content;
     },
+  });
+
+  const { data: orgs } = useQuery<Organization[]>({
+    queryKey: ['organizations'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ content: Organization[] }>('/organizations');
+      return data.content;
+    },
+    enabled: isSuperAdmin,
   });
 
   const createMutation = useMutation({
@@ -96,13 +127,18 @@ export default function CustomersPage() {
   const resetForm = () => {
     setShowForm(false); setEditingId(null);
     setName(''); setPhone(''); setEmail(''); setAddress('');
-    setMachineSearch(''); setSelectedMachineId(''); setError(null);
+    setMachineSearch(''); setSelectedMachineId(''); setSelectedOrgId(''); setError(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (isSuperAdmin && !selectedOrgId) {
+      setError('Please select an organization');
+      return;
+    }
     const params: any = { name, phone, email, address };
+    if (isSuperAdmin) params.organizationId = selectedOrgId;
     if (selectedMachineId) params.assignedMachineId = selectedMachineId;
     if (editingId) {
       updateMutation.mutate({ id: editingId, ...params });
@@ -129,6 +165,8 @@ export default function CustomersPage() {
   const filteredMachines = machines?.filter(m => {
     const isAvailable = !m.customerId || (editingId && m.customerId === editingId);
     if (!isAvailable) return false;
+    // Super admin: only show machines in the selected organization
+    if (isSuperAdmin && selectedOrgId && m.organizationId !== selectedOrgId) return false;
     if (!machineSearch) return true;
     return m.machineId.toLowerCase().includes(machineSearch.toLowerCase()) ||
            m.name.toLowerCase().includes(machineSearch.toLowerCase());
@@ -149,6 +187,23 @@ export default function CustomersPage() {
       {showForm && (
         <Card title={editingId ? 'Edit Customer' : 'Create Customer'}>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSuperAdmin && !editingId && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Organization *</label>
+                <select
+                  value={selectedOrgId}
+                  onChange={(e) => setSelectedOrgId(e.target.value)}
+                  required
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                >
+                  <option value="">Select organization...</option>
+                  {orgs?.map((o) => (
+                    <option key={o.id} value={o.id}>{o.name}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">Select the organization this customer belongs to.</p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Name *</label>

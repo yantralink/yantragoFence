@@ -2,6 +2,7 @@ package com.yantrago.api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Main entry point for the YantraGO Backend API.
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * telemetry storage, alerts, notifications, reporting, and WebSocket real-time push.
  */
 @SpringBootApplication
+@EnableScheduling
 public class YantraGoApiApplication {
 
     public static void main(String[] args) {

@@ -1,0 +1,22 @@
+#!/bin/bash
+echo "=== Login as 9527028875 ==="
+LOGIN_RESP=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"phone":"9527028875","password":"123456","role":"CUSTOMER"}')
+echo "$LOGIN_RESP" | python3 -m json.tool 2>/dev/null || echo "$LOGIN_RESP"
+
+TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('accessToken',''))" 2>/dev/null)
+if [ -z "$TOKEN" ]; then
+  echo "ERROR: Could not extract token"
+  exit 1
+fi
+
+echo ""
+echo "=== Machine detail (with battery fields) ==="
+curl -s http://localhost:8080/api/v1/machines/69f8dd7c-54f7-4d1f-9913-5ee34fb0f25e \
+  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+
+echo ""
+echo "=== Telemetry latest endpoint ==="
+curl -s http://localhost:8080/api/v1/machines/69f8dd7c-54f7-4d1f-9913-5ee34fb0f25e/telemetry/latest \
+  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool

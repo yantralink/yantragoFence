@@ -2,6 +2,7 @@ package com.yantrago.gateway.service;
 
 import com.yantrago.gateway.queue.CommandResultProducer;
 import com.yantrago.gateway.tcp.DeviceConnectionRegistry;
+import com.yantrago.gateway.tcp.concox.ConcoxV5ProtocolHandler;
 import com.yantrago.shared.queue.CommandMessage;
 import com.yantrago.shared.queue.CommandResultMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +29,7 @@ class CommandDispatchServiceTest {
 
     private DeviceConnectionRegistry connectionRegistry;
     private CommandResultProducer commandResultProducer;
+    private ConcoxV5ProtocolHandler concoxV5ProtocolHandler;
     private CommandDispatchService commandDispatchService;
 
     private final UUID commandId = UUID.randomUUID();
@@ -38,7 +40,8 @@ class CommandDispatchServiceTest {
     void setUp() {
         connectionRegistry = mock(DeviceConnectionRegistry.class);
         commandResultProducer = mock(CommandResultProducer.class);
-        commandDispatchService = new CommandDispatchService(connectionRegistry, commandResultProducer);
+        concoxV5ProtocolHandler = mock(ConcoxV5ProtocolHandler.class);
+        commandDispatchService = new CommandDispatchService(connectionRegistry, commandResultProducer, concoxV5ProtocolHandler);
     }
 
     @Test
@@ -59,6 +62,7 @@ class CommandDispatchServiceTest {
     @DisplayName("dispatchCommand should publish SENT when command is successfully sent to device")
     void dispatchCommand_shouldPublishSentWhenSuccessful() {
         when(connectionRegistry.isDeviceOnline(imei)).thenReturn(true);
+        when(concoxV5ProtocolHandler.buildCommandPacket(anyString())).thenReturn(new byte[]{(byte) 0x80, 0x01});
         when(connectionRegistry.sendCommand(eq(imei), any(byte[].class))).thenReturn(true);
         CommandMessage message = new CommandMessage(commandId, machineId, imei, "ON", Instant.now());
 
@@ -75,6 +79,7 @@ class CommandDispatchServiceTest {
     @DisplayName("dispatchCommand should publish FAILED when socket write fails")
     void dispatchCommand_shouldPublishFailedWhenSocketWriteFails() {
         when(connectionRegistry.isDeviceOnline(imei)).thenReturn(true);
+        when(concoxV5ProtocolHandler.buildCommandPacket(anyString())).thenReturn(new byte[]{(byte) 0x80, 0x01});
         when(connectionRegistry.sendCommand(eq(imei), any(byte[].class))).thenReturn(false);
         CommandMessage message = new CommandMessage(commandId, machineId, imei, "ON", Instant.now());
 
@@ -104,6 +109,7 @@ class CommandDispatchServiceTest {
     @DisplayName("dispatchCommand should send command packet via connection registry for ON command")
     void dispatchCommand_shouldSendPacketForOnCommand() {
         when(connectionRegistry.isDeviceOnline(imei)).thenReturn(true);
+        when(concoxV5ProtocolHandler.buildCommandPacket(anyString())).thenReturn(new byte[]{(byte) 0x80, 0x01});
         when(connectionRegistry.sendCommand(eq(imei), any(byte[].class))).thenReturn(true);
         CommandMessage message = new CommandMessage(commandId, machineId, imei, "ON", Instant.now());
 
@@ -116,6 +122,7 @@ class CommandDispatchServiceTest {
     @DisplayName("dispatchCommand should send command packet via connection registry for OFF command")
     void dispatchCommand_shouldSendPacketForOffCommand() {
         when(connectionRegistry.isDeviceOnline(imei)).thenReturn(true);
+        when(concoxV5ProtocolHandler.buildCommandPacket(anyString())).thenReturn(new byte[]{(byte) 0x80, 0x01});
         when(connectionRegistry.sendCommand(eq(imei), any(byte[].class))).thenReturn(true);
         CommandMessage message = new CommandMessage(commandId, machineId, imei, "OFF", Instant.now());
 

@@ -38,6 +38,24 @@ public class Device extends BaseEntity {
     @Column(name = "last_seen_at")
     private LocalDateTime lastSeenAt;
 
+    // Latest telemetry state from heartbeat/alarm packets (V33 migration).
+    // Time-series history remains in battery_readings, voltage_readings, gsm_readings.
+    @Column(name = "battery_pct")
+    private Double batteryPct;
+
+    @Column(name = "charging")
+    private Boolean charging;
+
+    @Column(name = "gsm_signal")
+    private Integer gsmSignal;
+
+    @Column(name = "last_telemetry_at")
+    private LocalDateTime lastTelemetryAt;
+
+    // Latest external power voltage from 0x94 info packet (V35 migration).
+    @Column(name = "voltage")
+    private Double voltage;
+
     public java.util.UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(java.util.UUID organizationId) { this.organizationId = organizationId; }
     public java.util.UUID getMachineId() { return machineId; }
@@ -54,4 +72,14 @@ public class Device extends BaseEntity {
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
     public LocalDateTime getLastSeenAt() { return lastSeenAt; }
     public void setLastSeenAt(LocalDateTime lastSeenAt) { this.lastSeenAt = lastSeenAt; }
+    public Double getBatteryPct() { return batteryPct; }
+    public void setBatteryPct(Double batteryPct) { this.batteryPct = batteryPct; }
+    public Boolean getCharging() { return charging; }
+    public void setCharging(Boolean charging) { this.charging = charging; }
+    public Integer getGsmSignal() { return gsmSignal; }
+    public void setGsmSignal(Integer gsmSignal) { this.gsmSignal = gsmSignal; }
+    public LocalDateTime getLastTelemetryAt() { return lastTelemetryAt; }
+    public void setLastTelemetryAt(LocalDateTime lastTelemetryAt) { this.lastTelemetryAt = lastTelemetryAt; }
+    public Double getVoltage() { return voltage; }
+    public void setVoltage(Double voltage) { this.voltage = voltage; }
 }

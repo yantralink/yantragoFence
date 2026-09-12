@@ -3,6 +3,7 @@ package com.yantrago.api.service;
 import com.yantrago.api.dto.machine.CreateMachineRequest;
 import com.yantrago.api.dto.machine.MachineDto;
 import com.yantrago.api.dto.machine.MachineStatusDto;
+import com.yantrago.api.dto.machine.TelemetryLatestDto;
 import com.yantrago.api.dto.machine.UpdateMachineRequest;
 import com.yantrago.api.model.Customer;
 import com.yantrago.api.model.Device;
@@ -17,6 +18,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,6 +69,18 @@ public class MachineService {
             // Super admin: list all machines
             return machineRepository.findAll(pageable).map(this::toDto);
         }
+
+        // Customer-role users: only see machines assigned to them
+        UUID customerUserId = getCurrentUserIdIfCustomer();
+        if (customerUserId != null) {
+            return customerRepository.findByUserId(customerUserId)
+                    .map(customer -> machineRepository
+                            .findByOrganizationIdAndCustomerId(orgId, customer.getId(), pageable)
+                            .map(this::toDto))
+                    .orElseGet(() -> Page.empty(pageable));
+        }
+
+        // Org admin / operator: see all machines in their org
         return machineRepository.findByOrganizationId(orgId, pageable).map(this::toDto);
     }
 
@@ -79,6 +95,17 @@ public class MachineService {
         Machine machine = machineRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + id));
         tenantGuard.validateTenantAccess(machine.getOrganizationId());
+
+        // Customer-role users: can only view machines assigned to them
+        UUID customerUserId = getCurrentUserIdIfCustomer();
+        if (customerUserId != null) {
+            customerRepository.findByUserId(customerUserId).ifPresent(customer -> {
+                if (!customer.getId().equals(machine.getCustomerId())) {
+                    throw new SecurityException("Access denied: this machine is not assigned to you");
+                }
+            });
+        }
+
         return toDto(machine);
     }
 
@@ -88,6 +115,30 @@ public class MachineService {
                 .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + id));
         tenantGuard.validateTenantAccess(machine.getOrganizationId());
         return new MachineStatusDto(machine.getId(), machine.getStatus(), machine.getIsOnline(), machine.getLastSeenAt());
+    }
+
+    /**
+     * Returns the latest telemetry snapshot for a machine's bound device.
+     * Reads from the devices table (V33 columns) which are updated by
+     * TelemetryConsumer on every heartbeat/alarm packet.
+     *
+     * Per AGENTS.md rule 7: tenant isolation enforced via TenantGuard.
+     */
+    @Transactional(readOnly = true)
+    public TelemetryLatestDto getLatestTelemetry(UUID machineId) {
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
+        tenantGuard.validateTenantAccess(machine.getOrganizationId());
+
+        return deviceRepository.findByMachineId(machineId)
+                .map(device -> new TelemetryLatestDto(
+                        device.getBatteryPct(),
+                        device.getCharging(),
+                        device.getGsmSignal(),
+                        device.getVoltage(),
+                        device.getLastTelemetryAt()
+                ))
+                .orElse(new TelemetryLatestDto(null, null, null, null, null));
     }
 
     @Transactional
@@ -107,7 +158,7 @@ public class MachineService {
         machine.setOrganizationId(null); // unassigned inventory — super admin assigns to org later
         machine.setCustomerId(null);
         machine.setName(request.getName());
-        machine.setSerialNumber(request.getSerialNumber());
+        machine.setSerialNumber(normalizeEmpty(request.getSerialNumber()));
         machine.setModel(request.getModel());
         machine.setStatus("IN_STOCK");
         machine.setIsOnline(false);
@@ -136,7 +187,7 @@ public class MachineService {
         // Super admin can update any machine; org users cannot (enforced by controller @PreAuthorize)
 
         if (request.getName() != null) machine.setName(request.getName());
-        if (request.getSerialNumber() != null) machine.setSerialNumber(request.getSerialNumber());
+        if (request.getSerialNumber() != null) machine.setSerialNumber(normalizeEmpty(request.getSerialNumber()));
         if (request.getModel() != null) machine.setModel(request.getModel());
 
         machine = machineRepository.save(machine);
@@ -252,15 +303,50 @@ public class MachineService {
         return toDto(machine);
     }
 
+    /**
+     * Returns the current user's UUID if they have the 'customer' role, otherwise null.
+     * Used to restrict machine visibility for customer-role mobile app users.
+     */
+    private UUID getCurrentUserIdIfCustomer() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return null;
+        }
+        boolean isCustomer = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> "ROLE_CUSTOMER".equals(a));
+        if (!isCustomer) {
+            return null;
+        }
+        Object principal = auth.getPrincipal();
+        return principal instanceof UUID ? (UUID) principal : null;
+    }
+
+    /**
+     * Convert empty or blank strings to NULL so that PostgreSQL unique
+     * indexes with IS NOT NULL conditions do not treat '' as a real value.
+     */
+    private String normalizeEmpty(String value) {
+        if (value == null || value.isBlank()) return null;
+        return value;
+    }
+
     private String generateMachineId() {
-        String maxId = machineRepository.findMaxMachineId();
-        if (maxId == null) {
+        // Only consider IDs matching the YG###### numeric format.
+        // Non-numeric IDs (e.g. "YG-SIM-01") are excluded so parsing
+        // never fails with NumberFormatException.
+        String maxId = machineRepository.findMaxNumericMachineId();
+        if (maxId == null || maxId.length() < 3) {
             return "YG000001";
         }
-        // Parse the numeric part and increment
-        String numPart = maxId.substring(2); // remove "YG"
-        int next = Integer.parseInt(numPart) + 1;
-        return "YG" + String.format("%06d", next);
+        try {
+            String numPart = maxId.substring(2); // remove "YG"
+            int next = Integer.parseInt(numPart) + 1;
+            return "YG" + String.format("%06d", next);
+        } catch (NumberFormatException e) {
+            log.warn("Could not parse numeric machine_id '{}', falling back to YG000001", maxId);
+            return "YG000001";
+        }
     }
 
     private MachineDto toDto(Machine m) {
@@ -284,6 +370,12 @@ public class MachineService {
             dto.setSimNumber(device.getSimNumber());
             dto.setProtocolType(device.getProtocolType());
             dto.setFirmwareVersion(device.getFirmwareVersion());
+            // Populate latest telemetry state from device record (V33/V35 columns)
+            dto.setBatteryPct(device.getBatteryPct());
+            dto.setCharging(device.getCharging());
+            dto.setGsmSignal(device.getGsmSignal());
+            dto.setVoltage(device.getVoltage());
+            dto.setLastTelemetryAt(device.getLastTelemetryAt());
         });
         // Populate customer name if assigned
         if (m.getCustomerId() != null) {

@@ -1,4 +1,7 @@
-import 'package:stomp_dart_client/stomp_dart_client.dart';
+import 'package:stomp_dart_client/stomp.dart';
+import 'package:stomp_dart_client/stomp_config.dart';
+import 'package:stomp_dart_client/stomp_frame.dart';
+import 'package:stomp_dart_client/stomp_handler.dart';
 import 'package:yantrago/core/config/app_config.dart';
 
 /// STOMP WebSocket client for real-time updates.
@@ -10,7 +13,7 @@ import 'package:yantrago/core/config/app_config.dart';
 /// - /topic/devices — device event updates
 class WebSocketClient {
   StompClient? _client;
-  final Map<String, StompUnsubscribeFn> _subscriptions = {};
+  final Map<String, StompUnsubscribe> _subscriptions = {};
 
   void connect({
     required Map<String, String> headers,

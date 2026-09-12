@@ -45,7 +45,16 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
                                    Map<String, Object> attributes) {
         if (request instanceof ServletServerHttpRequest servletRequest) {
             HttpServletRequest httpRequest = servletRequest.getServletRequest();
+
+            // Phase 3 fix: accept token from query parameter (primary, SockJS-safe)
+            // or from Authorization header (fallback for non-SockJS clients)
             String token = httpRequest.getParameter("token");
+            if (token == null || token.isBlank()) {
+                String authHeader = httpRequest.getHeader("Authorization");
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                    token = authHeader.substring(7);
+                }
+            }
 
             if (token == null || token.isBlank()) {
                 log.warn("WebSocket handshake rejected: no token provided from {}",
@@ -64,10 +73,12 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
                 UUID userId = jwtService.extractUserId(claims);
                 UUID organizationId = jwtService.extractOrganizationId(claims);
                 String roles = jwtService.extractRoles(claims);
+                String permissions = jwtService.extractPermissions(claims);
 
                 attributes.put("userId", userId);
                 attributes.put("organizationId", organizationId);
                 attributes.put("roles", roles);
+                attributes.put("permissions", permissions);
 
                 log.info("WebSocket handshake authenticated: userId={} orgId={}", userId, organizationId);
                 return true;

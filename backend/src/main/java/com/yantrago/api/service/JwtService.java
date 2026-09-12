@@ -58,16 +58,17 @@ public class JwtService {
         this.refreshKey = Keys.hmacShaKeyFor(refreshSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAccessToken(UUID userId, String email, UUID organizationId, String roles) {
-        return buildToken(userId, email, organizationId, roles, accessKey, accessTtlSeconds);
+    public String generateAccessToken(UUID userId, String email, UUID organizationId,
+                                       String roles, String permissions) {
+        return buildToken(userId, email, organizationId, roles, permissions, accessKey, accessTtlSeconds);
     }
 
     public String generateRefreshToken(UUID userId, String email, UUID organizationId) {
-        return buildToken(userId, email, organizationId, null, refreshKey, refreshTtlSeconds);
+        return buildToken(userId, email, organizationId, null, null, refreshKey, refreshTtlSeconds);
     }
 
     private String buildToken(UUID userId, String email, UUID organizationId, String roles,
-                              SecretKey key, long ttlSeconds) {
+                              String permissions, SecretKey key, long ttlSeconds) {
         Instant now = Instant.now();
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId.toString());
@@ -76,6 +77,9 @@ public class JwtService {
         }
         if (roles != null) {
             claims.put("roles", roles);
+        }
+        if (permissions != null && !permissions.isBlank()) {
+            claims.put("permissions", permissions);
         }
 
         return Jwts.builder()
@@ -132,6 +136,10 @@ public class JwtService {
 
     public String extractRoles(Claims claims) {
         return claims.get("roles", String.class);
+    }
+
+    public String extractPermissions(Claims claims) {
+        return claims.get("permissions", String.class);
     }
 
     public long getAccessTtlSeconds() {

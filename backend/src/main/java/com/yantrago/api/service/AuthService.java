@@ -89,7 +89,16 @@ public class AuthService {
                 String.class, user.getId()
         ).stream().collect(Collectors.joining(","));
 
-        String accessToken = jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getOrganizationId(), roles);
+        // Fetch user permissions for JWT claims (from role_permissions -> permissions)
+        String permissions = jdbcTemplate.queryForList(
+                "SELECT DISTINCT p.name FROM user_roles ur " +
+                        "JOIN role_permissions rp ON rp.role_id = ur.role_id " +
+                        "JOIN permissions p ON p.id = rp.permission_id " +
+                        "WHERE ur.user_id = ?",
+                String.class, user.getId()
+        ).stream().collect(Collectors.joining(","));
+
+        String accessToken = jwtService.generateAccessToken(user.getId(), user.getEmail(), user.getOrganizationId(), roles, permissions);
         String refreshTokenStr = jwtService.generateRefreshToken(user.getId(), user.getEmail(), user.getOrganizationId());
 
         // Persist refresh token hash
@@ -146,7 +155,16 @@ public class AuthService {
                 String.class, userId
         ).stream().collect(Collectors.joining(","));
 
-        String newAccessToken = jwtService.generateAccessToken(userId, user.getEmail(), orgId, roles);
+        // Fetch user permissions for new access token
+        String permissions = jdbcTemplate.queryForList(
+                "SELECT DISTINCT p.name FROM user_roles ur " +
+                        "JOIN role_permissions rp ON rp.role_id = ur.role_id " +
+                        "JOIN permissions p ON p.id = rp.permission_id " +
+                        "WHERE ur.user_id = ?",
+                String.class, userId
+        ).stream().collect(Collectors.joining(","));
+
+        String newAccessToken = jwtService.generateAccessToken(userId, user.getEmail(), orgId, roles, permissions);
         String newRefreshToken = jwtService.generateRefreshToken(userId, user.getEmail(), orgId);
 
         RefreshToken newStored = persistRefreshToken(newRefreshToken, user);

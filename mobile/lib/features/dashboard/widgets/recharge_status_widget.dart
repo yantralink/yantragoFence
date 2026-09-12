@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// Recharge status widget — displays charging status.
+import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/widgets/app_metric_card.dart';
+
+/// Recharge status widget — displays charging status as a shared metric card.
+///
+/// Composes [AppMetricCard]. Null charging state is shown as unavailable.
+/// This reflects the machine's charging status, not SIM validity.
 class RechargeStatusWidget extends StatelessWidget {
   final bool? charging;
 
@@ -8,25 +14,22 @@ class RechargeStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(
-              charging == true ? Icons.battery_charging_full : Icons.battery_alert,
-              size: 32,
-              color: charging == true ? Colors.green : Colors.grey,
-            ),
-            const SizedBox(height: 8),
-            Text('Recharge', style: Theme.of(context).textTheme.bodySmall),
-            Text(
-              charging == true ? 'Charging' : charging == false ? 'Not Charging' : '--',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-      ),
+    if (charging == null) {
+      return const AppMetricCard(
+        label: 'Recharge',
+        icon: Icons.battery_charging_full,
+        state: AppMetricState.unavailable,
+        statusText: 'No report received',
+      );
+    }
+    final bool isCharging = charging!;
+    return AppMetricCard(
+      label: 'Recharge',
+      icon: isCharging ? Icons.battery_charging_full : Icons.battery_alert,
+      state: AppMetricState.available,
+      value: isCharging ? 'Charging' : 'Not charging',
+      statusText: isCharging ? 'Power connected' : 'On battery',
+      statusTone: isCharging ? StatusTone.success : StatusTone.neutral,
     );
   }
 }

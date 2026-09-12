@@ -28,15 +28,18 @@ public class AlertService {
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
     private final PermissionEvaluator permissionEvaluator;
+    private final RecipientResolutionService recipientResolutionService;
 
     public AlertService(AlertRepository alertRepository,
                         OwnerContextService ownerContextService,
                         TenantGuard tenantGuard,
-                        PermissionEvaluator permissionEvaluator) {
+                        PermissionEvaluator permissionEvaluator,
+                        RecipientResolutionService recipientResolutionService) {
         this.alertRepository = alertRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
         this.permissionEvaluator = permissionEvaluator;
+        this.recipientResolutionService = recipientResolutionService;
     }
 
     @Transactional(readOnly = true)
@@ -62,6 +65,8 @@ public class AlertService {
         Alert alert = alertRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Alert not found: " + id));
         tenantGuard.validateTenantAccess(alert.getOrganizationId());
+        // Phase 1 fix: customers can only read alerts for machines assigned to them
+        validateAssignmentAccess(alert);
         return toDto(alert);
     }
 
@@ -73,6 +78,8 @@ public class AlertService {
         Alert alert = alertRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Alert not found: " + id));
         tenantGuard.validateTenantAccess(alert.getOrganizationId());
+        // Phase 1 fix: customers can only acknowledge alerts for machines assigned to them
+        validateAssignmentAccess(alert);
 
         alert.setIsAcknowledged(true);
         alert.setAcknowledgedBy(permissionEvaluator.getCurrentUserId());
@@ -81,6 +88,27 @@ public class AlertService {
         alert = alertRepository.save(alert);
         log.info("Acknowledged alert id={} by user={}", alert.getId(), alert.getAcknowledgedBy());
         return toDto(alert);
+    }
+
+    /**
+     * Phase 1 fix: validates that the current user has assignment-based access
+     * to the alert's machine. Admins (admin, org_admin, super_admin) bypass
+     * this check and can read/acknowledge any alert in their organization.
+     */
+    private void validateAssignmentAccess(Alert alert) {
+        if (permissionEvaluator.hasAnyRole("admin", "org_admin", "super_admin")) {
+            return;
+        }
+        UUID userId = permissionEvaluator.getCurrentUserId();
+        if (alert.getMachineId() == null) {
+            return;
+        }
+        if (!recipientResolutionService.revalidateAccess(
+                alert.getOrganizationId(), alert.getMachineId(), userId)) {
+            log.warn("Assignment access denied: user={} alert={} machine={}",
+                    userId, alert.getId(), alert.getMachineId());
+            throw new SecurityException("Access denied: alert is not for a machine assigned to you");
+        }
     }
 
     private AlertDto toDto(Alert a) {

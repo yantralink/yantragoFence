@@ -31,9 +31,11 @@ public class CommandDispatchService {
     private static final Logger log = LoggerFactory.getLogger(CommandDispatchService.class);
 
     // BR05 relay control commands (SMS-compatible ASCII strings)
-    // Note: BR05 relay is inverted (low-side switch) — "cut fuel" closes the relay, "restore" opens it.
-    // Turn ON  (machine ON)  → RELAY,1# → relay closes → LED/machine ON
-    // Turn OFF (machine OFF) → RELAY,0# → relay opens  → LED/machine OFF
+    // The device firmware interprets:
+    //   RELAY,1# → "Cut off the fuel supply" → FuelCut: YES → LED ON (fuel cut indicator)
+    //   RELAY,0# → "Restore fuel supply"    → FuelCut: NO  → LED OFF
+    // Turn ON  (machine ON)  → RELAY,1# → cut fuel   → FuelCut: YES → LED ON
+    // Turn OFF (machine OFF) → RELAY,0# → restore    → FuelCut: NO  → LED OFF
     private static final String RELAY_ON_COMMAND = "RELAY,1#";
     private static final String RELAY_OFF_COMMAND = "RELAY,0#";
 
@@ -102,8 +104,8 @@ public class CommandDispatchService {
     /**
      * Builds a 0x80 Online Instruction command packet for the BR05/Concox V5 protocol.
      *
-     * ON  → DYD=00 (relay connected → machine ON)
-     * OFF → DYD=01 (relay disconnected → machine OFF)
+     * ON  → RELAY,1# → device cuts off fuel supply → FuelCut: YES → LED ON
+     * OFF → RELAY,0# → device restores fuel supply → FuelCut: NO  → LED OFF
      *
      * The packet is built by ConcoxV5ProtocolHandler.buildCommandPacket() which
      * constructs the full 0x80 packet with server flags, ASCII command content,

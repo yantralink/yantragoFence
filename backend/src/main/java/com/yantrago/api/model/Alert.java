@@ -47,6 +47,35 @@ public class Alert extends BaseEntity {
     @Column(name = "triggered_at", nullable = false)
     private LocalDateTime triggeredAt;
 
+    // --- Incident lifecycle fields (V22) ---
+
+    @Column(name = "incident_state", nullable = false, length = 20)
+    private String incidentState = "OPEN";
+
+    @Column(name = "incident_key", length = 255)
+    private String incidentKey;
+
+    @Column(name = "first_observed_at")
+    private LocalDateTime firstObservedAt;
+
+    @Column(name = "last_observed_at")
+    private LocalDateTime lastObservedAt;
+
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
+
+    @Column(name = "occurrence_count", nullable = false)
+    private Integer occurrenceCount = 1;
+
+    @Column(name = "observed_value")
+    private Double observedValue;
+
+    @Column(name = "observed_unit", length = 20)
+    private String observedUnit;
+
+    @Column(name = "rule_version")
+    private Integer ruleVersion;
+
     public java.util.UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(java.util.UUID organizationId) { this.organizationId = organizationId; }
     public java.util.UUID getAlertRuleId() { return alertRuleId; }
@@ -69,4 +98,23 @@ public class Alert extends BaseEntity {
     public void setAcknowledgedAt(LocalDateTime acknowledgedAt) { this.acknowledgedAt = acknowledgedAt; }
     public LocalDateTime getTriggeredAt() { return triggeredAt; }
     public void setTriggeredAt(LocalDateTime triggeredAt) { this.triggeredAt = triggeredAt; }
+
+    public String getIncidentState() { return incidentState; }
+    public void setIncidentState(String incidentState) { this.incidentState = incidentState; }
+    public String getIncidentKey() { return incidentKey; }
+    public void setIncidentKey(String incidentKey) { this.incidentKey = incidentKey; }
+    public LocalDateTime getFirstObservedAt() { return firstObservedAt; }
+    public void setFirstObservedAt(LocalDateTime firstObservedAt) { this.firstObservedAt = firstObservedAt; }
+    public LocalDateTime getLastObservedAt() { return lastObservedAt; }
+    public void setLastObservedAt(LocalDateTime lastObservedAt) { this.lastObservedAt = lastObservedAt; }
+    public LocalDateTime getResolvedAt() { return resolvedAt; }
+    public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
+    public Integer getOccurrenceCount() { return occurrenceCount; }
+    public void setOccurrenceCount(Integer occurrenceCount) { this.occurrenceCount = occurrenceCount; }
+    public Double getObservedValue() { return observedValue; }
+    public void setObservedValue(Double observedValue) { this.observedValue = observedValue; }
+    public String getObservedUnit() { return observedUnit; }
+    public void setObservedUnit(String observedUnit) { this.observedUnit = observedUnit; }
+    public Integer getRuleVersion() { return ruleVersion; }
+    public void setRuleVersion(Integer ruleVersion) { this.ruleVersion = ruleVersion; }
 }

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:yantrago/core/auth/auth_state.dart';
 import 'package:yantrago/core/utils/validators.dart';
+import 'package:yantrago/core/widgets/app_action_button.dart';
+import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 
 /// Login page — full implementation with form validation and auth flow.
@@ -58,7 +60,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -73,8 +74,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
     });
 
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+
     return Scaffold(
-      body: SafeArea(
+      body: AppPageBody(
+        safeArea: true,
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
@@ -83,29 +88,37 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+                children: <Widget>[
                   // Logo / Title
-                  Icon(
-                    Icons.electrical_services,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: colors.primaryContainer,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      Icons.electrical_services,
+                      size: 44,
+                      color: colors.onPrimaryContainer,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'YantraGO',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                    style: text.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colors.primary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Machine Management Platform',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    style: text.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 48),
 
@@ -151,18 +164,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   const SizedBox(height: 24),
 
                   // Login button
-                  FilledButton(
+                  AppActionButton(
+                    label: 'Login',
+                    style: AppActionButtonStyle.primary,
+                    busy: _isLoading,
                     onPressed: _isLoading ? null : _handleLogin,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Login'),
                   ),
                   const SizedBox(height: 16),
 
@@ -170,9 +176,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   Text(
                     'Customers: log in with your phone number.\nAdmins: log in with your email.',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    style: text.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),

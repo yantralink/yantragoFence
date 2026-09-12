@@ -23,6 +23,7 @@ public class GpsIngestRequest {
     private Boolean relayOn;
     private Integer gpsSatelliteCount;
     private Integer gsmSignalStrength;
+    private Integer batteryLevel;       // Internal battery percentage (0–100) from voltage level byte
 
     public String getDeviceId() { return deviceId; }
     public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
@@ -52,4 +53,6 @@ public class GpsIngestRequest {
     public void setGpsSatelliteCount(Integer gpsSatelliteCount) { this.gpsSatelliteCount = gpsSatelliteCount; }
     public Integer getGsmSignalStrength() { return gsmSignalStrength; }
     public void setGsmSignalStrength(Integer gsmSignalStrength) { this.gsmSignalStrength = gsmSignalStrength; }
+    public Integer getBatteryLevel() { return batteryLevel; }
+    public void setBatteryLevel(Integer batteryLevel) { this.batteryLevel = batteryLevel; }
 }

@@ -24,4 +24,11 @@ public interface MachineRepository extends JpaRepository<Machine, UUID> {
 
     @Query("SELECT MAX(m.machineId) FROM Machine m")
     String findMaxMachineId();
+
+    /**
+     * Returns the highest machine_id matching the YG###### numeric format.
+     * Excludes non-numeric IDs (e.g. "YG-SIM-01") that would break parsing.
+     */
+    @Query(value = "SELECT MAX(machine_id) FROM machines WHERE machine_id ~ '^YG[0-9]+$'", nativeQuery = true)
+    String findMaxNumericMachineId();
 }

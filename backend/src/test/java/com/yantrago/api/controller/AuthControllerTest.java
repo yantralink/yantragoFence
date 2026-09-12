@@ -61,6 +61,12 @@ class AuthControllerTest {
     @MockBean
     private AuthService authService;
 
+    @MockBean
+    private com.yantrago.api.repository.UserRepository userRepository;
+
+    @MockBean
+    private com.yantrago.api.repository.OrganizationRepository organizationRepository;
+
     @Test
     void login_shouldReturnTokens_whenCredentialsValid() throws Exception {
         LoginRequest request = new LoginRequest();
@@ -71,7 +77,8 @@ class AuthControllerTest {
                 UUID.randomUUID().toString(),
                 "admin@yantrago-demo.com",
                 "Demo Org Admin",
-                UUID.randomUUID().toString()
+                UUID.randomUUID().toString(),
+                "Demo Org"
         );
         LoginResponse response = new LoginResponse("access-token", "refresh-token", "Bearer", 3600, userInfo);
 

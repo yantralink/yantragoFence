@@ -17,6 +17,12 @@ class Machine {
   final DateTime? lastSeenAt;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  // Latest telemetry state (from devices table — V33/V35 migrations)
+  final int? batteryPct;
+  final bool? charging;
+  final int? gsmSignal;
+  final double? voltage;
+  final DateTime? lastTelemetryAt;
 
   const Machine({
     required this.id,
@@ -36,6 +42,11 @@ class Machine {
     this.lastSeenAt,
     required this.createdAt,
     this.updatedAt,
+    this.batteryPct,
+    this.charging,
+    this.gsmSignal,
+    this.voltage,
+    this.lastTelemetryAt,
   });
 
   factory Machine.fromJson(Map<String, dynamic> json) {
@@ -62,6 +73,14 @@ class Machine {
           : DateTime.now(),
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt'] as String)
+          : null,
+      // Latest telemetry from devices table (V33/V35 columns)
+      batteryPct: (json['batteryPct'] as num?)?.toInt(),
+      charging: json['charging'] as bool?,
+      gsmSignal: (json['gsmSignal'] as num?)?.toInt(),
+      voltage: (json['voltage'] as num?)?.toDouble(),
+      lastTelemetryAt: json['lastTelemetryAt'] != null
+          ? DateTime.tryParse(json['lastTelemetryAt'] as String)
           : null,
     );
   }

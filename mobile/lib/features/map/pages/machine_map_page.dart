@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/widgets/app_state_panel.dart';
+import 'package:yantrago/core/widgets/app_status_badge.dart';
+import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/dashboard/providers/dashboard_provider.dart';
 import 'package:yantrago/features/map/providers/location_provider.dart';
 import 'package:yantrago/models/location.dart';
@@ -22,7 +26,7 @@ class MachineMapPage extends ConsumerStatefulWidget {
 }
 
 class _MachineMapPageState extends ConsumerState<MachineMapPage> {
-  GoogleMapController? _mapController;
+  GoogleMapController? _mapController; // ignore: unused_field
   final Set<Marker> _markers = {};
   bool _mapReady = false;
 
@@ -34,21 +38,10 @@ class _MachineMapPageState extends ConsumerState<MachineMapPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Map')),
       body: dashboard.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Error: $err', textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () => ref.refresh(dashboardProvider),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+        loading: () => AppStatePanel.loading(message: 'Loading map…'),
+        error: (_, __) => AppStatePanel.error(
+          message: 'Unable to load the map. Please try again.',
+          onRetry: () => ref.refresh(dashboardProvider.future),
         ),
         data: (summary) {
           final machines = summary.machines;
@@ -61,7 +54,7 @@ class _MachineMapPageState extends ConsumerState<MachineMapPage> {
           _updateMarkers(machines, locationList);
 
           return Stack(
-            children: [
+            children: <Widget>[
               GoogleMap(
                 initialCameraPosition: _getInitialCameraPosition(locationList),
                 markers: _markers,
@@ -81,31 +74,9 @@ class _MachineMapPageState extends ConsumerState<MachineMapPage> {
                   top: 16,
                   left: 16,
                   right: 16,
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          Icon(
-                            machines.isEmpty
-                                ? Icons.info_outline
-                                : Icons.devices,
-                            color: machines.isEmpty
-                                ? Colors.orange
-                                : Colors.green,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              locationList.isEmpty
-                                  ? '${machines.length} machines (no GPS data yet)'
-                                  : '${locationList.length} machines with GPS on map',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  child: _MapInfoBanner(
+                    machineCount: machines.length,
+                    locationCount: locationList.length,
                   ),
                 ),
             ],
@@ -160,5 +131,45 @@ class _MachineMapPageState extends ConsumerState<MachineMapPage> {
   String _formatTime(DateTime dt) {
     return '${dt.day}/${dt.month} ${dt.hour.toString().padLeft(2, '0')}:'
         '${dt.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+/// Info banner overlay on the map showing machine/location counts.
+class _MapInfoBanner extends StatelessWidget {
+  final int machineCount;
+  final int locationCount;
+
+  const _MapInfoBanner({
+    required this.machineCount,
+    required this.locationCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasGps = locationCount > 0;
+    final StatusTone tone = hasGps ? StatusTone.success : StatusTone.warning;
+    final String message = hasGps
+        ? '$locationCount machines with GPS on map'
+        : '$machineCount machines (no GPS data yet)';
+
+    return AppSurfaceCard(
+      child: Row(
+        children: <Widget>[
+          AppStatusBadge(
+            label: hasGps ? 'GPS' : 'No GPS',
+            tone: tone,
+            dot: true,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

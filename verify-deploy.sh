@@ -1,0 +1,12 @@
+#!/bin/bash
+echo "=== Applied migrations ==="
+sudo -u postgres psql -d yantrago -c "SELECT version, description FROM flyway_schema_history ORDER BY version DESC LIMIT 15;"
+echo ""
+echo "=== Devices table battery columns ==="
+sudo -u postgres psql -d yantrago -c "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='devices' AND column_name IN ('battery_pct','charging','gsm_signal','last_telemetry_at');"
+echo ""
+echo "=== Notification templates for alarm codes ==="
+sudo -u postgres psql -d yantrago -c "SELECT alert_type, incident_state, title_template FROM notification_templates WHERE alert_type IN ('EXTERNAL_POWER_LOW','EXTERNAL_POWER_CUT','LOW_POWER_SHUTDOWN','INTERNAL_BATTERY_LOW') ORDER BY alert_type, incident_state;"
+echo ""
+echo "=== Test telemetry endpoint ==="
+curl -s http://localhost:8080/api/v1/machines/69f8dd7c-54f7-4d1f-9913-5ee34fb0f25e/telemetry/latest 2>&1 || echo "(needs auth)"

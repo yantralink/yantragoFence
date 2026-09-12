@@ -33,9 +33,20 @@ class AppConfig {
   static const String rechargeEndpoint = '/api/v1/recharge';
   static const String auditEndpoint = '/api/v1/audit';
 
+  // Notification inbox endpoints (Phase 3/4)
+  static const String notificationsInboxEndpoint = '/api/v1/notifications/inbox';
+  static const String notificationsUnreadCountEndpoint = '/api/v1/notifications/inbox/unread-count';
+  static const String notificationsPreferencesEndpoint = '/api/v1/notifications/preferences';
+
+  // Device token endpoints (Phase 5)
+  static const String deviceTokensEndpoint = '/api/v1/device-tokens';
+  static const String deviceTokensDeactivateAllEndpoint = '/api/v1/device-tokens/deactivate-all';
+
   // WebSocket STOMP destinations
   static const String wsTopicLocation = '/topic/locations';
   static const String wsTopicTelemetry = '/topic/telemetry';
   static const String wsTopicCommandResult = '/topic/commands';
   static const String wsTopicDeviceEvent = '/topic/devices';
+  // User-specific notification invalidation queue (Phase 3/4)
+  static const String wsUserQueueNotifications = '/user/queue/notifications';
 }

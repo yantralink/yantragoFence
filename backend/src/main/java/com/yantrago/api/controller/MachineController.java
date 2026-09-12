@@ -3,6 +3,7 @@ package com.yantrago.api.controller;
 import com.yantrago.api.dto.machine.CreateMachineRequest;
 import com.yantrago.api.dto.machine.MachineDto;
 import com.yantrago.api.dto.machine.MachineStatusDto;
+import com.yantrago.api.dto.machine.TelemetryLatestDto;
 import com.yantrago.api.dto.machine.UpdateMachineRequest;
 import com.yantrago.api.service.MachineService;
 import jakarta.validation.Valid;
@@ -49,6 +50,11 @@ public class MachineController {
     @GetMapping("/{id}/status")
     public ResponseEntity<MachineStatusDto> getMachineStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(machineService.getMachineStatus(id));
+    }
+
+    @GetMapping("/{id}/telemetry/latest")
+    public ResponseEntity<TelemetryLatestDto> getLatestTelemetry(@PathVariable UUID id) {
+        return ResponseEntity.ok(machineService.getLatestTelemetry(id));
     }
 
     @PostMapping

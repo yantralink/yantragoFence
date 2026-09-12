@@ -25,6 +25,9 @@ public class NotificationPreference extends BaseEntity {
     @Column(name = "is_enabled", nullable = false)
     private Boolean isEnabled = true;
 
+    @Column(name = "push_enabled", nullable = false)
+    private Boolean pushEnabled = true;
+
     public java.util.UUID getUserId() { return userId; }
     public void setUserId(java.util.UUID userId) { this.userId = userId; }
     public java.util.UUID getOrganizationId() { return organizationId; }
@@ -35,4 +38,6 @@ public class NotificationPreference extends BaseEntity {
     public void setAlertType(String alertType) { this.alertType = alertType; }
     public Boolean getIsEnabled() { return isEnabled; }
     public void setIsEnabled(Boolean isEnabled) { this.isEnabled = isEnabled; }
+    public Boolean getPushEnabled() { return pushEnabled; }
+    public void setPushEnabled(Boolean pushEnabled) { this.pushEnabled = pushEnabled; }
 }

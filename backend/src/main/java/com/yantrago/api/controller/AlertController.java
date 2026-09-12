@@ -5,6 +5,7 @@ import com.yantrago.api.service.AlertService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -17,6 +18,9 @@ import java.util.UUID;
  * GET /api/v1/alerts?machineId={uuid} — filter by machine
  * GET /api/v1/alerts/{id} — get alert details
  * POST /api/v1/alerts/{id}/acknowledge — acknowledge an alert
+ *
+ * Per AGENTS.md rule 9: all sensitive operations require authorization.
+ * Per AGENTS.md rule 12: production features require security checks.
  */
 @RestController
 @RequestMapping("/api/v1/alerts")
@@ -29,6 +33,7 @@ public class AlertController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('alert:read') or hasRole('super_admin')")
     public ResponseEntity<Page<AlertDto>> listAlerts(
             @RequestParam(required = false) UUID machineId,
             @RequestParam(required = false) Boolean unacknowledged,
@@ -43,11 +48,13 @@ public class AlertController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('alert:read') or hasRole('super_admin')")
     public ResponseEntity<AlertDto> getAlert(@PathVariable UUID id) {
         return ResponseEntity.ok(alertService.getAlert(id));
     }
 
     @PostMapping("/{id}/acknowledge")
+    @PreAuthorize("hasAuthority('alert:acknowledge') or hasRole('super_admin')")
     public ResponseEntity<AlertDto> acknowledgeAlert(@PathVariable UUID id) {
         return ResponseEntity.ok(alertService.acknowledgeAlert(id));
     }

@@ -35,6 +35,26 @@ public class AlertRule extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    // --- Phase 2 lifecycle config (V23) ---
+
+    @Column(name = "sustain_minutes", nullable = false)
+    private Integer sustainMinutes = 0;
+
+    @Column(name = "recovery_minutes", nullable = false)
+    private Integer recoveryMinutes = 5;
+
+    @Column(name = "escalation_minutes")
+    private Integer escalationMinutes;
+
+    @Column(name = "escalation_severity", length = 20)
+    private String escalationSeverity;
+
+    @Column(name = "rule_version", nullable = false)
+    private Integer ruleVersion = 1;
+
+    @Column(name = "updated_by")
+    private java.util.UUID updatedBy;
+
     public java.util.UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(java.util.UUID organizationId) { this.organizationId = organizationId; }
     public java.util.UUID getMachineId() { return machineId; }
@@ -49,4 +69,16 @@ public class AlertRule extends BaseEntity {
     public void setSeverity(String severity) { this.severity = severity; }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public Integer getSustainMinutes() { return sustainMinutes; }
+    public void setSustainMinutes(Integer sustainMinutes) { this.sustainMinutes = sustainMinutes; }
+    public Integer getRecoveryMinutes() { return recoveryMinutes; }
+    public void setRecoveryMinutes(Integer recoveryMinutes) { this.recoveryMinutes = recoveryMinutes; }
+    public Integer getEscalationMinutes() { return escalationMinutes; }
+    public void setEscalationMinutes(Integer escalationMinutes) { this.escalationMinutes = escalationMinutes; }
+    public String getEscalationSeverity() { return escalationSeverity; }
+    public void setEscalationSeverity(String escalationSeverity) { this.escalationSeverity = escalationSeverity; }
+    public Integer getRuleVersion() { return ruleVersion; }
+    public void setRuleVersion(Integer ruleVersion) { this.ruleVersion = ruleVersion; }
+    public java.util.UUID getUpdatedBy() { return updatedBy; }
+    public void setUpdatedBy(java.util.UUID updatedBy) { this.updatedBy = updatedBy; }
 }

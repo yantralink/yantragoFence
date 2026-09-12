@@ -22,6 +22,12 @@ public class MachineDto {
     private String simNumber;
     private String protocolType;
     private String firmwareVersion;
+    // Latest telemetry state (from devices table — V33/V35 migrations)
+    private Double batteryPct;       // 0–100, null if no heartbeat received
+    private Boolean charging;         // true = external power connected
+    private Integer gsmSignal;        // 0–4, null if no data
+    private Double voltage;           // external power voltage in volts, null if no 0x94 packet
+    private LocalDateTime lastTelemetryAt;
     // Resolved names for display
     private String organizationName;
     private String customerName;
@@ -81,4 +87,14 @@ public class MachineDto {
     public void setOrganizationName(String organizationName) { this.organizationName = organizationName; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
+    public Double getBatteryPct() { return batteryPct; }
+    public void setBatteryPct(Double batteryPct) { this.batteryPct = batteryPct; }
+    public Boolean getCharging() { return charging; }
+    public void setCharging(Boolean charging) { this.charging = charging; }
+    public Integer getGsmSignal() { return gsmSignal; }
+    public void setGsmSignal(Integer gsmSignal) { this.gsmSignal = gsmSignal; }
+    public LocalDateTime getLastTelemetryAt() { return lastTelemetryAt; }
+    public void setLastTelemetryAt(LocalDateTime lastTelemetryAt) { this.lastTelemetryAt = lastTelemetryAt; }
+    public Double getVoltage() { return voltage; }
+    public void setVoltage(Double voltage) { this.voltage = voltage; }
 }

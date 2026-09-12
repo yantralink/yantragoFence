@@ -2,13 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:yantrago/core/auth/auth_state.dart';
+import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/auth/pages/splash_page.dart';
 import 'package:yantrago/features/auth/pages/login_page.dart';
 import 'package:yantrago/features/machines/pages/machine_list_page.dart';
 import 'package:yantrago/features/machines/pages/machine_detail_page.dart';
 import 'package:yantrago/features/machines/pages/machine_location_map_page.dart';
+import 'package:yantrago/features/alerts/pages/alert_detail_page.dart';
 import 'package:yantrago/features/alerts/pages/alerts_page.dart';
+import 'package:yantrago/features/notifications/pages/notification_detail_page.dart';
+import 'package:yantrago/features/notifications/pages/notification_preferences_page.dart';
+import 'package:yantrago/features/notifications/providers/notification_socket_provider.dart';
+import 'package:yantrago/features/notifications/widgets/notification_badge.dart';
 import 'package:yantrago/features/profile/pages/profile_page.dart';
 
 /// App router — GoRouter with auth guards.
@@ -82,6 +88,27 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AlertsPage(),
           ),
           GoRoute(
+            path: '/app/alerts/:id',
+            builder: (context, state) => AlertDetailPage(
+              alertId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: '/app/notifications',
+            builder: (context, state) => const AlertsPage(initialTab: 1),
+          ),
+          GoRoute(
+            path: '/app/notifications/:id',
+            builder: (context, state) => NotificationDetailPage(
+              notificationId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: '/app/notifications/preferences',
+            builder: (context, state) =>
+                const NotificationPreferencesPage(),
+          ),
+          GoRoute(
             path: '/app/profile',
             builder: (context, state) => const ProfilePage(),
           ),
@@ -89,8 +116,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Page not found: ${state.matchedLocation}'),
+      appBar: AppBar(title: const Text('Page Not Found')),
+      body: AppStatePanel.error(
+        message: 'The page "${state.matchedLocation}" could not be found.',
+        onRetry: () => context.go('/app/machines'),
       ),
     ),
   );
@@ -105,7 +134,7 @@ class _AuthStateListenable extends ChangeNotifier {
 }
 
 /// App shell with bottom navigation bar.
-class _AppShell extends StatelessWidget {
+class _AppShell extends ConsumerWidget {
   final Widget child;
 
   const _AppShell({required this.child});
@@ -118,32 +147,42 @@ class _AppShell extends StatelessWidget {
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
+    // /app/notifications maps to the Alerts tab (inbox view)
+    final normalizedLocation = location.startsWith('/app/notifications')
+        ? '/app/alerts'
+        : location;
     for (int i = 0; i < _routes.length; i++) {
-      if (location.startsWith(_routes[i])) return i;
+      if (normalizedLocation.startsWith(_routes[i])) return i;
     }
     return 0;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // SIG 19: watch the notification socket provider so it stays alive
+    // for the lifetime of the authenticated session.
+    ref.watch(notificationSocketProvider);
+
     final index = _currentIndex(context);
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (i) => context.go(_routes[i]),
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.devices_outlined),
             selectedIcon: Icon(Icons.devices),
             label: 'Machines',
           ),
           NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            selectedIcon: Icon(Icons.notifications),
+            icon: NotificationBadge(
+              child: const Icon(Icons.warning_amber_outlined),
+            ),
+            selectedIcon: const Icon(Icons.warning),
             label: 'Alerts',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.person_outlined),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',

@@ -3,16 +3,22 @@ import 'package:yantrago/core/auth/auth_service.dart';
 import 'package:yantrago/core/auth/auth_state.dart';
 import 'package:yantrago/core/auth/token_manager.dart';
 import 'package:yantrago/core/storage/secure_storage.dart';
+import 'package:yantrago/features/push/providers/push_notification_provider.dart';
 import 'package:yantrago/models/user.dart';
 
 /// Auth state notifier — manages authentication lifecycle.
 ///
 /// Per AGENTS.md rule 5: never assume a command succeeded until ACK is received.
 /// Per AGENTS.md rule 9: sensitive operations require authorization.
+///
+/// Phase 5: integrates push token registration on login and
+/// token deactivation on logout (shared-phone account switching).
 class AuthStateNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
+  final PushNotificationService _pushService;
 
-  AuthStateNotifier(this._authService) : super(const AuthInitial()) {
+  AuthStateNotifier(this._authService, this._pushService)
+      : super(const AuthInitial()) {
     _checkExistingSession();
   }
 
@@ -31,6 +37,8 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       await SecureStorage.setOrgId(user.organizationId);
       await SecureStorage.setOrgName(user.organizationName);
       state = Authenticated(user);
+      // Re-register FCM token for this account (token rotation)
+      await _pushService.registerTokenAfterLogin();
     } catch (_) {
       // Token is invalid or expired
       await SecureStorage.clearAll();
@@ -50,6 +58,8 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         password: password,
       );
       state = Authenticated(result.user);
+      // Register FCM token for the newly logged-in account
+      await _pushService.registerTokenAfterLogin();
     } catch (e) {
       state = AuthError(e.toString());
       // Reset to unauthenticated after error is consumed
@@ -60,9 +70,12 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }
 
   /// Logs out the current user.
+  /// Phase 5: deactivates all device tokens to prevent push to a shared device.
   Future<void> logout() async {
     state = const AuthLoading();
     try {
+      // Deactivate push tokens before clearing auth state
+      await _pushService.deactivateAllTokensOnLogout();
       await _authService.logout();
     } finally {
       state = const Unauthenticated();
@@ -83,7 +96,10 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
 
 /// Auth state provider.
 final authStateProvider = StateNotifierProvider<AuthStateNotifier, AuthState>(
-  (ref) => AuthStateNotifier(ref.watch(authServiceProvider)),
+  (ref) => AuthStateNotifier(
+    ref.watch(authServiceProvider),
+    ref.watch(pushNotificationServiceProvider),
+  ),
 );
 
 /// Convenience provider to get the current user.

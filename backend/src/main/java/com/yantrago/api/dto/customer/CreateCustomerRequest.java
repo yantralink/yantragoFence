@@ -22,6 +22,12 @@ public class CreateCustomerRequest {
     private Double latitude;
     private Double longitude;
 
+    /**
+     * Required when the caller is super_admin (no org in JWT).
+     * Ignored for org-scoped users — their org comes from the JWT per rule 7/8.
+     */
+    private UUID organizationId;
+
     /** Machine to assign to this customer (optional). UUID of the machine. */
     private UUID assignedMachineId;
 
@@ -37,6 +43,8 @@ public class CreateCustomerRequest {
     public void setLatitude(Double latitude) { this.latitude = latitude; }
     public Double getLongitude() { return longitude; }
     public void setLongitude(Double longitude) { this.longitude = longitude; }
+    public UUID getOrganizationId() { return organizationId; }
+    public void setOrganizationId(UUID organizationId) { this.organizationId = organizationId; }
     public UUID getAssignedMachineId() { return assignedMachineId; }
     public void setAssignedMachineId(UUID assignedMachineId) { this.assignedMachineId = assignedMachineId; }
 }

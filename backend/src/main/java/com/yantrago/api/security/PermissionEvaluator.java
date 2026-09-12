@@ -70,4 +70,26 @@ public class PermissionEvaluator {
         }
         return null;
     }
+
+    /**
+     * Checks if the current user has any of the given roles.
+     * Role names are matched as "ROLE_<name>" authorities.
+     * @param roleNames role names to check (e.g. "admin", "org_admin")
+     * @return true if the user has any of the roles
+     */
+    public boolean hasAnyRole(String... roleNames) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return false;
+        }
+        for (String role : roleNames) {
+            String roleAuthority = "ROLE_" + role;
+            for (GrantedAuthority ga : auth.getAuthorities()) {
+                if (roleAuthority.equals(ga.getAuthority())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

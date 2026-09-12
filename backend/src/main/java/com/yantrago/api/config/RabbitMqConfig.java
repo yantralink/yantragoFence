@@ -1,8 +1,11 @@
 package com.yantrago.api.config;
 
 import com.yantrago.shared.queue.QueueNames;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -21,6 +24,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class RabbitMqConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(RabbitMqConfig.class);
 
     // ===== Exchanges (all direct exchanges) =====
 
@@ -54,6 +59,11 @@ public class RabbitMqConfig {
         return ExchangeBuilder.directExchange(QueueNames.LOCATION_EXCHANGE).durable(true).build();
     }
 
+    @Bean
+    public DirectExchange notificationExchange() {
+        return ExchangeBuilder.directExchange(QueueNames.NOTIFICATION_EXCHANGE).durable(true).build();
+    }
+
     // ===== Queues =====
 
     @Bean
@@ -84,6 +94,19 @@ public class RabbitMqConfig {
     @Bean
     public Queue locationQueue() {
         return QueueBuilder.durable(QueueNames.LOCATION_QUEUE).build();
+    }
+
+    @Bean
+    public Queue notificationQueue() {
+        return QueueBuilder.durable(QueueNames.NOTIFICATION_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", QueueNames.NOTIFICATION_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue notificationDlq() {
+        return QueueBuilder.durable(QueueNames.NOTIFICATION_DLQ).build();
     }
 
     // ===== Bindings =====
@@ -130,6 +153,22 @@ public class RabbitMqConfig {
                 .with(QueueNames.LOCATION_ROUTING_KEY);
     }
 
+    @Bean
+    public Binding notificationBinding() {
+        return BindingBuilder.bind(notificationQueue())
+                .to(notificationExchange())
+                .with(QueueNames.NOTIFICATION_ROUTING_KEY);
+    }
+
+    // ===== RabbitAdmin (needed by NotificationHealthIndicators) =====
+
+    @Bean
+    public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
+        RabbitAdmin admin = new RabbitAdmin(connectionFactory);
+        admin.setAutoStartup(true);
+        return admin;
+    }
+
     // ===== Message converter (JSON) =====
 
     @Bean
@@ -141,6 +180,28 @@ public class RabbitMqConfig {
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(jacksonJsonMessageConverter());
+        // Phase 1 fix: enable publisher confirms and mandatory routing
+        template.setMandatory(true);
+        template.setConfirmCallback((correlationData, ack, cause) -> {
+            if (correlationData instanceof OutboxCorrelationData outboxData) {
+                if (ack) {
+                    outboxData.markPublished();
+                } else {
+                    outboxData.markNacked(cause);
+                }
+            }
+        });
+        template.setReturnsCallback(returned -> {
+            log.error("RabbitMQ message returned (unroutable): replyCode={} replyText={} exchange={} routingKey={}",
+                    returned.getReplyCode(), returned.getReplyText(),
+                    returned.getExchange(), returned.getRoutingKey());
+            if (returned.getMessage() != null) {
+                Object correlation = returned.getMessage().getMessageProperties().getCorrelationId();
+                if (correlation != null) {
+                    log.error("Unroutable message correlation: {}", correlation);
+                }
+            }
+        });
         return template;
     }
 }

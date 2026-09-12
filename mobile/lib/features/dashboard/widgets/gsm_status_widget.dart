@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 
-/// GSM status widget — displays GSM signal strength.
+import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/widgets/app_metric_card.dart';
+
+/// GSM status widget — displays GSM signal strength as a shared metric card.
+///
+/// Composes [AppMetricCard]. Null signal is shown as unavailable, not
+/// zero. The status tone reflects the domain threshold chosen here.
+///
+/// BR05 protocol provides a coarse 0–4 GSM signal level (not dBm).
+/// 0 = no signal, 4 = strongest. Thresholds are tuned for this scale.
 class GsmStatusWidget extends StatelessWidget {
   final int? signal;
 
@@ -8,28 +17,36 @@ class GsmStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(Icons.signal_cellular_alt, size: 32, color: _signalColor(signal)),
-            const SizedBox(height: 8),
-            Text('GSM Signal', style: Theme.of(context).textTheme.bodySmall),
-            Text(
-              signal != null ? '$signal dBm' : '--',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-      ),
+    if (signal == null) {
+      return const AppMetricCard(
+        label: 'GSM Signal',
+        icon: Icons.signal_cellular_alt,
+        state: AppMetricState.unavailable,
+        statusText: 'No report received',
+      );
+    }
+    final int level = signal!;
+    // BR05 GSM signal level is 0–4 (coarse enum, not dBm).
+    final StatusTone tone = level >= 3
+        ? StatusTone.success
+        : level >= 2
+            ? StatusTone.warning
+            : StatusTone.danger;
+    final String status = level >= 3
+        ? 'Strong signal'
+        : level >= 2
+            ? 'Weak signal'
+            : level >= 1
+                ? 'Poor signal'
+                : 'No signal';
+    return AppMetricCard(
+      label: 'GSM Signal',
+      icon: Icons.signal_cellular_alt,
+      state: AppMetricState.available,
+      value: '$level',
+      unit: '/4',
+      statusText: status,
+      statusTone: tone,
     );
-  }
-
-  Color _signalColor(int? level) {
-    if (level == null) return Colors.grey;
-    if (level > 20) return Colors.green;
-    if (level > 10) return Colors.orange;
-    return Colors.red;
   }
 }

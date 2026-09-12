@@ -17,6 +17,7 @@ public class TelemetryMessage implements Serializable {
     private Double voltage;
     private Double battery;
     private Integer gsmSignal;
+    private Boolean charging;  // true = external power connected, false = on battery
     private Instant timestamp;
 
     public TelemetryMessage() {
@@ -28,6 +29,17 @@ public class TelemetryMessage implements Serializable {
         this.voltage = voltage;
         this.battery = battery;
         this.gsmSignal = gsmSignal;
+        this.timestamp = timestamp;
+    }
+
+    public TelemetryMessage(UUID deviceId, String imei, Double voltage, Double battery,
+                            Integer gsmSignal, Boolean charging, Instant timestamp) {
+        this.deviceId = deviceId;
+        this.imei = imei;
+        this.voltage = voltage;
+        this.battery = battery;
+        this.gsmSignal = gsmSignal;
+        this.charging = charging;
         this.timestamp = timestamp;
     }
 
@@ -69,6 +81,14 @@ public class TelemetryMessage implements Serializable {
 
     public void setGsmSignal(Integer gsmSignal) {
         this.gsmSignal = gsmSignal;
+    }
+
+    public Boolean getCharging() {
+        return charging;
+    }
+
+    public void setCharging(Boolean charging) {
+        this.charging = charging;
     }
 
     public Instant getTimestamp() {

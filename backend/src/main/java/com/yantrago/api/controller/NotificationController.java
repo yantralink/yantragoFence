@@ -1,24 +1,29 @@
 package com.yantrago.api.controller;
 
-import com.yantrago.api.model.Notification;
-import com.yantrago.api.model.NotificationPreference;
+import com.yantrago.api.dto.notification.NotificationDto;
 import com.yantrago.api.service.NotificationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
- * Notification endpoints — list, get, dispatch notifications, manage preferences.
+ * Legacy notification endpoints — kept for backward compatibility but protected with RBAC.
  *
- * GET /api/v1/notifications — list notifications (paged, filtered by tenant)
- * GET /api/v1/notifications/mine — list current user's notifications
- * GET /api/v1/notifications/{id} — get notification details
- * POST /api/v1/notifications/{id}/dispatch — dispatch a PENDING notification
- * GET /api/v1/notifications/preferences/{userId} — get user's notification preferences
+ * Per notification plan Phase 3: protect or deprecate legacy broad endpoints.
+ * The new inbox endpoints are in NotificationInboxController and preference endpoints
+ * are in NotificationPreferenceController.
+ *
+ * Endpoints:
+ *   GET  /api/v1/notifications        — list all notifications in org (admin only)
+ *   GET  /api/v1/notifications/{id}    — get a notification (tenant-guarded)
+ *   POST /api/v1/notifications/{id}/dispatch — dispatch a PENDING notification (admin only)
+ *
+ * Note: The /mine and /preferences/{userId} endpoints are deprecated in favor of
+ * NotificationInboxController and NotificationPreferenceController respectively.
  */
 @RestController
 @RequestMapping("/api/v1/notifications")
@@ -30,28 +35,32 @@ public class NotificationController {
         this.notificationService = notificationService;
     }
 
+    /**
+     * Lists all notifications in the organization. Admin-only.
+     * For user-facing inbox, use /api/v1/notifications/inbox instead.
+     */
     @GetMapping
-    public ResponseEntity<Page<Notification>> listNotifications(Pageable pageable) {
+    @PreAuthorize("hasAuthority('notification:read_all') or hasRole('super_admin')")
+    public ResponseEntity<Page<NotificationDto>> listNotifications(Pageable pageable) {
         return ResponseEntity.ok(notificationService.listNotifications(pageable));
     }
 
-    @GetMapping("/mine")
-    public ResponseEntity<Page<Notification>> listMyNotifications(Pageable pageable) {
-        return ResponseEntity.ok(notificationService.listMyNotifications(pageable));
-    }
-
+    /**
+     * Gets a single notification. Tenant-guarded.
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<Notification> getNotification(@PathVariable UUID id) {
+    @PreAuthorize("hasAuthority('notification:read') or hasRole('super_admin')")
+    public ResponseEntity<NotificationDto> getNotification(@PathVariable UUID id) {
         return ResponseEntity.ok(notificationService.getNotification(id));
     }
 
+    /**
+     * Dispatches a PENDING notification via its configured channel.
+     * Admin-only. Push delivery remains OFF in Phase 3.
+     */
     @PostMapping("/{id}/dispatch")
-    public ResponseEntity<Notification> dispatchNotification(@PathVariable UUID id) {
+    @PreAuthorize("hasAuthority('notification:write') or hasRole('super_admin')")
+    public ResponseEntity<NotificationDto> dispatchNotification(@PathVariable UUID id) {
         return ResponseEntity.ok(notificationService.dispatchNotification(id));
-    }
-
-    @GetMapping("/preferences/{userId}")
-    public ResponseEntity<List<NotificationPreference>> getUserPreferences(@PathVariable UUID userId) {
-        return ResponseEntity.ok(notificationService.getUserPreferences(userId));
     }
 }

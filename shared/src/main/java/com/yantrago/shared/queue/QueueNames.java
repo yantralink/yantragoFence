@@ -18,6 +18,7 @@ public final class QueueNames {
     public static final String DEVICE_EVENT_EXCHANGE = "yantrago.device.event";
     public static final String ALERT_EVENT_EXCHANGE = "yantrago.alert.event";
     public static final String LOCATION_EXCHANGE = "yantrago.location";
+    public static final String NOTIFICATION_EXCHANGE = "yantrago.notification";
 
     // ----- Queues -----
     public static final String COMMAND_QUEUE = "yantrago.command.queue";
@@ -26,6 +27,8 @@ public final class QueueNames {
     public static final String DEVICE_EVENT_QUEUE = "yantrago.device.event.queue";
     public static final String ALERT_EVENT_QUEUE = "yantrago.alert.event.queue";
     public static final String LOCATION_QUEUE = "yantrago.location.queue";
+    public static final String NOTIFICATION_QUEUE = "yantrago.notification.queue";
+    public static final String NOTIFICATION_DLQ = "yantrago.notification.dlq";
 
     // ----- Routing keys -----
     public static final String COMMAND_ROUTING_KEY = "command";
@@ -34,4 +37,5 @@ public final class QueueNames {
     public static final String DEVICE_EVENT_ROUTING_KEY = "device.event";
     public static final String ALERT_EVENT_ROUTING_KEY = "alert.event";
     public static final String LOCATION_ROUTING_KEY = "location";
+    public static final String NOTIFICATION_ROUTING_KEY = "notification";
 }

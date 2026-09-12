@@ -1,15 +1,10 @@
 package com.yantrago.api.service;
 
+import com.yantrago.api.dto.notification.NotificationDto;
 import com.yantrago.api.model.Notification;
-import com.yantrago.api.model.NotificationPreference;
 import com.yantrago.api.repository.NotificationRepository;
 import com.yantrago.api.security.PermissionEvaluator;
 import com.yantrago.api.security.TenantGuard;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -18,14 +13,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 /**
- * Notification service — manages notification records and dispatches them
- * via the appropriate channels (PUSH, EMAIL, SMS) based on user preferences.
+ * Legacy notification service — manages the original notifications table (per-dispatch records).
  *
- * Per AGENTS.md rule 12: production feature requiring validation, logging, tests, security.
+ * Per notification plan Phase 3: the new inbox is in NotificationInboxService.
+ * This service is kept for backward compatibility with the dispatch endpoint.
+ *
+ * Per AGENTS.md rule 12: production feature with validation, logging, security.
  */
 @Service
 public class NotificationService {
@@ -36,66 +32,56 @@ public class NotificationService {
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
     private final PermissionEvaluator permissionEvaluator;
-    private final PushNotificationService pushNotificationService;
     private final EmailService emailService;
     private final SmsService smsService;
-    private final EntityManager entityManager;
 
     public NotificationService(NotificationRepository notificationRepository,
                                 OwnerContextService ownerContextService,
                                 TenantGuard tenantGuard,
                                 PermissionEvaluator permissionEvaluator,
-                                PushNotificationService pushNotificationService,
                                 EmailService emailService,
-                                SmsService smsService,
-                                EntityManager entityManager) {
+                                SmsService smsService) {
         this.notificationRepository = notificationRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
         this.permissionEvaluator = permissionEvaluator;
-        this.pushNotificationService = pushNotificationService;
         this.emailService = emailService;
         this.smsService = smsService;
-        this.entityManager = entityManager;
     }
 
+    /**
+     * Lists all notifications in the organization. Admin-only (RBAC enforced at controller).
+     */
     @Transactional(readOnly = true)
-    public Page<Notification> listNotifications(Pageable pageable) {
+    public Page<NotificationDto> listNotifications(Pageable pageable) {
         UUID orgId = ownerContextService.getOrganizationId();
-        return notificationRepository.findByOrganizationId(orgId, pageable);
+        return notificationRepository.findByOrganizationId(orgId, pageable).map(NotificationService::toDto);
     }
 
+    /**
+     * Gets a single notification. Tenant-guarded.
+     */
     @Transactional(readOnly = true)
-    public Page<Notification> listMyNotifications(Pageable pageable) {
-        UUID orgId = ownerContextService.getOrganizationId();
-        UUID userId = permissionEvaluator.getCurrentUserId();
-        if (userId == null) {
-            throw new SecurityException("Not authenticated");
-        }
-        return notificationRepository.findByOrganizationIdAndUserId(orgId, userId, pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public Notification getNotification(UUID id) {
+    public NotificationDto getNotification(UUID id) {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + id));
         tenantGuard.validateTenantAccess(notification.getOrganizationId());
-        return notification;
+        return toDto(notification);
     }
 
     /**
      * Dispatches a PENDING notification via its configured channel.
-     * Updates the notification record with the result.
+     * Push delivery remains OFF in Phase 3 — this is for admin-triggered dispatch only.
      */
     @Transactional
-    public Notification dispatchNotification(UUID notificationId) {
+    public NotificationDto dispatchNotification(UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
         tenantGuard.validateTenantAccess(notification.getOrganizationId());
 
         if (!"PENDING".equals(notification.getStatus())) {
             log.warn("Notification {} already dispatched (status={})", notificationId, notification.getStatus());
-            return notification;
+            return toDto(notification);
         }
 
         String channel = notification.getChannel();
@@ -105,22 +91,20 @@ public class NotificationService {
         try {
             switch (channel) {
                 case "PUSH" -> {
-                    // In production, look up the user's device token
-                    providerMessageId = pushNotificationService.sendPushNotification(
-                            null, notification.getTitle(), notification.getBody(), null);
-                    success = providerMessageId != null;
-                    notification.setProvider("FCM");
+                    // Push delivery remains OFF in Phase 3
+                    log.info("Push delivery is disabled (Phase 3). Skipping notification {}", notificationId);
+                    notification.setStatus("FAILED");
+                    notification.setError("Push delivery is disabled");
                 }
                 case "EMAIL" -> {
-                    // In production, look up the user's email
                     success = emailService.sendEmail(null, notification.getTitle(), notification.getBody());
                     notification.setProvider("SMTP");
                 }
                 case "SMS" -> {
-                    // In production, look up the user's phone
-                    providerMessageId = smsService.sendSms(null, notification.getBody());
-                    success = providerMessageId != null;
-                    notification.setProvider("TWILIO");
+                    // SMS delivery remains OFF (no provider configured)
+                    log.info("SMS delivery is disabled (no provider). Skipping notification {}", notificationId);
+                    notification.setStatus("FAILED");
+                    notification.setError("SMS delivery is disabled");
                 }
                 default -> {
                     log.warn("Unknown notification channel: {}", channel);
@@ -147,21 +131,31 @@ public class NotificationService {
 
         notification = notificationRepository.save(notification);
         log.info("Dispatched notification id={} channel={} status={}", notificationId, channel, notification.getStatus());
-        return notification;
+        return toDto(notification);
     }
 
     /**
-     * Looks up notification preferences for a user.
+     * Converts a Notification entity to its DTO representation.
+     * Per AGENTS.md rule 21: never return JPA entities from controllers.
      */
-    @Transactional(readOnly = true)
-    public List<NotificationPreference> getUserPreferences(UUID userId) {
-        UUID orgId = ownerContextService.getOrganizationId();
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<NotificationPreference> cq = cb.createQuery(NotificationPreference.class);
-        Root<NotificationPreference> root = cq.from(NotificationPreference.class);
-        Predicate orgPredicate = cb.equal(root.get("organizationId"), orgId);
-        Predicate userPredicate = cb.equal(root.get("userId"), userId);
-        cq.where(orgPredicate, userPredicate);
-        return entityManager.createQuery(cq).getResultList();
+    public static NotificationDto toDto(Notification entity) {
+        if (entity == null) return null;
+        return new NotificationDto(
+                entity.getId(),
+                entity.getOrganizationId(),
+                entity.getUserId(),
+                entity.getAlertId(),
+                entity.getChannel(),
+                entity.getTitle(),
+                entity.getBody(),
+                entity.getStatus(),
+                entity.getProvider(),
+                entity.getProviderMessageId(),
+                entity.getError(),
+                entity.getSentAt(),
+                entity.getDeliveredAt(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt()
+        );
     }
 }

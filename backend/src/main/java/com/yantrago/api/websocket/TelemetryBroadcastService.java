@@ -37,9 +37,11 @@ public class TelemetryBroadcastService {
      * @param voltage voltage reading (optional)
      * @param battery battery percentage (optional)
      * @param gsmSignal GSM signal strength (optional)
+     * @param charging true if external power connected (optional)
      */
     public void broadcastTelemetry(UUID machineId, UUID deviceId,
-                                    Double voltage, Double battery, Integer gsmSignal) {
+                                    Double voltage, Double battery, Integer gsmSignal,
+                                    Boolean charging) {
         if (machineId == null) {
             log.debug("Skipping telemetry broadcast: machineId is null (device={})", deviceId);
             return;
@@ -47,17 +49,18 @@ public class TelemetryBroadcastService {
 
         String destination = "/topic/telemetry/" + machineId;
         // Use HashMap because Map.of() does not allow null values, and
-        // voltage/battery/gsmSignal may be null.
+        // voltage/battery/gsmSignal/charging may be null.
         Map<String, Object> payload = new HashMap<>();
         payload.put("machineId", machineId.toString());
         payload.put("deviceId", deviceId != null ? deviceId.toString() : null);
         payload.put("voltage", voltage);
         payload.put("battery", battery);
         payload.put("gsmSignal", gsmSignal);
+        payload.put("charging", charging);
         payload.put("timestamp", LocalDateTime.now().toString());
 
         messagingTemplate.convertAndSend(destination, payload);
-        log.debug("Broadcasted telemetry to {} voltage={} battery={}", destination, voltage, battery);
+        log.debug("Broadcasted telemetry to {} voltage={} battery={} charging={}", destination, voltage, battery, charging);
     }
 
     /**
