@@ -41,11 +41,14 @@ public class NotificationFeatureSwitches {
     // All known event families.
     // Phase 6: added alarm-code-driven types (EXTERNAL_POWER_LOW, EXTERNAL_POWER_CUT,
     // LOW_POWER_SHUTDOWN, INTERNAL_BATTERY_LOW) from BR05 alarm codes 0x0E/0x0F/0x15/0x19.
+    // Command notifications: MACHINE_ON, MACHINE_OFF, COMMAND_ACK, COMMAND_FAILED
+    // for relay ON/OFF command lifecycle events.
     private static final Set<String> ALL_FAMILIES = Set.of(
             "LOW_BATTERY", "VOLTAGE_DROP", "GSM_SIGNAL_LOW",
             "DEVICE_OFFLINE", "SIM_EXPIRY",
             "EXTERNAL_POWER_LOW", "EXTERNAL_POWER_CUT",
-            "LOW_POWER_SHUTDOWN", "INTERNAL_BATTERY_LOW"
+            "LOW_POWER_SHUTDOWN", "INTERNAL_BATTERY_LOW",
+            "MACHINE_ON", "MACHINE_OFF", "COMMAND_ACK", "COMMAND_FAILED"
     );
 
     public NotificationFeatureSwitches(

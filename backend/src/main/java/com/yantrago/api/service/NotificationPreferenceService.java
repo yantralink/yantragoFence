@@ -190,6 +190,19 @@ public class NotificationPreferenceService {
                         List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
                 new EventCatalogDto("INTERNAL_BATTERY_LOW", "Internal Battery Low",
                         "Triggered when the internal backup battery is low (alarm code 0x19).",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                // Command lifecycle notifications for relay ON/OFF
+                new EventCatalogDto("COMMAND_ACK", "Command Acknowledged",
+                        "Triggered when the device acknowledges a relay ON/OFF command.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                new EventCatalogDto("MACHINE_ON", "Machine Turned On",
+                        "Triggered when a relay ON command completes successfully.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                new EventCatalogDto("MACHINE_OFF", "Machine Turned Off",
+                        "Triggered when a relay OFF command completes successfully.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                new EventCatalogDto("COMMAND_FAILED", "Command Failed",
+                        "Triggered when a relay ON/OFF command fails or times out.",
                         List.of("PUSH", "EMAIL", "SMS", "IN_APP"))
         );
     }
