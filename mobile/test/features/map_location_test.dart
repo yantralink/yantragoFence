@@ -15,7 +15,6 @@ import 'package:yantrago/features/machines/providers/machine_address_provider.da
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/widgets/location_card.dart';
-import 'package:yantrago/features/map/widgets/machine_marker.dart';
 import 'package:yantrago/models/location.dart';
 import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/machine_location.dart';
@@ -228,72 +227,6 @@ void main() {
         ],
       );
       expect(tester.takeException(), isNull);
-    });
-  });
-
-  group('MachineMarker', () {
-    testWidgets('renders with online status', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: Scaffold(
-          body: MachineMarker(
-            location: _gpsLocation(),
-            status: 'FENCING_ON',
-          ),
-        ),
-      ));
-      expect(find.byIcon(Icons.electrical_services), findsOneWidget);
-    });
-
-    testWidgets('renders with fault status', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: Scaffold(
-          body: MachineMarker(
-            location: _gpsLocation(),
-            status: 'FAULT',
-          ),
-        ),
-      ));
-      expect(find.byIcon(Icons.electrical_services), findsOneWidget);
-    });
-
-    testWidgets('renders with offline status', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: Scaffold(
-          body: MachineMarker(
-            location: _gpsLocation(),
-            status: 'OFFLINE',
-          ),
-        ),
-      ));
-      expect(find.byIcon(Icons.electrical_services), findsOneWidget);
-    });
-
-    testWidgets('renders in dark theme', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.darkTheme,
-        home: Scaffold(
-          body: MachineMarker(location: _gpsLocation()),
-        ),
-      ));
-      expect(find.byIcon(Icons.electrical_services), findsOneWidget);
-    });
-
-    testWidgets('onTap callback fires', (tester) async {
-      bool tapped = false;
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: Scaffold(
-          body: MachineMarker(
-            location: _gpsLocation(),
-            onTap: () => tapped = true,
-          ),
-        ),
-      ));
-      await tester.tap(find.byIcon(Icons.electrical_services));
-      expect(tapped, isTrue);
     });
   });
 }

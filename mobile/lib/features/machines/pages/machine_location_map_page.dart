@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
@@ -9,11 +7,11 @@ import 'package:yantrago/features/machines/providers/machine_location_provider.d
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 
 /// Machine location map page — shows a single machine's GPS location on an
-/// in-app map using Leaflet.js + OpenStreetMap tiles with a custom marker icon.
+/// in-app map using Leaflet.js + OpenStreetMap tiles with a default marker.
 /// Opened from the LocationCard on the machine detail page.
 ///
 /// Displays:
-/// - Interactive map with custom marker at the machine's coordinates
+/// - Interactive map with marker at the machine's coordinates
 /// - AppBar with the machine name and a back arrow
 /// - Address text below the map (reverse-geocoded)
 class MachineLocationMapPage extends ConsumerStatefulWidget {
@@ -28,27 +26,6 @@ class MachineLocationMapPage extends ConsumerStatefulWidget {
 
 class _MachineLocationMapPageState
     extends ConsumerState<MachineLocationMapPage> {
-  String? _markerIconBase64;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMarkerIcon();
-  }
-
-  Future<void> _loadMarkerIcon() async {
-    try {
-      final bytes = await rootBundle.load(
-        'assets/icons/Location_icon.png',
-      );
-      final base64Str = base64Encode(bytes.buffer.asUint8List());
-      if (mounted) {
-        setState(() => _markerIconBase64 = base64Str);
-      }
-    } catch (_) {
-      // If icon fails to load, map will use default marker
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,15 +57,10 @@ class _MachineLocationMapPageState
             );
           }
 
-          // Build Leaflet.js HTML with custom marker icon
-          final iconHtml = _markerIconBase64 != null
-              ? 'data:image/png;base64,$_markerIconBase64'
-              : null;
-
+          // Build Leaflet.js HTML with default marker
           final html = _buildLeafletHtml(
             latitude: loc.latitude,
             longitude: loc.longitude,
-            iconUrl: iconHtml,
           );
 
           final controller = WebViewController()
@@ -113,28 +85,11 @@ class _MachineLocationMapPageState
     );
   }
 
-  /// Builds the Leaflet.js HTML with OpenStreetMap tiles and a custom marker.
+  /// Builds the Leaflet.js HTML with OpenStreetMap tiles and a default marker.
   String _buildLeafletHtml({
     required double latitude,
     required double longitude,
-    String? iconUrl,
   }) {
-    final markerIcon = iconUrl != null
-        ? '''
-      var customIcon = L.icon({
-        iconUrl: '$iconUrl',
-        iconSize: [48, 48],
-        iconAnchor: [24, 48],
-        popupAnchor: [0, -48]
-      });
-      L.marker([$latitude, $longitude], {icon: customIcon}).addTo(map)
-        .bindPopup('Machine Location');
-    '''
-        : '''
-      L.marker([$latitude, $longitude]).addTo(map)
-        .bindPopup('Machine Location');
-    ''';
-
     return '''
 <!DOCTYPE html>
 <html>
@@ -155,7 +110,8 @@ class _MachineLocationMapPageState
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
-    $markerIcon
+    L.marker([$latitude, $longitude]).addTo(map)
+      .bindPopup('Machine Location');
   </script>
 </body>
 </html>

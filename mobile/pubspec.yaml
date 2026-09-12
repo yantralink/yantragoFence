@@ -24,36 +24,24 @@ dependencies:
   flutter_secure_storage: ^9.0.0
 
   # WebSocket / STOMP
-  web_socket_channel: ^2.4.0
   stomp_dart_client: ^0.4.4
 
   # Internationalization
   intl: ^0.18.0
 
-  # JSON serialization
-  json_annotation: ^4.8.0
-
-  # Maps
-  google_maps_flutter: ^2.5.0
+  # Maps (Leaflet.js via WebView)
   webview_flutter: ^4.10.0
-
-  # URL launcher (open maps, links)
-  url_launcher: ^6.2.0
 
   # Push notifications (Phase 5)
   firebase_core: ^3.6.0
   firebase_messaging: ^15.1.0
   flutter_local_notifications: ^17.2.0
 
-  # UI
-  cupertino_icons: ^1.0.6
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
   build_runner: ^2.4.0
-  json_serializable: ^6.7.0
 
 flutter:
   uses-material-design: true
