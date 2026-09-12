@@ -6,6 +6,8 @@ import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
 import 'package:yantrago/features/alerts/widgets/alert_card.dart';
+import 'package:yantrago/features/commands/providers/command_provider.dart';
+import 'package:yantrago/features/commands/widgets/command_history_section.dart';
 import 'package:yantrago/features/commands/widgets/command_status_widget.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
@@ -52,10 +54,12 @@ class MachineDetailPage extends ConsumerWidget {
             ref.invalidate(machineDetailProvider(machineId));
             ref.invalidate(machineTelemetryProvider(machineId));
             ref.invalidate(machineAlertsProvider(machineId));
+            ref.invalidate(machineCommandsProvider(machineId));
             await Future.wait([
               ref.read(machineDetailProvider(machineId).future),
               ref.read(machineTelemetryProvider(machineId).future),
               ref.read(machineAlertsProvider(machineId).future),
+              ref.read(machineCommandsProvider(machineId).future),
             ]);
           },
           child: AppPageBody(
@@ -81,6 +85,9 @@ class MachineDetailPage extends ConsumerWidget {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
+                const SizedBox(height: 16),
+                const AppSectionHeader(title: 'Command History', compact: true),
+                CommandHistorySection(machineId: m.id),
                 const SizedBox(height: 16),
                 const AppSectionHeader(title: 'Faults', compact: true),
                 _FaultsSection(machineId: m.id),

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yantrago/core/config/app_config.dart';
 import 'package:yantrago/core/network/api_client.dart';
+import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/models/command.dart';
 
 /// Command provider — sends ON/OFF commands and tracks command status.
@@ -52,4 +54,26 @@ class CommandState {
 final commandProvider =
     StateNotifierProvider<CommandNotifier, CommandState>((ref) {
   return CommandNotifier(ref.watch(apiClientProvider));
+});
+
+/// Machine commands provider — fetches command history filtered by machine ID.
+///
+/// Calls GET /api/v1/commands?machineId={uuid} to show only the commands
+/// belonging to the machine shown on the detail page.
+/// Per AGENTS.md rule 22: no direct API calls from widgets — go through a provider.
+final machineCommandsProvider =
+    FutureProvider.family<List<Command>, String>((ref, machineId) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return [];
+
+  final dio = ref.watch(apiClientProvider);
+  final response =
+      await dio.get('${AppConfig.commandsEndpoint}?machineId=$machineId&size=10&sort=createdAt,desc');
+  final data = response.data;
+  final List<dynamic> list = data is Map<String, dynamic>
+      ? data['content'] as List
+      : data as List;
+  return list
+      .map((c) => Command.fromJson(c as Map<String, dynamic>))
+      .toList();
 });
