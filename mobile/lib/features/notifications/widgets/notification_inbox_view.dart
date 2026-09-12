@@ -202,6 +202,12 @@ class _NotificationFilterSheetState
                 onSelected: (_) => setState(() => _alertType = 'MACHINE_OFF'),
               ),
               _FilterChip(
+                label: 'Command Ack',
+                selected: _alertType == 'COMMAND_ACK',
+                onSelected: (_) =>
+                    setState(() => _alertType = 'COMMAND_ACK'),
+              ),
+              _FilterChip(
                 label: 'Command Failed',
                 selected: _alertType == 'COMMAND_FAILED',
                 onSelected: (_) =>

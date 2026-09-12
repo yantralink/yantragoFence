@@ -30,9 +30,14 @@ class CommandNotifier extends StateNotifier<CommandState> {
   }
 
   /// Fetches command history for a machine.
+  /// Handles both paginated (Spring Page) and raw list response shapes.
   Future<void> fetchCommandHistory(String machineId) async {
-    final response = await _dio.get('/api/v1/commands?machineId=$machineId');
-    final commands = (response.data as List)
+    final response = await _dio.get('/api/v1/commands?machineId=$machineId&size=10&sort=createdAt,desc');
+    final data = response.data;
+    final List<dynamic> list = data is Map<String, dynamic>
+        ? data['content'] as List
+        : data as List;
+    final commands = list
         .map((c) => Command.fromJson(c as Map<String, dynamic>))
         .toList();
     state = CommandState(history: commands);
