@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   title?: string;
-  description?: string;
+  description?: React.ReactNode;
 }
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
@@ -18,10 +18,10 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         {...props}
       >
         {title && (
-          <div className="mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
             {description && (
-              <p className="mt-1 text-sm text-gray-500">{description}</p>
+              <div className="text-sm text-gray-500">{description}</div>
             )}
           </div>
         )}
