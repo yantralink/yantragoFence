@@ -101,8 +101,35 @@ public class UserService {
                     savedUser.getId(), role.getId());
         });
 
+        // Phase 7: create default notification preferences (IN_APP + PUSH for all alert types)
+        // Skip for super_admin users (null orgId) — they don't receive tenant-scoped notifications
+        if (orgId != null) {
+            createDefaultNotificationPreferences(savedUser.getId(), orgId);
+        }
+
         log.info("Created user id={} email={} orgId={} role={}", savedUser.getId(), savedUser.getEmail(), orgId, roleName);
         return toDto(savedUser);
+    }
+
+    /**
+     * Creates default notification preferences for a new user.
+     * Defaults: IN_APP and PUSH channels enabled for all alert types.
+     * Per Phase 7: ensures new users receive notifications without manual opt-in.
+     */
+    private void createDefaultNotificationPreferences(UUID userId, UUID orgId) {
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO notification_preferences (user_id, organization_id, channel, alert_type, is_enabled, push_enabled) " +
+                            "VALUES (?, ?, 'IN_APP', NULL, true, true) ON CONFLICT DO NOTHING",
+                    userId, orgId);
+            jdbcTemplate.update(
+                    "INSERT INTO notification_preferences (user_id, organization_id, channel, alert_type, is_enabled, push_enabled) " +
+                            "VALUES (?, ?, 'PUSH', NULL, true, true) ON CONFLICT DO NOTHING",
+                    userId, orgId);
+            log.info("Created default notification preferences for user={} orgId={}", userId, orgId);
+        } catch (Exception e) {
+            log.warn("Failed to create default notification preferences for user={}: {}", userId, e.getMessage());
+        }
     }
 
     @Transactional
