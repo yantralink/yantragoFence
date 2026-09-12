@@ -98,15 +98,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AlertsPage(initialTab: 1),
           ),
           GoRoute(
+            path: '/app/notifications/preferences',
+            builder: (context, state) =>
+                const NotificationPreferencesPage(),
+          ),
+          GoRoute(
             path: '/app/notifications/:id',
             builder: (context, state) => NotificationDetailPage(
               notificationId: state.pathParameters['id']!,
             ),
-          ),
-          GoRoute(
-            path: '/app/notifications/preferences',
-            builder: (context, state) =>
-                const NotificationPreferencesPage(),
           ),
           GoRoute(
             path: '/app/profile',
