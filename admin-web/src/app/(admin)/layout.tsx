@@ -13,6 +13,7 @@ const navItems = [
   { href: '/reports', label: 'Reports', icon: '📈' },
   { href: '/alerts', label: 'Alerts', icon: '🔔' },
   { href: '/alert-rules', label: 'Alert Rules', icon: '⚙️' },
+  { href: '/commands', label: 'Commands', icon: '🎛️' },
 ];
 
 export default function AdminLayout({
