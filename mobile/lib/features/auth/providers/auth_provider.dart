@@ -92,6 +92,18 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       // Ignore refresh errors
     }
   }
+
+  /// Updates the user's preferred notification language.
+  /// Phase 8: calls the backend to persist the locale, then updates local state.
+  Future<void> updatePreferredLocale(String locale) async {
+    if (state is! Authenticated) return;
+    try {
+      final user = await _authService.updatePreferredLocale(locale);
+      state = Authenticated(user);
+    } catch (_) {
+      // Ignore errors — best-effort
+    }
+  }
 }
 
 /// Auth state provider.

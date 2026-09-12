@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -82,10 +83,54 @@ public class AuthController {
                 user.getOrganizationId() != null ? user.getOrganizationId().toString() : null,
                 organizationName,
                 role,
-                user.getIsActive()
+                user.getIsActive(),
+                user.getPreferredLocale()
         );
         return ResponseEntity.ok(response);
     }
 
-    public record UserInfoResponse(String id, String email, String fullName, String organizationId, String organizationName, String role, Boolean active) {}
+    @PutMapping("/me/locale")
+    public ResponseEntity<UserInfoResponse> updateLocale(
+            @RequestBody UpdateLocaleRequest request,
+            Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        UUID userId = (UUID) authentication.getPrincipal();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+        String locale = request.locale();
+        if (locale == null || (!locale.equals("en") && !locale.equals("hi") && !locale.equals("mr"))) {
+            return ResponseEntity.badRequest().build();
+        }
+        user.setPreferredLocale(locale);
+        userRepository.save(user);
+        String role = authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring(5))
+                .findFirst()
+                .orElse("viewer");
+        String organizationName = null;
+        if (user.getOrganizationId() != null) {
+            organizationName = organizationRepository.findById(user.getOrganizationId())
+                    .map(Organization::getName)
+                    .orElse(null);
+        }
+        UserInfoResponse response = new UserInfoResponse(
+                user.getId().toString(),
+                user.getEmail(),
+                user.getFullName(),
+                user.getOrganizationId() != null ? user.getOrganizationId().toString() : null,
+                organizationName,
+                role,
+                user.getIsActive(),
+                user.getPreferredLocale()
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    public record UserInfoResponse(String id, String email, String fullName, String organizationId, String organizationName, String role, Boolean active, String preferredLocale) {}
+
+    public record UpdateLocaleRequest(String locale) {}
 }

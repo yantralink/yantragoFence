@@ -144,6 +144,7 @@ public class UserService {
         if (request.getPhone() != null) user.setPhone(request.getPhone());
         if (request.getIsActive() != null) user.setIsActive(request.getIsActive());
         if (request.getIsLocked() != null) user.setIsLocked(request.getIsLocked());
+        if (request.getPreferredLocale() != null) user.setPreferredLocale(request.getPreferredLocale());
 
         user = userRepository.save(user);
         log.info("Updated user id={}", user.getId());
@@ -187,7 +188,8 @@ public class UserService {
                 user.getFullName(),
                 user.getPhone(),
                 user.getIsActive(),
-                user.getIsLocked()
+                user.getIsLocked(),
+                user.getPreferredLocale()
         );
     }
 }

@@ -36,6 +36,9 @@ public class User extends BaseEntity {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
+    @Column(name = "preferred_locale", nullable = false, length = 10)
+    private String preferredLocale = "en";
+
     public java.util.UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(java.util.UUID organizationId) { this.organizationId = organizationId; }
     public String getEmail() { return email; }
@@ -52,4 +55,6 @@ public class User extends BaseEntity {
     public void setIsLocked(Boolean isLocked) { this.isLocked = isLocked; }
     public LocalDateTime getLastLoginAt() { return lastLoginAt; }
     public void setLastLoginAt(LocalDateTime lastLoginAt) { this.lastLoginAt = lastLoginAt; }
+    public String getPreferredLocale() { return preferredLocale; }
+    public void setPreferredLocale(String preferredLocale) { this.preferredLocale = preferredLocale; }
 }

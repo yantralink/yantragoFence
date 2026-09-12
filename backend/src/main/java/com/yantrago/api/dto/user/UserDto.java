@@ -15,11 +15,17 @@ public class UserDto {
     private String phone;
     private Boolean isActive;
     private Boolean isLocked;
+    private String preferredLocale;
 
     public UserDto() {}
 
     public UserDto(UUID id, UUID organizationId, String email, String fullName,
                    String phone, Boolean isActive, Boolean isLocked) {
+        this(id, organizationId, email, fullName, phone, isActive, isLocked, "en");
+    }
+
+    public UserDto(UUID id, UUID organizationId, String email, String fullName,
+                   String phone, Boolean isActive, Boolean isLocked, String preferredLocale) {
         this.id = id;
         this.organizationId = organizationId;
         this.email = email;
@@ -27,6 +33,7 @@ public class UserDto {
         this.phone = phone;
         this.isActive = isActive;
         this.isLocked = isLocked;
+        this.preferredLocale = preferredLocale;
     }
 
     public UUID getId() { return id; }
@@ -43,4 +50,6 @@ public class UserDto {
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
     public Boolean getIsLocked() { return isLocked; }
     public void setIsLocked(Boolean isLocked) { this.isLocked = isLocked; }
+    public String getPreferredLocale() { return preferredLocale; }
+    public void setPreferredLocale(String preferredLocale) { this.preferredLocale = preferredLocale; }
 }

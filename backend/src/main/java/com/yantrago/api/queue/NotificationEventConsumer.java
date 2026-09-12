@@ -128,7 +128,7 @@ public class NotificationEventConsumer {
         // Resolve machine name for template rendering
         String machineName = resolveMachineName(machineId);
 
-        // Build template variables
+        // Build template variables (shared across all recipients)
         Map<String, String> variables = new HashMap<>();
         variables.put("machineName", machineName != null ? machineName : "Unknown");
         variables.put("observedValue", message.getObservedValue() != null
@@ -136,31 +136,32 @@ public class NotificationEventConsumer {
         variables.put("observedUnit", message.getObservedUnit() != null ? message.getObservedUnit() : "");
         variables.put("message", message.getMessage() != null ? message.getMessage() : "");
 
-        // Render template (English default for Phase 3; locale resolution is Phase 4)
-        NotificationTemplateService.RenderedTemplate template = templateService.render(
-                orgId, alertType, incidentState, "en", variables
-        );
-
-        String title;
-        String body;
-        int templateVersion;
-
-        if (template != null) {
-            title = template.title();
-            body = template.body();
-            templateVersion = template.templateVersion();
-        } else {
-            // Fallback: use the message from the transition
-            title = alertType + " — " + incidentState;
-            body = message.getMessage() != null ? message.getMessage() : "Alert: " + alertType;
-            templateVersion = 0;
-        }
-
-        // Create inbox items for each recipient with per-event/recipient deduplication
+        // Create inbox items for each recipient with per-event/recipient deduplication.
+        // Phase 8: render template per-recipient using their preferred locale.
         for (RecipientSnapshot recipient : recipients) {
             try {
+                String locale = recipient.preferredLocale() != null ? recipient.preferredLocale() : "en";
+                NotificationTemplateService.RenderedTemplate template = templateService.render(
+                        orgId, alertType, incidentState, locale, variables
+                );
+
+                String title;
+                String body;
+                int templateVersion;
+
+                if (template != null) {
+                    title = template.title();
+                    body = template.body();
+                    templateVersion = template.templateVersion();
+                } else {
+                    // Fallback: use the message from the transition
+                    title = alertType + " — " + incidentState;
+                    body = message.getMessage() != null ? message.getMessage() : "Alert: " + alertType;
+                    templateVersion = 0;
+                }
+
                 createInboxItem(message, eventId, orgId, machineId, recipient,
-                        title, body, templateVersion);
+                        title, body, templateVersion, locale);
             } catch (Exception e) {
                 log.error("Failed to create inbox item for user={} eventId={}: {}",
                         recipient.userId(), eventId, e.getMessage(), e);
@@ -177,7 +178,7 @@ public class NotificationEventConsumer {
      */
     private void createInboxItem(AlertTransitionMessage message, UUID eventId,
                                   UUID orgId, UUID machineId, RecipientSnapshot recipient,
-                                  String title, String body, int templateVersion) {
+                                  String title, String body, int templateVersion, String locale) {
         UUID userId = recipient.userId();
 
         // Check for existing inbox item (dedup)
@@ -209,7 +210,7 @@ public class NotificationEventConsumer {
         inbox.setMachineId(machineId);
         inbox.setObservedValue(message.getObservedValue());
         inbox.setObservedUnit(message.getObservedUnit());
-        inbox.setLocale("en");
+        inbox.setLocale(locale != null ? locale : "en");
         inbox.setTemplateVersion(templateVersion);
         inbox.setIsRead(false);
         // Event-time recipient snapshot

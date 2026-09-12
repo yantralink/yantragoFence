@@ -51,6 +51,15 @@ class AuthService {
     return User.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// Updates the current user's preferred notification locale.
+  /// Phase 8: allows users to select Hindi, Marathi, or English.
+  Future<User> updatePreferredLocale(String locale) async {
+    final response = await _dio.put('/api/v1/auth/me/locale', data: {
+      'locale': locale,
+    });
+    return User.fromJson(response.data as Map<String, dynamic>);
+  }
+
   /// Checks if a token exists in secure storage.
   Future<bool> isAuthenticated() async {
     final token = await SecureStorage.getAccessToken();

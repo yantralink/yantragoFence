@@ -99,6 +99,42 @@ class ProfilePage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
+            // Language selection (Phase 8)
+            const AppSectionHeader(title: 'Language'),
+            AppSurfaceCard(
+              child: Column(
+                children: <Widget>[
+                  _LanguageTile(
+                    label: 'English',
+    code: 'en',
+    selected: user.preferredLocale == 'en',
+    onTap: () => ref.read(authStateProvider.notifier).updatePreferredLocale('en'),
+                  ),
+                  _LanguageTile(
+                    label: 'हिंदी (Hindi)',
+    code: 'hi',
+    selected: user.preferredLocale == 'hi',
+    onTap: () => ref.read(authStateProvider.notifier).updatePreferredLocale('hi'),
+                  ),
+                  _LanguageTile(
+                    label: 'मराठी (Marathi)',
+    code: 'mr',
+    selected: user.preferredLocale == 'mr',
+    onTap: () => ref.read(authStateProvider.notifier).updatePreferredLocale('mr'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                'Notifications will be delivered in your selected language.',
+                style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Notification preferences
             AppSurfaceCard(
               onTap: () => context.push('/app/notifications/preferences'),
@@ -128,6 +164,47 @@ class ProfilePage extends ConsumerWidget {
               icon: Icons.logout,
               onPressed: () => ref.read(authStateProvider.notifier).logout(),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Language selection tile for the profile page.
+class _LanguageTile extends StatelessWidget {
+  final String label;
+  final String code;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _LanguageTile({
+    required this.label,
+    required this.code,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(label, style: text.bodyLarge),
+            ),
+            if (selected)
+              Icon(Icons.check_circle, color: colors.primary, size: 22)
+            else
+              Icon(Icons.radio_button_unchecked,
+                  color: colors.onSurfaceVariant, size: 22),
           ],
         ),
       ),

@@ -15,6 +15,8 @@ public class UpdateUserRequest {
     private String phone;
     private Boolean isActive;
     private Boolean isLocked;
+    @Size(max = 10)
+    private String preferredLocale;
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -28,4 +30,6 @@ public class UpdateUserRequest {
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
     public Boolean getIsLocked() { return isLocked; }
     public void setIsLocked(Boolean isLocked) { this.isLocked = isLocked; }
+    public String getPreferredLocale() { return preferredLocale; }
+    public void setPreferredLocale(String preferredLocale) { this.preferredLocale = preferredLocale; }
 }

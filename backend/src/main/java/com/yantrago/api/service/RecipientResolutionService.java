@@ -71,9 +71,11 @@ public class RecipientResolutionService {
 
         try {
             snapshots = jdbcTemplate.query(
-                    "SELECT c.user_id, c.id AS customer_id, c.name AS customer_name " +
+                    "SELECT c.user_id, c.id AS customer_id, c.name AS customer_name, " +
+                            "u.preferred_locale " +
                             "FROM machine_assignments ma " +
                             "JOIN customers c ON c.id = ma.customer_id " +
+                            "JOIN users u ON u.id = c.user_id " +
                             "WHERE ma.organization_id = ? AND ma.machine_id = ? " +
                             "AND ma.unassigned_at IS NULL " +
                             "AND c.user_id IS NOT NULL " +
@@ -81,7 +83,8 @@ public class RecipientResolutionService {
                     (rs, rowNum) -> new RecipientSnapshot(
                             rs.getObject("user_id", UUID.class),
                             rs.getObject("customer_id", UUID.class),
-                            rs.getString("customer_name")
+                            rs.getString("customer_name"),
+                            rs.getString("preferred_locale") != null ? rs.getString("preferred_locale") : "en"
                     ),
                     organizationId, machineId
             );
@@ -133,5 +136,5 @@ public class RecipientResolutionService {
      * Event-time recipient snapshot — captures the user ID, customer ID, and
      * customer name at the time of notification creation.
      */
-    public record RecipientSnapshot(UUID userId, UUID customerId, String customerName) {}
+    public record RecipientSnapshot(UUID userId, UUID customerId, String customerName, String preferredLocale) {}
 }
