@@ -104,9 +104,27 @@ class NotificationCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     if (notification.incidentState == 'RESOLVED')
-                      AppStatusBadge(
+                      const AppStatusBadge(
                         label: 'Resolved',
                         tone: StatusTone.success,
+                        dot: true,
+                      ),
+                    if (notification.isDone)
+                      const AppStatusBadge(
+                        label: 'Done',
+                        tone: StatusTone.success,
+                        dot: true,
+                      ),
+                    if (notification.isAck)
+                      const AppStatusBadge(
+                        label: 'Ack',
+                        tone: StatusTone.info,
+                        dot: true,
+                      ),
+                    if (notification.isFailed)
+                      const AppStatusBadge(
+                        label: 'Failed',
+                        tone: StatusTone.danger,
                         dot: true,
                       ),
                   ],
@@ -120,6 +138,14 @@ class NotificationCard extends StatelessWidget {
   }
 
   StatusTone _tone(NotificationInbox n) {
+    // Command notifications use tone based on outcome, not just severity
+    if (n.isCommand) {
+      if (n.alertType == 'COMMAND_FAILED') return StatusTone.danger;
+      if (n.alertType == 'MACHINE_ON' || n.alertType == 'MACHINE_OFF') {
+        return StatusTone.success;
+      }
+      if (n.alertType == 'COMMAND_ACK') return StatusTone.info;
+    }
     if (n.isCritical) return StatusTone.danger;
     if (n.isWarning) return StatusTone.warning;
     return StatusTone.info;
@@ -137,6 +163,22 @@ class NotificationCard extends StatelessWidget {
         return Icons.wifi_off_outlined;
       case 'SIM_EXPIRY':
         return Icons.sim_card_alert_outlined;
+      case 'EXTERNAL_POWER_LOW':
+        return Icons.power_outlined;
+      case 'EXTERNAL_POWER_CUT':
+        return Icons.power_off_outlined;
+      case 'LOW_POWER_SHUTDOWN':
+        return Icons.bedtime_outlined;
+      case 'INTERNAL_BATTERY_LOW':
+        return Icons.battery_2_bar_outlined;
+      case 'COMMAND_ACK':
+        return Icons.check_circle_outline;
+      case 'MACHINE_ON':
+        return Icons.power_settings_new;
+      case 'MACHINE_OFF':
+        return Icons.power_off;
+      case 'COMMAND_FAILED':
+        return Icons.error_outline;
       default:
         return Icons.notifications_outlined;
     }

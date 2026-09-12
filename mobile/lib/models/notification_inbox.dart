@@ -175,6 +175,22 @@ class NotificationInbox {
   bool get isWarning => severity == 'WARNING';
   bool get isInfo => severity == 'INFO';
 
+  /// Command lifecycle notification types from relay ON/OFF commands.
+  bool get isCommand =>
+      alertType == 'COMMAND_ACK' ||
+      alertType == 'MACHINE_ON' ||
+      alertType == 'MACHINE_OFF' ||
+      alertType == 'COMMAND_FAILED';
+
+  /// Command completed successfully (DONE state).
+  bool get isDone => incidentState == 'DONE';
+
+  /// Command acknowledged by device (ACK state).
+  bool get isAck => incidentState == 'ACK';
+
+  /// Command failed (FAILED state).
+  bool get isFailed => incidentState == 'FAILED';
+
   /// Display label for the alert type.
   String get alertTypeLabel {
     switch (alertType) {
@@ -188,6 +204,22 @@ class NotificationInbox {
         return 'Device Offline';
       case 'SIM_EXPIRY':
         return 'SIM Expiry';
+      case 'EXTERNAL_POWER_LOW':
+        return 'External Power Low';
+      case 'EXTERNAL_POWER_CUT':
+        return 'External Power Cut';
+      case 'LOW_POWER_SHUTDOWN':
+        return 'Low Power Shutdown';
+      case 'INTERNAL_BATTERY_LOW':
+        return 'Internal Battery Low';
+      case 'COMMAND_ACK':
+        return 'Command Acknowledged';
+      case 'MACHINE_ON':
+        return 'Machine Turned On';
+      case 'MACHINE_OFF':
+        return 'Machine Turned Off';
+      case 'COMMAND_FAILED':
+        return 'Command Failed';
       default:
         return alertType.replaceAll('_', ' ');
     }

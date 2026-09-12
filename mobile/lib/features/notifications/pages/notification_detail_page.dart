@@ -133,6 +133,26 @@ class _DetailContent extends StatelessWidget {
               children: <Widget>[
                 Row(
                   children: <Widget>[
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: (Theme.of(context)
+                                .extension<AppSemanticColors>()
+                                ?.toneSoft(tone) ??
+                            colors.primary.withValues(alpha: 0.12)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        _icon(notification),
+                        size: 22,
+                        color: Theme.of(context)
+                                .extension<AppSemanticColors>()
+                                ?.tone(tone) ??
+                            colors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         notification.alertTypeLabel,
@@ -167,7 +187,7 @@ class _DetailContent extends StatelessWidget {
               children: <Widget>[
                 _DetailRow(
                   label: 'Status',
-                  value: notification.incidentState,
+                  value: _statusLabel(notification),
                 ),
                 if (notification.observedValue != null)
                   _DetailRow(
@@ -246,9 +266,50 @@ class _DetailContent extends StatelessWidget {
   }
 
   StatusTone _tone(NotificationInbox n) {
+    // Command notifications use tone based on outcome, not just severity
+    if (n.isCommand) {
+      if (n.alertType == 'COMMAND_FAILED') return StatusTone.danger;
+      if (n.alertType == 'MACHINE_ON' || n.alertType == 'MACHINE_OFF') {
+        return StatusTone.success;
+      }
+      if (n.alertType == 'COMMAND_ACK') return StatusTone.info;
+    }
     if (n.isCritical) return StatusTone.danger;
     if (n.isWarning) return StatusTone.warning;
     return StatusTone.info;
+  }
+
+  IconData _icon(NotificationInbox n) {
+    switch (n.alertType) {
+      case 'LOW_BATTERY':
+        return Icons.battery_alert_outlined;
+      case 'VOLTAGE_DROP':
+        return Icons.bolt_outlined;
+      case 'GSM_SIGNAL_LOW':
+        return Icons.signal_cellular_connected_no_internet_0_bar;
+      case 'DEVICE_OFFLINE':
+        return Icons.wifi_off_outlined;
+      case 'SIM_EXPIRY':
+        return Icons.sim_card_alert_outlined;
+      case 'EXTERNAL_POWER_LOW':
+        return Icons.power_outlined;
+      case 'EXTERNAL_POWER_CUT':
+        return Icons.power_off_outlined;
+      case 'LOW_POWER_SHUTDOWN':
+        return Icons.bedtime_outlined;
+      case 'INTERNAL_BATTERY_LOW':
+        return Icons.battery_2_bar_outlined;
+      case 'COMMAND_ACK':
+        return Icons.check_circle_outline;
+      case 'MACHINE_ON':
+        return Icons.power_settings_new;
+      case 'MACHINE_OFF':
+        return Icons.power_off;
+      case 'COMMAND_FAILED':
+        return Icons.error_outline;
+      default:
+        return Icons.notifications_outlined;
+    }
   }
 
   String _formatDateTime(DateTime dt) {
@@ -257,6 +318,26 @@ class _DetailContent extends StatelessWidget {
     if (d.inHours < 1) return '${d.inMinutes} min ago';
     if (d.inDays < 1) return '${d.inHours} h ago';
     return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Friendlier status label for command and alert states.
+  String _statusLabel(NotificationInbox n) {
+    switch (n.incidentState) {
+      case 'OPEN':
+        return 'Open';
+      case 'RESOLVED':
+        return 'Resolved';
+      case 'ESCALATED':
+        return 'Escalated';
+      case 'ACK':
+        return 'Acknowledged by device';
+      case 'DONE':
+        return 'Completed';
+      case 'FAILED':
+        return 'Failed';
+      default:
+        return n.incidentState;
+    }
   }
 }
 

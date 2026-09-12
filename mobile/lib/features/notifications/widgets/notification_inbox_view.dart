@@ -191,6 +191,22 @@ class _NotificationFilterSheetState
                 selected: _alertType == 'SIM_EXPIRY',
                 onSelected: (_) => setState(() => _alertType = 'SIM_EXPIRY'),
               ),
+              _FilterChip(
+                label: 'Machine On',
+                selected: _alertType == 'MACHINE_ON',
+                onSelected: (_) => setState(() => _alertType = 'MACHINE_ON'),
+              ),
+              _FilterChip(
+                label: 'Machine Off',
+                selected: _alertType == 'MACHINE_OFF',
+                onSelected: (_) => setState(() => _alertType = 'MACHINE_OFF'),
+              ),
+              _FilterChip(
+                label: 'Command Failed',
+                selected: _alertType == 'COMMAND_FAILED',
+                onSelected: (_) =>
+                    setState(() => _alertType = 'COMMAND_FAILED'),
+              ),
             ],
           ),
           const SizedBox(height: 16),
