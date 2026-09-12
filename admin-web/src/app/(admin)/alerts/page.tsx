@@ -51,6 +51,10 @@ const ALERT_TYPE_LABELS: Record<string, string> = {
   EXTERNAL_POWER_CUT: 'External Power Cut',
   LOW_POWER_SHUTDOWN: 'Low Power Shutdown',
   INTERNAL_BATTERY_LOW: 'Internal Battery Low',
+  COMMAND_ACK: 'Command Acknowledged',
+  MACHINE_ON: 'Machine Turned On',
+  MACHINE_OFF: 'Machine Turned Off',
+  COMMAND_FAILED: 'Command Failed',
 };
 
 function formatDate(dateStr: string): string {

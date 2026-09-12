@@ -6,6 +6,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,14 +49,13 @@ public class CommandBroadcastService {
         }
 
         String destination = "/topic/command/" + machineId;
-        Map<String, Object> payload = Map.of(
-                "commandId", commandId.toString(),
-                "machineId", machineId.toString(),
-                "status", status,
-                "attemptCount", attemptCount,
-                "error", error,
-                "timestamp", LocalDateTime.now().toString()
-        );
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("commandId", commandId.toString());
+        payload.put("machineId", machineId.toString());
+        payload.put("status", status);
+        payload.put("attemptCount", attemptCount);
+        payload.put("error", error != null ? error : "");
+        payload.put("timestamp", LocalDateTime.now().toString());
 
         messagingTemplate.convertAndSend(destination, payload);
         log.debug("Broadcasted command status to {} status={}", destination, status);

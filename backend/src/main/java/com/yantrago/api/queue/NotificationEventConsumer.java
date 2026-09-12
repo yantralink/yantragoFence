@@ -134,6 +134,7 @@ public class NotificationEventConsumer {
         variables.put("observedValue", message.getObservedValue() != null
                 ? String.valueOf(message.getObservedValue()) : "");
         variables.put("observedUnit", message.getObservedUnit() != null ? message.getObservedUnit() : "");
+        variables.put("message", message.getMessage() != null ? message.getMessage() : "");
 
         // Render template (English default for Phase 3; locale resolution is Phase 4)
         NotificationTemplateService.RenderedTemplate template = templateService.render(
