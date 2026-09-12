@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "985709311978",
+    "project_id": "yantrago-1ae3f",
+    "storage_bucket": "yantrago-1ae3f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:985709311978:android:8c9b6547095b08bf7fa493",
+        "android_client_info": {
+          "package_name": "com.yantrago.yantrago"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnWgNypCpZcnzSbSo_p2bSfJa1M8Rpb2E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
