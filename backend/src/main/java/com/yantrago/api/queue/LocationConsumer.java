@@ -1,6 +1,8 @@
 package com.yantrago.api.queue;
 
+import com.yantrago.api.service.AutoGeofenceService;
 import com.yantrago.api.service.DeviceResolverService;
+import com.yantrago.api.service.GeofenceBreachService;
 import com.yantrago.api.service.LocationService;
 import com.yantrago.api.websocket.LocationBroadcastService;
 import com.yantrago.shared.queue.LocationMessage;
@@ -31,13 +33,19 @@ public class LocationConsumer {
     private final LocationService locationService;
     private final LocationBroadcastService locationBroadcastService;
     private final DeviceResolverService deviceResolverService;
+    private final GeofenceBreachService geofenceBreachService;
+    private final AutoGeofenceService autoGeofenceService;
 
     public LocationConsumer(LocationService locationService,
                             LocationBroadcastService locationBroadcastService,
-                            DeviceResolverService deviceResolverService) {
+                            DeviceResolverService deviceResolverService,
+                            GeofenceBreachService geofenceBreachService,
+                            AutoGeofenceService autoGeofenceService) {
         this.locationService = locationService;
         this.locationBroadcastService = locationBroadcastService;
         this.deviceResolverService = deviceResolverService;
+        this.geofenceBreachService = geofenceBreachService;
+        this.autoGeofenceService = autoGeofenceService;
     }
 
     @RabbitListener(queues = QueueNames.LOCATION_QUEUE)
@@ -81,6 +89,36 @@ public class LocationConsumer {
                     message.getSpeed(), message.getCourse(),
                     recordedAt
             );
+
+            // Auto-create geofence if missing (Phase 10.5, opt-in via config)
+            if (deviceInfo.machineId() != null) {
+                try {
+                    autoGeofenceService.autoCreateIfMissing(
+                            deviceInfo.organizationId(),
+                            deviceInfo.machineId(),
+                            message.getLatitude(),
+                            message.getLongitude()
+                    );
+                } catch (Exception ae) {
+                    log.warn("Auto-geofence creation failed for machine={} (location still persisted): {}",
+                            deviceInfo.machineId(), ae.getMessage());
+                }
+            }
+
+            // Check geo-fence breach after location update (Phase 10)
+            if (deviceInfo.machineId() != null) {
+                try {
+                    geofenceBreachService.checkBreach(
+                            deviceInfo.organizationId(),
+                            deviceInfo.machineId(),
+                            message.getLatitude(),
+                            message.getLongitude()
+                    );
+                } catch (Exception ge) {
+                    log.warn("Geo-fence breach check failed for machine={} (location still persisted): {}",
+                            deviceInfo.machineId(), ge.getMessage());
+                }
+            }
         } catch (Exception e) {
             log.error("Failed to persist location for deviceId={}: {}",
                     message.getDeviceId(), e.getMessage(), e);

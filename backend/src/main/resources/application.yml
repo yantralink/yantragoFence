@@ -135,6 +135,15 @@ alert:
     batch-size: ${ALERT_EXPIRY_BATCH_SIZE:100}
     lease-seconds: ${ALERT_EXPIRY_LEASE_SECONDS:30}
 
+# Geo-fence auto-creation (Phase 10.5)
+# When enabled, a geofence is automatically created using the first GPS location
+# as the center. This protects machines from day one without manual setup.
+geofence:
+  auto-create:
+    enabled: ${GEOFENCE_AUTO_CREATE_ENABLED:false}   # off by default — opt-in
+    default-radius-meters: ${GEOFENCE_AUTO_CREATE_RADIUS:200}  # 200m default
+    name-template: "Auto-Geofence"                    # name prefix for auto-created geofences
+
 # Notification feature switches (Phase 6)
 # Per notification plan N11: feature switches separately control each event family
 # and push dispatch. Disabling push preserves inbox and incident processing.

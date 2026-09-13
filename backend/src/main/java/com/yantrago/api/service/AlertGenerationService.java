@@ -295,6 +295,22 @@ public class AlertGenerationService {
 
     private Double queryLatestTelemetryValue(UUID orgId, UUID machineId, String metric,
                                               LocalDateTime from, LocalDateTime to) {
+        // Speed is read from device_locations (one row per device, latest GPS fix).
+        // Other metrics are read from their respective time-series tables.
+        if ("speed".equals(metric)) {
+            try {
+                String sql = "SELECT dl.speed FROM device_locations dl " +
+                        "JOIN devices d ON dl.device_id = d.id " +
+                        "WHERE d.organization_id = ? AND dl.machine_id = ? " +
+                        "AND dl.recorded_at BETWEEN ? AND ? " +
+                        "ORDER BY dl.recorded_at DESC LIMIT 1";
+                return jdbcTemplate.queryForObject(sql, Double.class, orgId, machineId, from, to);
+            } catch (Exception e) {
+                log.debug("No speed data found for machineId={}: {}", machineId, e.getMessage());
+                return null;
+            }
+        }
+
         String table = switch (metric) {
             case "voltage" -> "voltage_readings";
             case "battery" -> "battery_readings";

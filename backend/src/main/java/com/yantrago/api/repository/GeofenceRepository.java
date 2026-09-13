@@ -1,0 +1,24 @@
+package com.yantrago.api.repository;
+
+import com.yantrago.api.model.Geofence;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface GeofenceRepository extends JpaRepository<Geofence, UUID> {
+
+    List<Geofence> findByOrganizationIdOrderByCreatedAtDesc(UUID organizationId);
+
+    Optional<Geofence> findByOrganizationIdAndMachineId(UUID organizationId, UUID machineId);
+
+    @Query("SELECT g FROM Geofence g WHERE g.organizationId = :orgId AND g.machineId = :machineId AND g.isActive = true")
+    Optional<Geofence> findActiveByMachineId(@Param("orgId") UUID orgId,
+                                              @Param("machineId") UUID machineId);
+
+    @Query("SELECT g FROM Geofence g WHERE g.organizationId = :orgId AND g.isActive = true")
+    List<Geofence> findActiveByOrganizationId(@Param("orgId") UUID orgId);
+}

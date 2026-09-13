@@ -213,6 +213,18 @@ class _NotificationFilterSheetState
                 onSelected: (_) =>
                     setState(() => _alertType = 'COMMAND_FAILED'),
               ),
+              _FilterChip(
+                label: 'Movement',
+                selected: _alertType == 'MACHINE_MOVING',
+                onSelected: (_) =>
+                    setState(() => _alertType = 'MACHINE_MOVING'),
+              ),
+              _FilterChip(
+                label: 'Geofence',
+                selected: _alertType == 'GEOFENCE_BREACH',
+                onSelected: (_) =>
+                    setState(() => _alertType = 'GEOFENCE_BREACH'),
+              ),
             ],
           ),
           const SizedBox(height: 16),

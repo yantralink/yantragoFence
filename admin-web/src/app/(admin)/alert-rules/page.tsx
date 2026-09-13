@@ -40,6 +40,7 @@ const ALERT_TYPES = [
   { value: 'LOW_BATTERY', label: 'Low Battery', metric: 'battery', unit: '%' },
   { value: 'VOLTAGE_DROP', label: 'Voltage Drop', metric: 'voltage', unit: 'V' },
   { value: 'GSM_SIGNAL_LOW', label: 'Low GSM Signal', metric: 'gsm_signal', unit: '' },
+  { value: 'MACHINE_MOVING', label: 'Machine Moving', metric: 'speed', unit: 'km/h' },
 ];
 
 const SEVERITIES = ['CRITICAL', 'WARNING', 'INFO'];

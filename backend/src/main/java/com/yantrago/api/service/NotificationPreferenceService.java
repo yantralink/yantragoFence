@@ -203,6 +203,14 @@ public class NotificationPreferenceService {
                         List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
                 new EventCatalogDto("COMMAND_FAILED", "Command Failed",
                         "Triggered when a relay ON/OFF command fails or times out.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                // Phase 9: speed-based movement alert for theft detection
+                new EventCatalogDto("MACHINE_MOVING", "Machine Moving",
+                        "Triggered when the machine GPS speed exceeds the configured threshold — possible theft.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                // Phase 10: geo-fence breach alert for theft detection
+                new EventCatalogDto("GEOFENCE_BREACH", "Geo-Fence Breach",
+                        "Triggered when the machine moves outside its defined geo-fence boundary — possible theft.",
                         List.of("PUSH", "EMAIL", "SMS", "IN_APP"))
         );
     }

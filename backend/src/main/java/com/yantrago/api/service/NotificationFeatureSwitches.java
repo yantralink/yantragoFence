@@ -43,12 +43,15 @@ public class NotificationFeatureSwitches {
     // LOW_POWER_SHUTDOWN, INTERNAL_BATTERY_LOW) from BR05 alarm codes 0x0E/0x0F/0x15/0x19.
     // Command notifications: MACHINE_ON, MACHINE_OFF, COMMAND_ACK, COMMAND_FAILED
     // for relay ON/OFF command lifecycle events.
+    // Phase 9: added MACHINE_MOVING for speed-based theft detection.
+    // Phase 10: added GEOFENCE_BREACH for geo-fence breach detection.
     private static final Set<String> ALL_FAMILIES = Set.of(
             "LOW_BATTERY", "VOLTAGE_DROP", "GSM_SIGNAL_LOW",
             "DEVICE_OFFLINE", "SIM_EXPIRY",
             "EXTERNAL_POWER_LOW", "EXTERNAL_POWER_CUT",
             "LOW_POWER_SHUTDOWN", "INTERNAL_BATTERY_LOW",
-            "MACHINE_ON", "MACHINE_OFF", "COMMAND_ACK", "COMMAND_FAILED"
+            "MACHINE_ON", "MACHINE_OFF", "COMMAND_ACK", "COMMAND_FAILED",
+            "MACHINE_MOVING", "GEOFENCE_BREACH"
     );
 
     public NotificationFeatureSwitches(

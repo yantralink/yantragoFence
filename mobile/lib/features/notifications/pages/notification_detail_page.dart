@@ -274,6 +274,8 @@ class _DetailContent extends StatelessWidget {
       }
       if (n.alertType == 'COMMAND_ACK') return StatusTone.info;
     }
+    // Movement or geofence alert is always danger — possible theft
+    if (n.isTheftAlert) return StatusTone.danger;
     if (n.isCritical) return StatusTone.danger;
     if (n.isWarning) return StatusTone.warning;
     return StatusTone.info;
@@ -307,6 +309,10 @@ class _DetailContent extends StatelessWidget {
         return Icons.power_off;
       case 'COMMAND_FAILED':
         return Icons.error_outline;
+      case 'MACHINE_MOVING':
+        return Icons.directions_run;
+      case 'GEOFENCE_BREACH':
+        return Icons.location_off_outlined;
       default:
         return Icons.notifications_outlined;
     }

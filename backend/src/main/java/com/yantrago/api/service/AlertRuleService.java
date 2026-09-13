@@ -36,7 +36,7 @@ public class AlertRuleService {
 
     // Supported alert types for rule creation. Offline and expiry are system-managed.
     private static final java.util.Set<String> SUPPORTED_RULE_TYPES = java.util.Set.of(
-            "LOW_BATTERY", "VOLTAGE_DROP", "GSM_SIGNAL_LOW"
+            "LOW_BATTERY", "VOLTAGE_DROP", "GSM_SIGNAL_LOW", "MACHINE_MOVING"
     );
 
     private static final java.util.Set<String> VALID_SEVERITIES = java.util.Set.of(
@@ -44,7 +44,7 @@ public class AlertRuleService {
     );
 
     private static final java.util.Set<String> SUPPORTED_METRICS = java.util.Set.of(
-            "voltage", "battery", "gsm_signal"
+            "voltage", "battery", "gsm_signal", "speed"
     );
 
     // Valid operators in conditionConfig (case-insensitive). Also accepts the

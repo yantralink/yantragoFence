@@ -55,6 +55,8 @@ const ALERT_TYPE_LABELS: Record<string, string> = {
   MACHINE_ON: 'Machine Turned On',
   MACHINE_OFF: 'Machine Turned Off',
   COMMAND_FAILED: 'Command Failed',
+  MACHINE_MOVING: 'Machine Moving',
+  GEOFENCE_BREACH: 'Geo-Fence Breach',
 };
 
 function formatDate(dateStr: string): string {

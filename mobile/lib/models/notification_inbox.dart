@@ -182,6 +182,15 @@ class NotificationInbox {
       alertType == 'MACHINE_OFF' ||
       alertType == 'COMMAND_FAILED';
 
+  /// Speed-based movement alert — possible theft.
+  bool get isMovementAlert => alertType == 'MACHINE_MOVING';
+
+  /// Geo-fence breach alert — possible theft.
+  bool get isGeofenceAlert => alertType == 'GEOFENCE_BREACH';
+
+  /// Theft-related alert (movement or geofence breach).
+  bool get isTheftAlert => isMovementAlert || isGeofenceAlert;
+
   /// Command completed successfully (DONE state).
   bool get isDone => incidentState == 'DONE';
 
@@ -220,6 +229,10 @@ class NotificationInbox {
         return 'Machine Turned Off';
       case 'COMMAND_FAILED':
         return 'Command Failed';
+      case 'MACHINE_MOVING':
+        return 'Machine Moving';
+      case 'GEOFENCE_BREACH':
+        return 'Geo-Fence Breach';
       default:
         return alertType.replaceAll('_', ' ');
     }
