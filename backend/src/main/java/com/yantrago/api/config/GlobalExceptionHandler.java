@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
-        return buildErrorResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(SecurityException.class)

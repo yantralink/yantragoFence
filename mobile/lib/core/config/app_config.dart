@@ -42,6 +42,9 @@ class AppConfig {
   static const String deviceTokensEndpoint = '/api/v1/device-tokens';
   static const String deviceTokensDeactivateAllEndpoint = '/api/v1/device-tokens/deactivate-all';
 
+  // Customer settings endpoints (Phase 11)
+  static const String customerSettingsEndpoint = '/api/v1/customer/settings';
+
   // WebSocket STOMP destinations
   static const String wsTopicLocation = '/topic/locations';
   static const String wsTopicTelemetry = '/topic/telemetry';

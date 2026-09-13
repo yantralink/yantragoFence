@@ -16,5 +16,6 @@ public record GeofenceDto(
         Integer radiusMeters,
         Boolean isActive,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String customerName
 ) {}

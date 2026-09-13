@@ -171,6 +171,6 @@ class RecipientResolutionServiceTest {
     }
 
     private RecipientSnapshot createSnapshot() {
-        return new RecipientSnapshot(userId, customerId, "John Farmer");
+        return new RecipientSnapshot(userId, customerId, "John Farmer", "en");
     }
 }

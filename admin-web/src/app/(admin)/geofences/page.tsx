@@ -16,6 +16,7 @@ interface Geofence {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  customerName?: string | null;
 }
 
 interface Machine {
@@ -402,6 +403,9 @@ export default function AdminGeofencesPage() {
                     Name
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    Customer
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                     Machine
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
@@ -423,6 +427,11 @@ export default function AdminGeofencesPage() {
                   <tr key={g.id}>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">
                       {g.name}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {g.customerName ?? (
+                        <span className="text-gray-400">Unassigned</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {machineName(g.machineId)}

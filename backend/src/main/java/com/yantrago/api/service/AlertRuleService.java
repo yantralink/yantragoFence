@@ -5,7 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yantrago.api.dto.alert.AlertRuleDto;
 import com.yantrago.api.dto.alert.AlertRuleRequest;
 import com.yantrago.api.model.AlertRule;
+import com.yantrago.api.model.Customer;
+import com.yantrago.api.model.Machine;
 import com.yantrago.api.repository.AlertRuleRepository;
+import com.yantrago.api.repository.CustomerRepository;
+import com.yantrago.api.repository.MachineRepository;
 import com.yantrago.api.security.PermissionEvaluator;
 import com.yantrago.api.security.TenantGuard;
 import org.slf4j.Logger;
@@ -13,6 +17,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,24 +68,40 @@ public class AlertRuleService {
     private final PermissionEvaluator permissionEvaluator;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final CustomerRepository customerRepository;
+    private final MachineRepository machineRepository;
 
     public AlertRuleService(AlertRuleRepository alertRuleRepository,
                              OwnerContextService ownerContextService,
                              TenantGuard tenantGuard,
                              PermissionEvaluator permissionEvaluator,
                              JdbcTemplate jdbcTemplate,
-                             ObjectMapper objectMapper) {
+                             ObjectMapper objectMapper,
+                             CustomerRepository customerRepository,
+                             MachineRepository machineRepository) {
         this.alertRuleRepository = alertRuleRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
         this.permissionEvaluator = permissionEvaluator;
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
+        this.customerRepository = customerRepository;
+        this.machineRepository = machineRepository;
     }
 
     @Transactional(readOnly = true)
     public Page<AlertRuleDto> listRules(Pageable pageable) {
         UUID orgId = ownerContextService.getOrganizationId();
+
+        // Customer-role users: only see rules for their own machines
+        UUID customerId = getCustomerIdIfCustomer();
+        if (customerId != null) {
+            return alertRuleRepository
+                    .findByOrganizationIdAndCustomerMachines(orgId, customerId, pageable)
+                    .map(this::toDto);
+        }
+
+        // Admin / org_admin: see all rules in org
         return alertRuleRepository.findByOrganizationId(orgId, pageable).map(this::toDto);
     }
 
@@ -87,6 +110,7 @@ public class AlertRuleService {
         AlertRule rule = alertRuleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Alert rule not found: " + id));
         tenantGuard.validateTenantAccess(rule.getOrganizationId());
+        validateRuleOwnership(rule);
         return toDto(rule);
     }
 
@@ -94,6 +118,7 @@ public class AlertRuleService {
     public AlertRuleDto createRule(AlertRuleRequest request) {
         UUID orgId = ownerContextService.getOrganizationId();
         validateRequest(request);
+        validateMachineOwnership(orgId, request.getMachineId());
 
         AlertRule rule = new AlertRule();
         rule.setOrganizationId(orgId);
@@ -124,6 +149,8 @@ public class AlertRuleService {
                 .orElseThrow(() -> new IllegalArgumentException("Alert rule not found: " + id));
         tenantGuard.validateTenantAccess(rule.getOrganizationId());
         validateRequest(request);
+        validateMachineOwnership(rule.getOrganizationId(), request.getMachineId());
+        validateRuleOwnership(rule);
 
         String oldConfig = rule.getConditionConfig();
         int oldVersion = rule.getRuleVersion();
@@ -154,6 +181,7 @@ public class AlertRuleService {
         AlertRule rule = alertRuleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Alert rule not found: " + id));
         tenantGuard.validateTenantAccess(rule.getOrganizationId());
+        validateRuleOwnership(rule);
 
         writeAudit(rule.getId(), rule.getOrganizationId(), "DELETE", rule.getConditionConfig(), null,
                 rule.getRuleVersion(), null, permissionEvaluator.getCurrentUserId());
@@ -167,6 +195,7 @@ public class AlertRuleService {
         AlertRule rule = alertRuleRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Alert rule not found: " + id));
         tenantGuard.validateTenantAccess(rule.getOrganizationId());
+        validateRuleOwnership(rule);
 
         int oldVersion = rule.getRuleVersion();
         rule.setIsActive(active);
@@ -262,6 +291,7 @@ public class AlertRuleService {
     }
 
     private AlertRuleDto toDto(AlertRule r) {
+        String customerName = resolveCustomerName(r.getMachineId());
         return new AlertRuleDto(
                 r.getId(),
                 r.getOrganizationId(),
@@ -278,7 +308,91 @@ public class AlertRuleService {
                 r.getRuleVersion(),
                 r.getUpdatedBy(),
                 r.getCreatedAt(),
-                r.getUpdatedAt()
+                r.getUpdatedAt(),
+                customerName
         );
+    }
+
+    /**
+     * Resolves the customer name for a machine via a lightweight query.
+     * Returns null if machineId is null, unassigned, or customer not found.
+     */
+    private String resolveCustomerName(UUID machineId) {
+        if (machineId == null) return null;
+        try {
+            return jdbcTemplate.queryForObject(
+                    "SELECT c.name FROM machines m JOIN customers c ON m.customer_id = c.id " +
+                    "WHERE m.id = ?",
+                    String.class, machineId);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the customer ID if the current user has the 'customer' role,
+     * otherwise null. Used for customer-level isolation.
+     */
+    private UUID getCustomerIdIfCustomer() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return null;
+        }
+        boolean isCustomer = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> "ROLE_CUSTOMER".equals(a));
+        if (!isCustomer) {
+            return null;
+        }
+        Object principal = auth.getPrincipal();
+        if (!(principal instanceof UUID userId)) {
+            return null;
+        }
+        return customerRepository.findByUserId(userId)
+                .map(Customer::getId)
+                .orElse(null);
+    }
+
+    /**
+     * Validates that the current customer owns the specified machine.
+     * Admin/org_admin roles bypass this check (they have org-wide access).
+     */
+    private void validateMachineOwnership(UUID orgId, UUID machineId) {
+        UUID customerId = getCustomerIdIfCustomer();
+        if (customerId == null) {
+            return; // admin role — org-wide access
+        }
+        if (machineId == null) {
+            throw new SecurityException(
+                    "Access denied: customers can only create rules for their own machines");
+        }
+        Machine machine = machineRepository.findById(machineId)
+                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
+        if (!customerId.equals(machine.getCustomerId())) {
+            throw new SecurityException(
+                    "Access denied: machine " + machineId + " is not assigned to you");
+        }
+    }
+
+    /**
+     * Validates that the current customer owns the machine associated with
+     * the given alert rule. Admin/org_admin roles bypass this check.
+     */
+    private void validateRuleOwnership(AlertRule rule) {
+        UUID customerId = getCustomerIdIfCustomer();
+        if (customerId == null) {
+            return; // admin role — org-wide access
+        }
+        if (rule.getMachineId() == null) {
+            throw new SecurityException(
+                    "Access denied: org-wide rules can only be managed by admins");
+        }
+        Machine machine = machineRepository.findById(rule.getMachineId())
+                .orElseThrow(() -> new SecurityException(
+                        "Access denied: machine not found for rule"));
+        if (!customerId.equals(machine.getCustomerId())) {
+            throw new SecurityException(
+                    "Access denied: this alert rule belongs to another customer's machine");
+        }
     }
 }

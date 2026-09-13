@@ -113,7 +113,7 @@ class AlertRuleControllerTest {
         AlertRuleDto dto = new AlertRuleDto(ruleId, orgId, null, "Test Rule",
                 "LOW_BATTERY", "{\"metric\":\"battery\"}", "WARNING", true,
                 10, 5, null, null, 1, null,
-                LocalDateTime.now(), LocalDateTime.now());
+                LocalDateTime.now(), LocalDateTime.now(), null);
         Page<AlertRuleDto> page = new PageImpl<>(List.of(dto), PageRequest.of(0, 20), 1);
         when(alertRuleService.listRules(any())).thenReturn(page);
 
@@ -127,7 +127,7 @@ class AlertRuleControllerTest {
         AlertRuleDto dto = new AlertRuleDto(ruleId, orgId, null, "Test Rule",
                 "LOW_BATTERY", "{\"metric\":\"battery\"}", "WARNING", true,
                 10, 5, null, null, 1, null,
-                LocalDateTime.now(), LocalDateTime.now());
+                LocalDateTime.now(), LocalDateTime.now(), null);
         when(alertRuleService.getRule(ruleId)).thenReturn(dto);
 
         AlertRuleDto result = alertRuleService.getRule(ruleId);
@@ -146,7 +146,7 @@ class AlertRuleControllerTest {
         AlertRuleDto dto = new AlertRuleDto(ruleId, orgId, null, "Test Rule",
                 "LOW_BATTERY", request.getConditionConfig(), "WARNING", true,
                 0, 5, null, null, 1, null,
-                LocalDateTime.now(), LocalDateTime.now());
+                LocalDateTime.now(), LocalDateTime.now(), null);
         when(alertRuleService.createRule(any())).thenReturn(dto);
 
         AlertRuleDto result = alertRuleService.createRule(request);
@@ -165,7 +165,7 @@ class AlertRuleControllerTest {
         AlertRuleDto dto = new AlertRuleDto(ruleId, orgId, null, "Test Rule",
                 "LOW_BATTERY", "{}", "WARNING", true,
                 0, 5, null, null, 1, null,
-                LocalDateTime.now(), LocalDateTime.now());
+                LocalDateTime.now(), LocalDateTime.now(), null);
         when(alertRuleService.toggleRule(ruleId, true)).thenReturn(dto);
 
         AlertRuleDto result = alertRuleService.toggleRule(ruleId, true);
@@ -177,7 +177,7 @@ class AlertRuleControllerTest {
         AlertRuleDto dto = new AlertRuleDto(ruleId, orgId, null, "Test Rule",
                 "LOW_BATTERY", "{}", "WARNING", false,
                 0, 5, null, null, 1, null,
-                LocalDateTime.now(), LocalDateTime.now());
+                LocalDateTime.now(), LocalDateTime.now(), null);
         when(alertRuleService.toggleRule(ruleId, false)).thenReturn(dto);
 
         AlertRuleDto result = alertRuleService.toggleRule(ruleId, false);

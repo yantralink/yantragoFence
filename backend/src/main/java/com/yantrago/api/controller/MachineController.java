@@ -89,6 +89,7 @@ public class MachineController {
     }
 
     @PostMapping("/{id}/assign-customer")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','ORG_ADMIN')")
     public ResponseEntity<MachineDto> assignToCustomer(@PathVariable UUID id,
                                                        @RequestBody Map<String, UUID> body) {
         UUID customerId = body.get("customerId");
@@ -99,6 +100,7 @@ public class MachineController {
     }
 
     @PostMapping("/{id}/unassign-customer")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','ORG_ADMIN')")
     public ResponseEntity<MachineDto> unassignFromCustomer(@PathVariable UUID id) {
         return ResponseEntity.ok(machineService.unassignMachineFromCustomer(id));
     }

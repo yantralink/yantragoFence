@@ -22,5 +22,6 @@ public record AlertRuleDto(
         Integer ruleVersion,
         UUID updatedBy,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String customerName
 ) {}

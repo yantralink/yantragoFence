@@ -20,6 +20,7 @@ interface AlertRule {
   escalationSeverity: string | null;
   createdAt: string;
   updatedAt: string;
+  customerName?: string | null;
 }
 
 interface Machine {
@@ -492,6 +493,9 @@ export default function AdminAlertRulesPage() {
                     Machine
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    Customer
+                  </th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                     Status
                   </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
@@ -528,6 +532,11 @@ export default function AdminAlertRulesPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {machineName(r.machineId)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {r.customerName ?? (
+                          <span className="text-gray-400">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span

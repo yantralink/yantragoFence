@@ -5,10 +5,12 @@ import com.yantrago.api.dto.machine.MachineDto;
 import com.yantrago.api.dto.machine.MachineStatusDto;
 import com.yantrago.api.dto.machine.TelemetryLatestDto;
 import com.yantrago.api.dto.machine.UpdateMachineRequest;
+import com.yantrago.api.model.AlertRule;
 import com.yantrago.api.model.Customer;
 import com.yantrago.api.model.Device;
 import com.yantrago.api.model.Machine;
 import com.yantrago.api.model.MachineAssignment;
+import com.yantrago.api.repository.AlertRuleRepository;
 import com.yantrago.api.repository.CustomerRepository;
 import com.yantrago.api.repository.DeviceRepository;
 import com.yantrago.api.repository.MachineAssignmentRepository;
@@ -47,19 +49,22 @@ public class MachineService {
     private final MachineAssignmentRepository machineAssignmentRepository;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
+    private final AlertRuleRepository alertRuleRepository;
 
     public MachineService(MachineRepository machineRepository,
                           DeviceRepository deviceRepository,
                           CustomerRepository customerRepository,
                           MachineAssignmentRepository machineAssignmentRepository,
                           OwnerContextService ownerContextService,
-                          TenantGuard tenantGuard) {
+                          TenantGuard tenantGuard,
+                          AlertRuleRepository alertRuleRepository) {
         this.machineRepository = machineRepository;
         this.deviceRepository = deviceRepository;
         this.customerRepository = customerRepository;
         this.machineAssignmentRepository = machineAssignmentRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
+        this.alertRuleRepository = alertRuleRepository;
     }
 
     @Transactional(readOnly = true)
@@ -278,7 +283,14 @@ public class MachineService {
         machine.setStatus("ACTIVE");
         machine = machineRepository.save(machine);
 
-        log.info("Assigned machine {} to customer {}", machine.getMachineId(), customerId);
+        // Auto-create a DISABLED MACHINE_MOVING alert rule for this machine.
+        // Per Phase 11 design: theft protection is NOT auto-enabled. The customer
+        // must explicitly enable it after installing the machine on their farm,
+        // so we don't create a geofence around the shop/transport location.
+        createDefaultMovementRule(orgId, machine.getId());
+
+        log.info("Assigned machine {} to customer {} (default movement rule created, disabled)",
+                machine.getMachineId(), customerId);
         return toDto(machine);
     }
 
@@ -299,8 +311,45 @@ public class MachineService {
         machine.setStatus("IN_STOCK");
         machine = machineRepository.save(machine);
 
+        // Remove auto-created MACHINE_MOVING rule (if it exists) so the next
+        // customer starts fresh. Only delete rules with the default name to
+        // avoid removing customer-customized rules.
+        alertRuleRepository.findAllRulesByTypeAndMachine(
+                machine.getOrganizationId(), machine.getId(), "MACHINE_MOVING"
+        ).stream()
+                .filter(r -> "Theft Protection — Movement".equals(r.getName()))
+                .forEach(alertRuleRepository::delete);
+
         log.info("Unassigned machine {} from customer", machine.getMachineId());
         return toDto(machine);
+    }
+
+    /**
+     * Creates a default MACHINE_MOVING alert rule (DISABLED) for a machine.
+     *
+     * Per Phase 11 design: the rule is created in DISABLED state. The customer
+     * must explicitly enable theft protection after installing the machine
+     * on their farm. This prevents false alerts during transport from shop
+     * to farm. Default threshold: speed > 10 km/h.
+     */
+    private void createDefaultMovementRule(UUID orgId, UUID machineId) {
+        try {
+            AlertRule rule = new AlertRule();
+            rule.setOrganizationId(orgId);
+            rule.setMachineId(machineId);
+            rule.setName("Theft Protection — Movement");
+            rule.setAlertType("MACHINE_MOVING");
+            rule.setConditionConfig("{\"metric\":\"speed\",\"operator\":\"GT\",\"threshold\":10}");
+            rule.setSeverity("CRITICAL");
+            rule.setIsActive(false); // DISABLED — customer enables after installation
+            rule.setSustainMinutes(0);
+            rule.setRecoveryMinutes(1);
+            rule.setRuleVersion(1);
+            alertRuleRepository.save(rule);
+            log.info("Auto-created DISABLED MACHINE_MOVING rule for machine={}", machineId);
+        } catch (Exception e) {
+            log.warn("Could not auto-create movement rule for machine={}: {}", machineId, e.getMessage());
+        }
     }
 
     /**

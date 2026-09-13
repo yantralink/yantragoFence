@@ -82,7 +82,7 @@ class NotificationDeliveryIntegrationTest {
 
         // Recipient snapshot: assigned customer's user
         when(recipientService.resolveRecipientSnapshots(orgId, machineId))
-                .thenReturn(List.of(new RecipientSnapshot(userId, customerId, "John Farmer")));
+                .thenReturn(List.of(new RecipientSnapshot(userId, customerId, "John Farmer", "en")));
 
         // Access still valid
         when(recipientService.revalidateAccess(orgId, machineId, userId)).thenReturn(true);
@@ -161,7 +161,7 @@ class NotificationDeliveryIntegrationTest {
         when(jdbcTemplate.queryForObject(eq("SELECT name FROM machines WHERE id = ?"),
                 eq(String.class), eq(machineId))).thenReturn("Generator-05");
         when(recipientService.resolveRecipientSnapshots(orgId, machineId))
-                .thenReturn(List.of(new RecipientSnapshot(userId, customerId, "Jane Farmer")));
+                .thenReturn(List.of(new RecipientSnapshot(userId, customerId, "Jane Farmer", "en")));
         when(recipientService.revalidateAccess(orgId, machineId, userId)).thenReturn(true);
         when(inboxRepository.findByEventIdAndUserId(eventId, userId)).thenReturn(Optional.empty());
         when(templateService.render(any(), eq("DEVICE_OFFLINE"), eq("OPEN"), eq("en"), any()))
@@ -220,7 +220,7 @@ class NotificationDeliveryIntegrationTest {
         when(jdbcTemplate.queryForObject(eq("SELECT name FROM machines WHERE id = ?"),
                 eq(String.class), eq(machineId))).thenReturn("Pump-12");
         when(recipientService.resolveRecipientSnapshots(orgId, machineId))
-                .thenReturn(List.of(new RecipientSnapshot(userId, customerId, "Bob Farmer")));
+                .thenReturn(List.of(new RecipientSnapshot(userId, customerId, "Bob Farmer", "en")));
         when(recipientService.revalidateAccess(orgId, machineId, userId)).thenReturn(true);
         when(inboxRepository.findByEventIdAndUserId(eventId, userId)).thenReturn(Optional.empty());
         when(templateService.render(any(), eq("SIM_EXPIRY"), eq("OPEN"), eq("en"), any()))
@@ -279,7 +279,7 @@ class NotificationDeliveryIntegrationTest {
         when(jdbcTemplate.queryForObject(eq("SELECT name FROM machines WHERE id = ?"),
                 eq(String.class), eq(machineId))).thenReturn("Tractor-01");
         when(recipientService.resolveRecipientSnapshots(orgId, machineId))
-                .thenReturn(List.of(new RecipientSnapshot(userId, customerId, "John Farmer")));
+                .thenReturn(List.of(new RecipientSnapshot(userId, customerId, "John Farmer", "en")));
         when(recipientService.revalidateAccess(orgId, machineId, userId)).thenReturn(true);
         when(inboxRepository.findByEventIdAndUserId(resolvedEventId, userId)).thenReturn(Optional.empty());
         when(templateService.render(any(), eq("LOW_BATTERY"), eq("RESOLVED"), eq("en"), any()))
@@ -338,8 +338,8 @@ class NotificationDeliveryIntegrationTest {
                 eq(String.class), eq(machineId))).thenReturn("Tractor-01");
         when(recipientService.resolveRecipientSnapshots(orgId, machineId))
                 .thenReturn(List.of(
-                        new RecipientSnapshot(user1, customer1, "User One"),
-                        new RecipientSnapshot(user2, customer2, "User Two")));
+                        new RecipientSnapshot(user1, customer1, "User One", "en"),
+                        new RecipientSnapshot(user2, customer2, "User Two", "en")));
         when(recipientService.revalidateAccess(orgId, machineId, user1)).thenReturn(true);
         when(recipientService.revalidateAccess(orgId, machineId, user2)).thenReturn(true);
         when(inboxRepository.findByEventIdAndUserId(eventId, user1)).thenReturn(Optional.empty());
@@ -442,8 +442,8 @@ class NotificationDeliveryIntegrationTest {
                 eq(String.class), eq(machineId))).thenReturn("Tractor-01");
         when(recipientService.resolveRecipientSnapshots(orgId, machineId))
                 .thenReturn(List.of(
-                        new RecipientSnapshot(user1, UUID.randomUUID(), "User One"),
-                        new RecipientSnapshot(user2, UUID.randomUUID(), "User Two")));
+                        new RecipientSnapshot(user1, UUID.randomUUID(), "User One", "en"),
+                        new RecipientSnapshot(user2, UUID.randomUUID(), "User Two", "en")));
         // User 1 access revoked, user 2 access valid
         when(recipientService.revalidateAccess(orgId, machineId, user1)).thenReturn(false);
         when(recipientService.revalidateAccess(orgId, machineId, user2)).thenReturn(true);

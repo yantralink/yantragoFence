@@ -135,14 +135,12 @@ alert:
     batch-size: ${ALERT_EXPIRY_BATCH_SIZE:100}
     lease-seconds: ${ALERT_EXPIRY_LEASE_SECONDS:30}
 
-# Geo-fence auto-creation (Phase 10.5)
-# When enabled, a geofence is automatically created using the first GPS location
-# as the center. This protects machines from day one without manual setup.
-geofence:
-  auto-create:
-    enabled: ${GEOFENCE_AUTO_CREATE_ENABLED:false}   # off by default — opt-in
-    default-radius-meters: ${GEOFENCE_AUTO_CREATE_RADIUS:200}  # 200m default
-    name-template: "Auto-Geofence"                    # name prefix for auto-created geofences
+# Geo-fence auto-creation (Phase 11)
+# Auto-creation on first GPS is DISABLED. Customers must explicitly enable
+# theft protection after installing the machine on their farm via the
+# mobile app toggle. This prevents false alerts during transport from shop.
+# A default DISABLED MACHINE_MOVING alert rule is auto-created when a machine
+# is assigned to a customer (see MachineService.assignMachineToCustomer).
 
 # Notification feature switches (Phase 6)
 # Per notification plan N11: feature switches separately control each event family

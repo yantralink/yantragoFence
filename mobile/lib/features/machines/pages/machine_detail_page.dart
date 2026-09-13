@@ -15,6 +15,7 @@ import 'package:yantrago/features/machines/widgets/location_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_info_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_telemetry_grid.dart';
 import 'package:yantrago/features/machines/widgets/on_off_button.dart';
+import 'package:yantrago/features/machines/widgets/theft_protection_card.dart';
 import 'package:go_router/go_router.dart';
 
 /// Machine detail page — shows machine info, location, telemetry, and
@@ -72,6 +73,8 @@ class MachineDetailPage extends ConsumerWidget {
                 MachineInfoCard(machine: m),
                 const SizedBox(height: 8),
                 LocationCard(machineId: m.id),
+                const SizedBox(height: 8),
+                TheftProtectionCard(machineId: m.id),
                 const AppSectionHeader(title: 'Telemetry', compact: true),
                 MachineTelemetryGrid(machine: m),
                 const AppSectionHeader(title: 'Controls', compact: true),

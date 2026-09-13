@@ -58,7 +58,7 @@ class NotificationDlqReplayServiceTest {
 
         when(recipientResolutionService.resolveRecipientSnapshots(any(), any()))
                 .thenReturn(List.of(new RecipientResolutionService.RecipientSnapshot(
-                        UUID.randomUUID(), UUID.randomUUID(), "Customer")));
+                        UUID.randomUUID(), UUID.randomUUID(), "Customer", "en")));
 
         var result = service.replayMessage(body, replayedBy, "Manual replay after DLQ review");
 

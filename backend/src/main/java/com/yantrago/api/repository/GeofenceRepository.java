@@ -21,4 +21,14 @@ public interface GeofenceRepository extends JpaRepository<Geofence, UUID> {
 
     @Query("SELECT g FROM Geofence g WHERE g.organizationId = :orgId AND g.isActive = true")
     List<Geofence> findActiveByOrganizationId(@Param("orgId") UUID orgId);
+
+    /**
+     * Returns geofences for machines owned by a specific customer within an org.
+     * Used for customer-level isolation (Phase 11).
+     */
+    @Query("SELECT g FROM Geofence g WHERE g.organizationId = :orgId " +
+            "AND g.machineId IN (SELECT m.id FROM Machine m WHERE m.customerId = :customerId) " +
+            "ORDER BY g.createdAt DESC")
+    List<Geofence> findByOrganizationIdAndCustomerMachines(@Param("orgId") UUID orgId,
+                                                            @Param("customerId") UUID customerId);
 }

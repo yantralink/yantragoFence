@@ -27,4 +27,25 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, UUID> {
     List<AlertRule> findActiveRulesByType(@Param("orgId") UUID orgId,
                                            @Param("machineId") UUID machineId,
                                            @Param("alertType") String alertType);
+
+    /**
+     * Returns all rules (active or inactive) for a specific machine and alert type.
+     * Used for cleanup when unassigning a machine from a customer (Phase 11).
+     */
+    @Query("SELECT r FROM AlertRule r WHERE r.organizationId = :orgId " +
+            "AND r.machineId = :machineId " +
+            "AND r.alertType = :alertType")
+    List<AlertRule> findAllRulesByTypeAndMachine(@Param("orgId") UUID orgId,
+                                                  @Param("machineId") UUID machineId,
+                                                  @Param("alertType") String alertType);
+
+    /**
+     * Returns alert rules for machines owned by a specific customer within an org.
+     * Used for customer-level isolation (Phase 11).
+     */
+    @Query("SELECT r FROM AlertRule r WHERE r.organizationId = :orgId " +
+            "AND r.machineId IN (SELECT m.id FROM Machine m WHERE m.customerId = :customerId)")
+    Page<AlertRule> findByOrganizationIdAndCustomerMachines(@Param("orgId") UUID orgId,
+                                                              @Param("customerId") UUID customerId,
+                                                              Pageable pageable);
 }

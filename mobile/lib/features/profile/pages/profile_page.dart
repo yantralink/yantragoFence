@@ -9,14 +9,20 @@ import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
+import 'package:yantrago/features/profile/providers/customer_settings_provider.dart';
 import 'package:yantrago/features/profile/providers/profile_provider.dart';
 
 /// Profile page — shows user profile and logout button.
-class ProfilePage extends ConsumerWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends ConsumerState<ProfilePage> {
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(profileProvider);
 
     if (user == null) {
@@ -135,6 +141,19 @@ class ProfilePage extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
+            // Theft Protection Defaults (Phase 11)
+            const AppSectionHeader(title: 'Theft Protection Defaults'),
+            _TheftProtectionDefaultsCard(),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                'These defaults apply when you enable theft protection on a new machine. You can still adjust each machine individually.',
+                style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Notification preferences
             AppSurfaceCard(
               onTap: () => context.push('/app/notifications/preferences'),
@@ -208,6 +227,161 @@ class _LanguageTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Theft Protection Defaults card — lets the customer set their preferred
+/// geofence radius and speed threshold for new machines (Phase 11).
+class _TheftProtectionDefaultsCard extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_TheftProtectionDefaultsCard> createState() =>
+      _TheftProtectionDefaultsCardState();
+}
+
+class _TheftProtectionDefaultsCardState
+    extends ConsumerState<_TheftProtectionDefaultsCard> {
+  late double _radiusSlider;
+  late double _speedSlider;
+  bool _initialized = false;
+  bool _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final settingsAsync = ref.watch(customerSettingsNotifierProvider);
+
+    return settingsAsync.when(
+      loading: () => AppSurfaceCard(
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (error, _) => AppSurfaceCard(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            children: <Widget>[
+              Icon(Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error, size: 32),
+              const SizedBox(height: 8),
+              Text('Could not load defaults',
+                  style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => ref
+                    .read(customerSettingsNotifierProvider.notifier)
+                    .load(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (settings) {
+        if (!_initialized) {
+          _radiusSlider = settings.defaultGeofenceRadiusMeters.toDouble();
+          _speedSlider = settings.defaultSpeedThresholdKmh.toDouble();
+          _initialized = true;
+        }
+
+        final ColorScheme colors = Theme.of(context).colorScheme;
+        final TextTheme text = Theme.of(context).textTheme;
+
+        return AppSurfaceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              // Geofence radius row
+              Row(
+                children: <Widget>[
+                  Icon(Icons.location_searching, color: colors.primary, size: 22),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Geofence Radius', style: text.bodyLarge),
+                  ),
+                  Text(
+                    '${_radiusSlider.round()} m',
+                    style: text.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              Slider(
+                value: _radiusSlider,
+                min: 50,
+                max: 1000,
+                divisions: 19, // 50m steps
+                label: '${_radiusSlider.round()} m',
+                onChanged: (v) => setState(() => _radiusSlider = v),
+              ),
+              const SizedBox(height: 8),
+
+              // Speed threshold row
+              Row(
+                children: <Widget>[
+                  Icon(Icons.speed, color: colors.primary, size: 22),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Speed Alert', style: text.bodyLarge),
+                  ),
+                  Text(
+                    '${_speedSlider.round()} km/h',
+                    style: text.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              Slider(
+                value: _speedSlider,
+                min: 1,
+                max: 30,
+                divisions: 29, // 1 km/h steps
+                label: '${_speedSlider.round()} km/h',
+                onChanged: (v) => setState(() => _speedSlider = v),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Alert when machine moves faster than ${_speedSlider.round()} km/h',
+                style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+
+              // Save button
+              AppActionButton(
+                label: 'Save Defaults',
+                style: AppActionButtonStyle.primary,
+                icon: Icons.save_outlined,
+                busy: _saving,
+                onPressed: _saving
+                    ? null
+                    : () async {
+                        setState(() => _saving = true);
+                        await ref
+                            .read(customerSettingsNotifierProvider.notifier)
+                            .update(
+                              _radiusSlider.round(),
+                              _speedSlider.round(),
+                            );
+                        if (mounted) {
+                          setState(() => _saving = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Defaults saved'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -112,7 +112,7 @@ class NotificationEventConsumerTest {
     }
 
     private RecipientSnapshot createSnapshot() {
-        return new RecipientSnapshot(userId, customerId, "John Farmer");
+        return new RecipientSnapshot(userId, customerId, "John Farmer", "en");
     }
 
     @Test
