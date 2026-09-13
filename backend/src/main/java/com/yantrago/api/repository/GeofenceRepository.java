@@ -19,6 +19,16 @@ public interface GeofenceRepository extends JpaRepository<Geofence, UUID> {
     Optional<Geofence> findActiveByMachineId(@Param("orgId") UUID orgId,
                                               @Param("machineId") UUID machineId);
 
+    /**
+     * Finds the active geofence for a machine regardless of organization.
+     * Used by TheftProtectionService.enable() to update an existing geofence
+     * in place (the machine may have been reassigned across orgs, or the
+     * geofence may have been created by an admin from a different org).
+     * Machine ownership is validated by the caller before this query.
+     */
+    @Query("SELECT g FROM Geofence g WHERE g.machineId = :machineId AND g.isActive = true")
+    Optional<Geofence> findActiveByMachineIdOnly(@Param("machineId") UUID machineId);
+
     @Query("SELECT g FROM Geofence g WHERE g.organizationId = :orgId AND g.isActive = true")
     List<Geofence> findActiveByOrganizationId(@Param("orgId") UUID orgId);
 

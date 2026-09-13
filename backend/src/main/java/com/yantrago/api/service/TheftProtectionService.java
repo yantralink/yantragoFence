@@ -112,7 +112,10 @@ public class TheftProtectionService {
         final int finalSpeedThreshold = speedThreshold;
 
         // Create or update geofence at current GPS location
-        Geofence geofence = geofenceRepository.findActiveByMachineId(orgId, machineId)
+        // Use machineId-only lookup: the geofence may have been created by a
+        // different org (e.g. admin or prior assignment). Machine ownership is
+        // already validated above, so org filtering is not needed here.
+        Geofence geofence = geofenceRepository.findActiveByMachineIdOnly(machineId)
                 .map(existing -> {
                     // Update existing geofence in place (avoids unique constraint violation)
                     existing.setLatitude(latitude);
@@ -172,8 +175,9 @@ public class TheftProtectionService {
         validateCustomerOwnership(machine);
         UUID orgId = machine.getOrganizationId();
 
-        // Deactivate geofence
-        geofenceRepository.findActiveByMachineId(orgId, machineId)
+        // Deactivate geofence (use machineId-only lookup — geofence may have
+        // been created by a different org; machine ownership is validated above)
+        geofenceRepository.findActiveByMachineIdOnly(machineId)
                 .ifPresent(geofence -> {
                     geofence.setIsActive(false);
                     geofenceRepository.save(geofence);
@@ -206,9 +210,10 @@ public class TheftProtectionService {
         validateCustomerOwnership(machine);
         UUID orgId = machine.getOrganizationId();
 
-        // Check if geofence is active
+        // Check if geofence is active (use machineId-only lookup — geofence
+        // may have been created by a different org; ownership validated above)
         Geofence activeGeofence = geofenceRepository
-                .findActiveByMachineId(orgId, machineId).orElse(null);
+                .findActiveByMachineIdOnly(machineId).orElse(null);
         boolean geofenceActive = activeGeofence != null;
 
         // Check if MACHINE_MOVING rule is active
