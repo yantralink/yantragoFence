@@ -113,7 +113,7 @@ class _ProtectionContent extends ConsumerWidget {
               ),
               Switch(
                 value: enabled,
-                onChanged: (value) async {
+                onChanged: ref.read(theftProtectionNotifierProvider(machineId)).isLoading ? null : (value) async {
                   final notifier = ref.read(
                       theftProtectionNotifierProvider(machineId).notifier);
                   if (value) {

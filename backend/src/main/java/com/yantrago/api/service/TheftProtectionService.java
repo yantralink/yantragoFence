@@ -108,24 +108,33 @@ public class TheftProtectionService {
             radiusMeters = settings.getDefaultGeofenceRadiusMeters();
             speedThreshold = settings.getDefaultSpeedThresholdKmh();
         }
+        final int finalRadiusMeters = radiusMeters;
+        final int finalSpeedThreshold = speedThreshold;
 
-        // Deactivate existing active geofence for this machine (one active per machine)
-        geofenceRepository.findActiveByMachineId(orgId, machineId)
-                .ifPresent(existing -> {
-                    existing.setIsActive(false);
-                    geofenceRepository.save(existing);
+        // Create or update geofence at current GPS location
+        Geofence geofence = geofenceRepository.findActiveByMachineId(orgId, machineId)
+                .map(existing -> {
+                    // Update existing geofence in place (avoids unique constraint violation)
+                    existing.setLatitude(latitude);
+                    existing.setLongitude(longitude);
+                    existing.setRadiusMeters(finalRadiusMeters);
+                    existing.setIsActive(true);
+                    return existing;
+                })
+                .orElseGet(() -> {
+                    // No existing geofence — create a new one
+                    Geofence g = new Geofence();
+                    g.setOrganizationId(orgId);
+                    g.setMachineId(machineId);
+                    g.setName(DEFAULT_GEOFENCE_NAME);
+                    g.setLatitude(latitude);
+                    g.setLongitude(longitude);
+                    g.setRadiusMeters(finalRadiusMeters);
+                    g.setIsActive(true);
+                    return g;
                 });
-
-        // Create new geofence at current GPS location
-        Geofence geofence = new Geofence();
-        geofence.setOrganizationId(orgId);
-        geofence.setMachineId(machineId);
-        geofence.setName(DEFAULT_GEOFENCE_NAME);
-        geofence.setLatitude(latitude);
-        geofence.setLongitude(longitude);
-        geofence.setRadiusMeters(radiusMeters);
-        geofence.setIsActive(true);
         geofenceRepository.save(geofence);
+        geofenceRepository.flush();
 
         // Activate the MACHINE_MOVING alert rule and update threshold to match defaults
         List<AlertRule> rules = alertRuleRepository.findAllRulesByTypeAndMachine(

@@ -326,7 +326,7 @@ class _TheftProtectionPanel extends ConsumerWidget {
                   ),
                   Switch(
                     value: enabled,
-                    onChanged: (value) async {
+                    onChanged: statusAsync.isLoading ? null : (value) async {
                       final notifier = ref.read(
                           theftProtectionNotifierProvider(machineId).notifier);
                       if (value) {
