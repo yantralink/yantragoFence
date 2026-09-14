@@ -87,6 +87,11 @@ class AppTheme {
         scrolledUnderElevation: 0,
         centerTitle: false,
         titleSpacing: AppSpacing.pagePadding,
+        titleTextStyle: TextStyle(
+          fontSize: 26,
+          fontWeight: FontWeight.bold,
+          color: AppPalette.lightSuccess,
+        ),
       ),
       cardTheme: CardThemeData(
         color: surfaceColor,
