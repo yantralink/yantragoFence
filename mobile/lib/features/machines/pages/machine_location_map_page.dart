@@ -238,9 +238,7 @@ class _AddressContent extends StatelessWidget {
     final uri = Uri.parse(
       'https://www.google.com/maps?q=$latitude,$longitude',
     );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
