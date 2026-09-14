@@ -140,19 +140,37 @@ public class TheftProtectionService {
         geofenceRepository.flush();
 
         // Activate the MACHINE_MOVING alert rule and update threshold to match defaults
-        List<AlertRule> rules = alertRuleRepository.findAllRulesByTypeAndMachine(
-                orgId, machineId, "MACHINE_MOVING");
+        // Use machineId-only lookup — rule may have been created by a different org
+        List<AlertRule> rules = alertRuleRepository.findAllRulesByTypeAndMachineOnly(
+                machineId, "MACHINE_MOVING");
         String conditionConfig = String.format(
-                "{\"metric\":\"speed\",\"operator\":\"GT\",\"threshold\":%d}", speedThreshold);
-        for (AlertRule rule : rules) {
-            if (!rule.getIsActive()) {
-                rule.setIsActive(true);
-            }
+                "{\"metric\":\"speed\",\"operator\":\"GT\",\"threshold\":%d}", finalSpeedThreshold);
+        if (rules.isEmpty()) {
+            // No existing rule — create one (machine may have been assigned before
+            // the auto-create-on-assignment feature was implemented)
+            AlertRule rule = new AlertRule();
+            rule.setOrganizationId(orgId);
+            rule.setMachineId(machineId);
+            rule.setName("Movement Alert");
+            rule.setAlertType("MACHINE_MOVING");
             rule.setConditionConfig(conditionConfig);
+            rule.setIsActive(true);
+            rule.setSeverity("WARNING");
             alertRuleRepository.save(rule);
-            log.info("Activated MACHINE_MOVING rule {} for machine={} threshold={}km/h",
-                    rule.getId(), machineId, speedThreshold);
+            log.info("Created and activated MACHINE_MOVING rule for machine={} threshold={}km/h",
+                    machineId, finalSpeedThreshold);
+        } else {
+            for (AlertRule rule : rules) {
+                if (!rule.getIsActive()) {
+                    rule.setIsActive(true);
+                }
+                rule.setConditionConfig(conditionConfig);
+                alertRuleRepository.save(rule);
+                log.info("Activated MACHINE_MOVING rule {} for machine={} threshold={}km/h",
+                        rule.getId(), machineId, finalSpeedThreshold);
+            }
         }
+        alertRuleRepository.flush();
 
         log.info("Theft protection ENABLED for machine={} at lat={},lng={} radius={}m speedThreshold={}km/h",
                 machineId, latitude, longitude, radiusMeters, speedThreshold);
@@ -184,9 +202,9 @@ public class TheftProtectionService {
                     log.info("Deactivated geofence {} for machine={}", geofence.getId(), machineId);
                 });
 
-        // Deactivate MACHINE_MOVING rule
-        List<AlertRule> rules = alertRuleRepository.findAllRulesByTypeAndMachine(
-                orgId, machineId, "MACHINE_MOVING");
+        // Deactivate MACHINE_MOVING rule (use machineId-only lookup)
+        List<AlertRule> rules = alertRuleRepository.findAllRulesByTypeAndMachineOnly(
+                machineId, "MACHINE_MOVING");
         for (AlertRule rule : rules) {
             if (rule.getIsActive()) {
                 rule.setIsActive(false);
@@ -216,9 +234,9 @@ public class TheftProtectionService {
                 .findActiveByMachineIdOnly(machineId).orElse(null);
         boolean geofenceActive = activeGeofence != null;
 
-        // Check if MACHINE_MOVING rule is active
+        // Check if MACHINE_MOVING rule is active (use machineId-only lookup)
         boolean movementRuleActive = alertRuleRepository
-                .findAllRulesByTypeAndMachine(orgId, machineId, "MACHINE_MOVING")
+                .findAllRulesByTypeAndMachineOnly(machineId, "MACHINE_MOVING")
                 .stream()
                 .anyMatch(AlertRule::getIsActive);
 

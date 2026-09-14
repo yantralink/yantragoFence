@@ -40,6 +40,17 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, UUID> {
                                                   @Param("alertType") String alertType);
 
     /**
+     * Returns all rules (active or inactive) for a specific machine and alert type,
+     * regardless of organization. Used by TheftProtectionService to find rules
+     * that may have been created by a different org. Machine ownership is
+     * validated by the caller.
+     */
+    @Query("SELECT r FROM AlertRule r WHERE r.machineId = :machineId " +
+            "AND r.alertType = :alertType")
+    List<AlertRule> findAllRulesByTypeAndMachineOnly(@Param("machineId") UUID machineId,
+                                                       @Param("alertType") String alertType);
+
+    /**
      * Returns alert rules for machines owned by a specific customer within an org.
      * Used for customer-level isolation (Phase 11).
      */
