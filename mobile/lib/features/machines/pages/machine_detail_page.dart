@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
-import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
-import 'package:yantrago/features/alerts/widgets/alert_card.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
 import 'package:yantrago/features/commands/widgets/command_history_section.dart';
 import 'package:yantrago/features/commands/widgets/command_status_widget.dart';
@@ -15,8 +13,6 @@ import 'package:yantrago/features/machines/widgets/location_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_info_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_telemetry_grid.dart';
 import 'package:yantrago/features/machines/widgets/on_off_button.dart';
-import 'package:yantrago/features/machines/widgets/theft_protection_card.dart';
-import 'package:go_router/go_router.dart';
 
 /// Machine detail page — shows machine info, location, telemetry, and
 /// ON/OFF controls.
@@ -54,12 +50,10 @@ class MachineDetailPage extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(machineDetailProvider(machineId));
             ref.invalidate(machineTelemetryProvider(machineId));
-            ref.invalidate(machineAlertsProvider(machineId));
             ref.invalidate(machineCommandsProvider(machineId));
             await Future.wait([
               ref.read(machineDetailProvider(machineId).future),
               ref.read(machineTelemetryProvider(machineId).future),
-              ref.read(machineAlertsProvider(machineId).future),
               ref.read(machineCommandsProvider(machineId).future),
             ]);
           },
@@ -74,7 +68,6 @@ class MachineDetailPage extends ConsumerWidget {
                 const SizedBox(height: 8),
                 LocationCard(machineId: m.id),
                 const SizedBox(height: 8),
-                TheftProtectionCard(machineId: m.id),
                 const AppSectionHeader(title: 'Telemetry', compact: true),
                 MachineTelemetryGrid(machine: m),
                 const AppSectionHeader(title: 'Controls', compact: true),
@@ -91,86 +84,11 @@ class MachineDetailPage extends ConsumerWidget {
                 const SizedBox(height: 16),
                 const AppSectionHeader(title: 'Command History', compact: true),
                 CommandHistorySection(machineId: m.id),
-                const SizedBox(height: 16),
-                const AppSectionHeader(title: 'Faults', compact: true),
-                _FaultsSection(machineId: m.id),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Faults section — shows alerts for this machine.
-///
-/// Fetches alerts via [machineAlertsProvider] (filtered by machineId).
-/// Shows a compact list of AlertCards, or an empty state when there are
-/// no active faults.
-class _FaultsSection extends ConsumerWidget {
-  final String machineId;
-
-  const _FaultsSection({required this.machineId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final alerts = ref.watch(machineAlertsProvider(machineId));
-
-    return alerts.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      ),
-      error: (_, __) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          'Unable to load faults. Pull down to refresh.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ),
-      data: (list) {
-        if (list.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'No active faults',
-                    style: Theme.of(context).textTheme.bodySmall,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            ...list.map((a) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: AlertCard(
-                    alert: a,
-                    onTap: () => context.push('/app/alerts/${a.id}'),
-                  ),
-                )),
-          ],
-        );
-      },
     );
   }
 }

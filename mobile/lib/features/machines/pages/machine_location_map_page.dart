@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
@@ -199,6 +200,8 @@ class _AddressBar extends StatelessWidget {
           lines: <String>[
             '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}'
           ],
+          latitude: latitude,
+          longitude: longitude,
         ),
         data: (addr) {
           final lines = addr != null
@@ -206,7 +209,12 @@ class _AddressBar extends StatelessWidget {
               : <String>[
                   '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}'
                 ];
-          return _AddressContent(label: 'Current Location', lines: lines);
+          return _AddressContent(
+            label: 'Current Location',
+            lines: lines,
+            latitude: latitude,
+            longitude: longitude,
+          );
         },
       ),
     );
@@ -216,8 +224,24 @@ class _AddressBar extends StatelessWidget {
 class _AddressContent extends StatelessWidget {
   final String label;
   final List<String> lines;
+  final double latitude;
+  final double longitude;
 
-  const _AddressContent({required this.label, required this.lines});
+  const _AddressContent({
+    required this.label,
+    required this.lines,
+    required this.latitude,
+    required this.longitude,
+  });
+
+  Future<void> _openInGoogleMaps() async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps?q=$latitude,$longitude',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -239,6 +263,29 @@ class _AddressContent extends StatelessWidget {
               line,
               style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
             )),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: GestureDetector(
+            onTap: _openInGoogleMaps,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.map_outlined, color: colors.primary, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  'Open in Google Maps',
+                  style: text.bodySmall?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(Icons.arrow_forward, color: colors.primary, size: 14),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
