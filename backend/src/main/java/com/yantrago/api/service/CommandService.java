@@ -188,31 +188,55 @@ public class CommandService {
         MachineCommand command = commandRepository.findById(commandId)
                 .orElseThrow(() -> new IllegalArgumentException("Command not found: " + commandId));
 
-        command.setAttemptCount(command.getAttemptCount() + 1);
         if (error != null) {
             command.setLastError(error);
         }
         commandRepository.save(command);
 
-        // Persist the attempt in command_attempts for full auditability
-        CommandAttempt attempt = new CommandAttempt();
-        attempt.setCommandId(commandId);
-        attempt.setAttemptNumber(attemptNumber);
-        attempt.setStatus(status);
-        attempt.setError(error);
         LocalDateTime now = LocalDateTime.now();
-        if ("SENT".equals(status) || "QUEUED".equals(status)) {
-            attempt.setSentAt(now);
-        }
-        if ("ACK".equals(status) || "DONE".equals(status)) {
-            attempt.setAckedAt(now);
-        }
-        if ("FAILED".equals(status) || "TIMEOUT".equals(status)) {
-            attempt.setAckedAt(now);
-        }
-        commandAttemptRepository.save(attempt);
 
-        log.info("Recorded attempt {} for command {} status={}", attemptNumber, commandId, status);
+        // Upsert: if the attempt already exists (e.g. SENT was recorded, now ACK arrives),
+        // update it. Otherwise, insert a new attempt row.
+        CommandAttempt attempt = commandAttemptRepository
+                .findByCommandIdAndAttemptNumber(commandId, attemptNumber)
+                .orElse(null);
+
+        if (attempt == null) {
+            // New attempt — increment attempt count
+            command.setAttemptCount(command.getAttemptCount() + 1);
+            commandRepository.save(command);
+
+            attempt = new CommandAttempt();
+            attempt.setCommandId(commandId);
+            attempt.setAttemptNumber(attemptNumber);
+            attempt.setStatus(status);
+            attempt.setError(error);
+            if ("SENT".equals(status) || "QUEUED".equals(status)) {
+                attempt.setSentAt(now);
+            }
+            if ("ACK".equals(status) || "DONE".equals(status)) {
+                attempt.setAckedAt(now);
+            }
+            if ("FAILED".equals(status) || "TIMEOUT".equals(status)) {
+                attempt.setAckedAt(now);
+            }
+            commandAttemptRepository.save(attempt);
+            log.info("Recorded attempt {} for command {} status={}", attemptNumber, commandId, status);
+        } else {
+            // Existing attempt — update status and timestamps
+            attempt.setStatus(status);
+            if (error != null) {
+                attempt.setError(error);
+            }
+            if ("ACK".equals(status) || "DONE".equals(status)) {
+                attempt.setAckedAt(now);
+            }
+            if ("FAILED".equals(status) || "TIMEOUT".equals(status)) {
+                attempt.setAckedAt(now);
+            }
+            commandAttemptRepository.save(attempt);
+            log.info("Updated attempt {} for command {} status={}", attemptNumber, commandId, status);
+        }
     }
 
     private CommandResponse toResponse(MachineCommand c) {
