@@ -235,6 +235,9 @@ public class NotificationEventConsumer {
             pushData.put("severity", message.getSeverity());
             pushData.put("machineId", machineId.toString());
             pushData.put("inboxId", inbox.getId().toString());
+            if (message.getAlertId() != null) {
+                pushData.put("alertId", message.getAlertId().toString());
+            }
             try {
                 pushDeliveryService.enqueuePushDelivery(orgId, inbox.getId(), userId,
                         title, body, pushData);

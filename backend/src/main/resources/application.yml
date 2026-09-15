@@ -59,6 +59,9 @@ spring:
     virtual-host: /
     publisher-confirm-type: correlated    # Phase 1 fix: enable publisher confirms
     publisher-returns: true               # Phase 1 fix: detect unroutable messages
+    listener:
+      simple:
+        default-requeue-rejected: false   # rejected messages are dead-lettered (not requeued forever)
 
   # Mail (SMTP) — optional, defaults disabled
   mail:

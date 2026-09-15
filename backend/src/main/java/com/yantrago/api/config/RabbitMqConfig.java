@@ -73,7 +73,15 @@ public class RabbitMqConfig {
 
     @Bean
     public Queue commandResultQueue() {
-        return QueueBuilder.durable(QueueNames.COMMAND_RESULT_QUEUE).build();
+        return QueueBuilder.durable(QueueNames.COMMAND_RESULT_QUEUE)
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", QueueNames.COMMAND_RESULT_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue commandResultDlq() {
+        return QueueBuilder.durable(QueueNames.COMMAND_RESULT_DLQ).build();
     }
 
     @Bean

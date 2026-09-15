@@ -9,7 +9,7 @@ import 'package:yantrago/core/config/app_config.dart';
 /// Connects to the backend WebSocket endpoint and subscribes to topics:
 /// - /topic/locations — device location updates
 /// - /topic/telemetry — telemetry readings
-/// - /topic/commands — command result updates
+/// - /topic/command/{machineId} — command status updates
 /// - /topic/devices — device event updates
 class WebSocketClient {
   StompClient? _client;

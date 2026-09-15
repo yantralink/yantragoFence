@@ -19,12 +19,12 @@ import java.util.UUID;
 
 /**
  * Consumes CommandResultMessage from the gateway — reports command lifecycle
- * state transitions (QUEUED, SENT, ACK, DONE, FAILED).
+ * state transitions (QUEUED, SENT, ACK, DONE, FAILED, TIMEOUT).
  *
  * Per AGENTS.md rule 5: never assume a command succeeded until acknowledgement is received.
- * This consumer is where the ack/failed transitions are applied to the command record.
+ * This consumer is where the ack/failed/timeout transitions are applied to the command record.
  *
- * Command notifications: when a relay ON/OFF command reaches ACK, DONE, or FAILED,
+ * Command notifications: when a relay ON/OFF command reaches ACK, DONE, FAILED, or TIMEOUT,
  * an AlertTransitionMessage is written to the event_outbox so the existing
  * notification pipeline (OutboxPublisher → NotificationEventConsumer) can create
  * inbox items and push notifications for the assigned customer's user.
@@ -54,42 +54,46 @@ public class CommandResultConsumer {
         log.info("Received command result: commandId={} status={} attemptCount={}",
                 message.getCommandId(), message.getStatus(), message.getAttemptCount());
 
-        try {
-            CommandResponse response = commandService.transitionCommand(
+        // Core processing: transition state + record attempt.
+        // If this fails, rethrow so RabbitMQ dead-letters the message.
+        CommandResponse response = commandService.transitionCommand(
+                message.getCommandId(),
+                message.getStatus(),
+                message.getError()
+        );
+
+        if (message.getAttemptCount() > 0) {
+            commandService.recordAttempt(
                     message.getCommandId(),
+                    message.getAttemptCount(),
                     message.getStatus(),
                     message.getError()
             );
+        }
 
-            if (message.getAttemptCount() > 0) {
-                commandService.recordAttempt(
-                        message.getCommandId(),
-                        message.getAttemptCount(),
-                        message.getStatus(),
-                        message.getError()
-                );
-            }
-
-            // Broadcast command status update to WebSocket subscribers
+        // Secondary operations: broadcast + notification.
+        // These must NOT rethrow — the command is already processed.
+        try {
             commandBroadcastService.broadcastCommandStatus(
                     response.getMachineId(), message.getCommandId(),
                     message.getStatus(), message.getAttemptCount(), message.getError()
             );
-
-            // Generate notification for terminal and ACK transitions
-            generateCommandNotification(response, message);
-
         } catch (Exception e) {
-            log.error("Failed to process command result for commandId={}: {}",
+            log.error("Failed to broadcast command status for commandId={}: {}",
                     message.getCommandId(), e.getMessage(), e);
-            // Don't rethrow — RabbitMQ will not redeliver (avoid poison pill).
-            // In production, consider a dead-letter queue.
+        }
+
+        try {
+            generateCommandNotification(response, message);
+        } catch (Exception e) {
+            log.error("Failed to generate command notification for commandId={}: {}",
+                    message.getCommandId(), e.getMessage(), e);
         }
     }
 
     /**
      * Writes an AlertTransitionMessage to the event_outbox for command lifecycle
-     * transitions that should generate notifications (ACK, DONE, FAILED).
+     * transitions that should generate notifications (ACK, DONE, FAILED, TIMEOUT).
      *
      * The existing notification pipeline (OutboxPublisher → NotificationEventConsumer)
      * will pick up the outbox event and create inbox items for the assigned
@@ -130,6 +134,14 @@ public class CommandResultConsumer {
                 notificationMessage = message.getError() != null
                         ? String.format("Command %s failed: %s", command.getCommandType(), message.getError())
                         : String.format("Command %s failed", command.getCommandType());
+                break;
+            case "TIMEOUT":
+                alertType = "COMMAND_FAILED";
+                severity = "WARNING";
+                incidentState = "TIMEOUT";
+                notificationMessage = message.getError() != null
+                        ? String.format("Command %s timed out: %s", command.getCommandType(), message.getError())
+                        : String.format("Command %s timed out waiting for device response", command.getCommandType());
                 break;
             default:
                 // QUEUED, SENT, PENDING — no notification
@@ -174,11 +186,6 @@ public class CommandResultConsumer {
         transition.setIncidentState(incidentState);
         transition.setMessage(message);
         transition.setOccurrenceCount(1);
-        // For COMMAND_FAILED, pass the error as observedValue for template rendering
-        if (error != null && "COMMAND_FAILED".equals(alertType)) {
-            // observedValue is Double, so we can't pass a string directly.
-            // The NotificationEventConsumer will use the message field as fallback.
-        }
 
         String payload = objectMapper.writeValueAsString(transition);
 

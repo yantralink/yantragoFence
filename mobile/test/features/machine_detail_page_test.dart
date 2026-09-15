@@ -16,6 +16,7 @@ import 'package:go_router/go_router.dart';
 import 'package:yantrago/core/config/theme.dart';
 import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
+import 'package:yantrago/features/commands/providers/command_socket_provider.dart';
 import 'package:yantrago/features/machines/pages/machine_detail_page.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
@@ -146,6 +147,9 @@ List<Override> _overrides({
     else
       machineAddressProvider('m1').overrideWith((ref) async => null),
     commandProvider.overrideWith((ref) => _FakeCommandNotifier(pending)),
+    // Stub the command socket so it never opens a real WebSocket in tests.
+    commandSocketProvider('m1')
+        .overrideWith((ref) => _StubCommandSocketController(ref, 'm1')),
   ];
 }
 
@@ -159,6 +163,15 @@ class _FakeCommandNotifier extends CommandNotifier {
     required String imei,
     required String commandType,
   }) async {}
+}
+
+/// Stub command socket controller — disables auto-connect so tests never
+/// open a real WebSocket.
+class _StubCommandSocketController extends CommandSocketController {
+  _StubCommandSocketController(super.ref, super.machineId)
+      : super(autoConnect: false);
+  @override
+  Future<void> connect() async {}
 }
 
 void main() {

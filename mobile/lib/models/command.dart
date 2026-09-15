@@ -49,4 +49,29 @@ class Command {
   bool get isAcked => status == 'ACK';
   bool get isDone => status == 'DONE';
   bool get isFailed => status == 'FAILED';
+  bool get isTimeout => status == 'TIMEOUT';
+  bool get isTerminal => isDone || isFailed || isTimeout;
+
+  /// Returns a copy of this command with the given fields replaced.
+  /// A null argument means "keep the existing value" for that field.
+  Command copyWith({
+    String? status,
+    int? attemptCount,
+    String? lastError,
+    DateTime? completedAt,
+  }) {
+    return Command(
+      id: id,
+      machineId: machineId,
+      deviceId: deviceId,
+      imei: imei,
+      commandType: commandType,
+      status: status ?? this.status,
+      attemptCount: attemptCount ?? this.attemptCount,
+      maxAttempts: maxAttempts,
+      lastError: lastError ?? this.lastError,
+      completedAt: completedAt ?? this.completedAt,
+      createdAt: createdAt,
+    );
+  }
 }

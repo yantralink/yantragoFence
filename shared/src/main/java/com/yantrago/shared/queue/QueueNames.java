@@ -29,6 +29,7 @@ public final class QueueNames {
     public static final String LOCATION_QUEUE = "yantrago.location.queue";
     public static final String NOTIFICATION_QUEUE = "yantrago.notification.queue";
     public static final String NOTIFICATION_DLQ = "yantrago.notification.dlq";
+    public static final String COMMAND_RESULT_DLQ = "yantrago.command.result.dlq";
 
     // ----- Routing keys -----
     public static final String COMMAND_ROUTING_KEY = "command";

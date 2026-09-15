@@ -17,32 +17,26 @@ import 'package:yantrago/models/command.dart';
 /// (pending, acknowledged, done, failed) without ever claiming success
 /// before acknowledgement.
 class CommandStatusWidget extends ConsumerWidget {
-  const CommandStatusWidget({super.key});
+  final String machineId;
+
+  const CommandStatusWidget({super.key, required this.machineId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(commandProvider);
 
-    if (state.lastCommand == null && !state.pending) {
+    // Treat a command from another machine as no command at all.
+    final lastCommand = state.lastCommand;
+    final cmd = (lastCommand != null && lastCommand.machineId == machineId)
+        ? lastCommand
+        : null;
+
+    if (cmd == null) {
       return AppSurfaceCard(
         child: AppStatePanel.empty(
           title: 'No recent commands',
           message: 'Commands sent to this machine will appear here.',
           icon: Icons.history,
-        ),
-      );
-    }
-
-    final cmd = state.lastCommand;
-    if (cmd == null) {
-      return AppSurfaceCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const AppSectionHeader(title: 'Command Status'),
-            const SizedBox(height: 8),
-            _PendingStatus(),
-          ],
         ),
       );
     }
@@ -77,6 +71,7 @@ class CommandStatusWidget extends ConsumerWidget {
     if (c.isAcked) return 'Acknowledged';
     if (c.isDone) return 'Done';
     if (c.isFailed) return 'Failed';
+    if (c.isTimeout) return 'Timed Out';
     return c.status;
   }
 
@@ -85,6 +80,7 @@ class CommandStatusWidget extends ConsumerWidget {
     if (c.isAcked) return StatusTone.info;
     if (c.isDone) return StatusTone.success;
     if (c.isFailed) return StatusTone.danger;
+    if (c.isTimeout) return StatusTone.danger;
     return StatusTone.neutral;
   }
 
@@ -94,25 +90,5 @@ class CommandStatusWidget extends ConsumerWidget {
     if (d.inHours < 1) return '${d.inMinutes} min ago';
     if (d.inDays < 1) return '${d.inHours} h ago';
     return '${d.inDays} d ago';
-  }
-}
-
-class _PendingStatus extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        const SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'Awaiting device acknowledgement…',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      ],
-    );
   }
 }

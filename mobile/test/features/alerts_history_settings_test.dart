@@ -225,7 +225,7 @@ void main() {
     testWidgets('shows empty state when no commands', (tester) async {
       await _pump(
         tester,
-        const CommandStatusWidget(),
+        const CommandStatusWidget(machineId: 'm1'),
         overrides: [
           commandProvider.overrideWith((ref) => _FakeCommandNotifier()),
         ],
@@ -236,7 +236,7 @@ void main() {
     testWidgets('shows pending status as Awaiting ACK', (tester) async {
       await _pump(
         tester,
-        const CommandStatusWidget(),
+        const CommandStatusWidget(machineId: 'm1'),
         overrides: [
           commandProvider.overrideWith(
             (ref) => _FakeCommandNotifier(
@@ -253,7 +253,7 @@ void main() {
     testWidgets('shows done status', (tester) async {
       await _pump(
         tester,
-        const CommandStatusWidget(),
+        const CommandStatusWidget(machineId: 'm1'),
         overrides: [
           commandProvider.overrideWith(
             (ref) => _FakeCommandNotifier(
@@ -268,7 +268,7 @@ void main() {
     testWidgets('shows failed status with error', (tester) async {
       await _pump(
         tester,
-        const CommandStatusWidget(),
+        const CommandStatusWidget(machineId: 'm1'),
         overrides: [
           commandProvider.overrideWith(
             (ref) => _FakeCommandNotifier(
@@ -281,10 +281,26 @@ void main() {
       expect(find.text('Device timeout'), findsOneWidget);
     });
 
+    testWidgets('shows timed out status with error', (tester) async {
+      await _pump(
+        tester,
+        const CommandStatusWidget(machineId: 'm1'),
+        overrides: [
+          commandProvider.overrideWith(
+            (ref) => _FakeCommandNotifier(
+              command: _command(status: 'TIMEOUT', lastError: 'No response'),
+            ),
+          ),
+        ],
+      );
+      expect(find.text('Timed Out'), findsWidgets);
+      expect(find.text('No response'), findsOneWidget);
+    });
+
     testWidgets('renders in dark theme', (tester) async {
       await _pump(
         tester,
-        const CommandStatusWidget(),
+        const CommandStatusWidget(machineId: 'm1'),
         brightness: Brightness.dark,
         overrides: [
           commandProvider.overrideWith(

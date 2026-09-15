@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/config/app_config.dart';
 import 'package:yantrago/core/network/api_client.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/models/command.dart';
+import 'package:yantrago/models/command_status_update.dart';
 
 /// Command provider — sends ON/OFF commands and tracks command status.
 ///
@@ -29,29 +31,40 @@ class CommandNotifier extends StateNotifier<CommandState> {
     state = CommandState(lastCommand: command, pending: true);
   }
 
-  /// Fetches command history for a machine.
-  /// Handles both paginated (Spring Page) and raw list response shapes.
-  Future<void> fetchCommandHistory(String machineId) async {
-    final response = await _dio.get('/api/v1/commands?machineId=$machineId&size=10&sort=createdAt,desc');
-    final data = response.data;
-    final List<dynamic> list = data is Map<String, dynamic>
-        ? data['content'] as List
-        : data as List;
-    final commands = list
-        .map((c) => Command.fromJson(c as Map<String, dynamic>))
-        .toList();
-    state = CommandState(history: commands);
+  /// Applies a real-time status update from the command WebSocket.
+  /// Only updates if it matches the last sent command.
+  void applyStatusUpdate(CommandStatusUpdate update) {
+    final last = state.lastCommand;
+    if (last == null || last.id != update.commandId) return;
+    final updated = last.copyWith(
+      status: update.status,
+      attemptCount: update.attemptCount,
+      lastError: update.error,
+      completedAt: (update.status == 'DONE' ||
+              update.status == 'FAILED' ||
+              update.status == 'TIMEOUT')
+          ? DateTime.now()
+          : null,
+    );
+    state = CommandState(
+      lastCommand: updated,
+      pending: !updated.isTerminal,
+    );
+  }
+
+  /// Seeds the last command for testing — no network call.
+  @visibleForTesting
+  void seedLastCommand(Command c) {
+    state = CommandState(lastCommand: c, pending: !c.isTerminal);
   }
 }
 
 class CommandState {
   final Command? lastCommand;
-  final List<Command> history;
   final bool pending;
 
   const CommandState({
     this.lastCommand,
-    this.history = const [],
     this.pending = false,
   });
 }

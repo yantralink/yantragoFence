@@ -3,9 +3,11 @@ package com.yantrago.api.service;
 import com.yantrago.api.dto.command.CommandRequest;
 import com.yantrago.api.dto.command.CommandResponse;
 import com.yantrago.api.dto.command.CommandStatusDto;
+import com.yantrago.api.model.CommandAttempt;
 import com.yantrago.api.model.Machine;
 import com.yantrago.api.model.MachineCommand;
 import com.yantrago.api.queue.CommandProducer;
+import com.yantrago.api.repository.CommandAttemptRepository;
 import com.yantrago.api.repository.CommandRepository;
 import com.yantrago.api.repository.DeviceRepository;
 import com.yantrago.api.repository.MachineRepository;
@@ -34,6 +36,7 @@ import static org.mockito.Mockito.*;
 class CommandServiceTest {
 
     private CommandRepository commandRepository;
+    private CommandAttemptRepository commandAttemptRepository;
     private MachineRepository machineRepository;
     private DeviceRepository deviceRepository;
     private CommandStateMachine stateMachine;
@@ -51,6 +54,7 @@ class CommandServiceTest {
     @BeforeEach
     void setUp() {
         commandRepository = mock(CommandRepository.class);
+        commandAttemptRepository = mock(CommandAttemptRepository.class);
         machineRepository = mock(MachineRepository.class);
         deviceRepository = mock(DeviceRepository.class);
         stateMachine = new CommandStateMachine();
@@ -60,7 +64,7 @@ class CommandServiceTest {
         commandProducer = mock(CommandProducer.class);
 
         commandService = new CommandService(
-                commandRepository, machineRepository, deviceRepository,
+                commandRepository, commandAttemptRepository, machineRepository, deviceRepository,
                 stateMachine, ownerContextService, tenantGuard,
                 permissionEvaluator, commandProducer
         );
@@ -263,19 +267,174 @@ class CommandServiceTest {
     }
 
     @Test
-    @DisplayName("recordAttempt should increment attempt count")
-    void recordAttempt_shouldIncrementCount() {
+    @DisplayName("transitionCommand should accept SENT → TIMEOUT and set completedAt")
+    void transitionCommand_shouldAcceptTimeoutFromSent() {
+        MachineCommand command = new MachineCommand();
+        command.setId(commandId);
+        command.setOrganizationId(orgId);
+        command.setStatus("SENT");
+        command.setCreatedAt(LocalDateTime.now());
+        when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
+        when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CommandResponse response = commandService.transitionCommand(commandId, "TIMEOUT", "Device did not respond");
+
+        assertEquals("TIMEOUT", response.getStatus());
+        assertEquals("Device did not respond", response.getLastError());
+        assertNotNull(response.getCompletedAt());
+    }
+
+    @Test
+    @DisplayName("transitionCommand should accept ACK → TIMEOUT")
+    void transitionCommand_shouldAcceptTimeoutFromAck() {
+        MachineCommand command = new MachineCommand();
+        command.setId(commandId);
+        command.setOrganizationId(orgId);
+        command.setStatus("ACK");
+        command.setCreatedAt(LocalDateTime.now());
+        when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
+        when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CommandResponse response = commandService.transitionCommand(commandId, "TIMEOUT", null);
+
+        assertEquals("TIMEOUT", response.getStatus());
+        assertNotNull(response.getCompletedAt());
+    }
+
+    @Test
+    @DisplayName("recordAttempt should increment attempt count and persist command_attempts row")
+    void recordAttempt_shouldIncrementCountAndPersistAttempt() {
         MachineCommand command = new MachineCommand();
         command.setId(commandId);
         command.setOrganizationId(orgId);
         command.setAttemptCount(1);
         when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
         when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(commandAttemptRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         commandService.recordAttempt(commandId, 2, "SENT", null);
 
-        ArgumentCaptor<MachineCommand> captor = ArgumentCaptor.forClass(MachineCommand.class);
-        verify(commandRepository).save(captor.capture());
-        assertEquals(2, captor.getValue().getAttemptCount());
+        // Verify attempt count was incremented on machine_commands
+        ArgumentCaptor<MachineCommand> commandCaptor = ArgumentCaptor.forClass(MachineCommand.class);
+        verify(commandRepository).save(commandCaptor.capture());
+        assertEquals(2, commandCaptor.getValue().getAttemptCount());
+
+        // Verify a CommandAttempt row was persisted
+        ArgumentCaptor<CommandAttempt> attemptCaptor = ArgumentCaptor.forClass(CommandAttempt.class);
+        verify(commandAttemptRepository).save(attemptCaptor.capture());
+        CommandAttempt attempt = attemptCaptor.getValue();
+        assertEquals(commandId, attempt.getCommandId());
+        assertEquals(2, attempt.getAttemptNumber());
+        assertEquals("SENT", attempt.getStatus());
+        assertNotNull(attempt.getSentAt());
+        assertNull(attempt.getAckedAt());
+    }
+
+    @Test
+    @DisplayName("recordAttempt should set ackedAt for ACK status")
+    void recordAttempt_shouldSetAckedAtForAckStatus() {
+        MachineCommand command = new MachineCommand();
+        command.setId(commandId);
+        command.setOrganizationId(orgId);
+        command.setAttemptCount(0);
+        when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
+        when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(commandAttemptRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        commandService.recordAttempt(commandId, 1, "ACK", null);
+
+        ArgumentCaptor<CommandAttempt> captor = ArgumentCaptor.forClass(CommandAttempt.class);
+        verify(commandAttemptRepository).save(captor.capture());
+        CommandAttempt attempt = captor.getValue();
+        assertEquals("ACK", attempt.getStatus());
+        assertNotNull(attempt.getAckedAt());
+        assertNull(attempt.getSentAt());
+    }
+
+    @Test
+    @DisplayName("recordAttempt should set ackedAt for DONE status")
+    void recordAttempt_shouldSetAckedAtForDoneStatus() {
+        MachineCommand command = new MachineCommand();
+        command.setId(commandId);
+        command.setOrganizationId(orgId);
+        command.setAttemptCount(1);
+        when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
+        when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(commandAttemptRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        commandService.recordAttempt(commandId, 2, "DONE", null);
+
+        ArgumentCaptor<CommandAttempt> captor = ArgumentCaptor.forClass(CommandAttempt.class);
+        verify(commandAttemptRepository).save(captor.capture());
+        assertNotNull(captor.getValue().getAckedAt());
+    }
+
+    @Test
+    @DisplayName("recordAttempt should set ackedAt for FAILED status")
+    void recordAttempt_shouldSetAckedAtAndErrorForFailedStatus() {
+        MachineCommand command = new MachineCommand();
+        command.setId(commandId);
+        command.setOrganizationId(orgId);
+        command.setAttemptCount(2);
+        when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
+        when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(commandAttemptRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        commandService.recordAttempt(commandId, 3, "FAILED", "Device timeout");
+
+        ArgumentCaptor<CommandAttempt> captor = ArgumentCaptor.forClass(CommandAttempt.class);
+        verify(commandAttemptRepository).save(captor.capture());
+        CommandAttempt attempt = captor.getValue();
+        assertEquals("FAILED", attempt.getStatus());
+        assertEquals("Device timeout", attempt.getError());
+        assertNotNull(attempt.getAckedAt());
+    }
+
+    @Test
+    @DisplayName("recordAttempt should set ackedAt for TIMEOUT status")
+    void recordAttempt_shouldSetAckedAtForTimeoutStatus() {
+        MachineCommand command = new MachineCommand();
+        command.setId(commandId);
+        command.setOrganizationId(orgId);
+        command.setAttemptCount(2);
+        when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
+        when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(commandAttemptRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        commandService.recordAttempt(commandId, 3, "TIMEOUT", "Device did not respond");
+
+        ArgumentCaptor<CommandAttempt> captor = ArgumentCaptor.forClass(CommandAttempt.class);
+        verify(commandAttemptRepository).save(captor.capture());
+        CommandAttempt attempt = captor.getValue();
+        assertEquals("TIMEOUT", attempt.getStatus());
+        assertEquals("Device did not respond", attempt.getError());
+        assertNotNull(attempt.getAckedAt());
+    }
+
+    @Test
+    @DisplayName("recordAttempt should set sentAt for QUEUED status")
+    void recordAttempt_shouldSetSentAtForQueuedStatus() {
+        MachineCommand command = new MachineCommand();
+        command.setId(commandId);
+        command.setOrganizationId(orgId);
+        command.setAttemptCount(0);
+        when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
+        when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(commandAttemptRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        commandService.recordAttempt(commandId, 1, "QUEUED", null);
+
+        ArgumentCaptor<CommandAttempt> captor = ArgumentCaptor.forClass(CommandAttempt.class);
+        verify(commandAttemptRepository).save(captor.capture());
+        assertNotNull(captor.getValue().getSentAt());
+    }
+
+    @Test
+    @DisplayName("recordAttempt should throw when command not found")
+    void recordAttempt_shouldThrowWhenCommandNotFound() {
+        when(commandRepository.findById(commandId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commandService.recordAttempt(commandId, 1, "SENT", null));
     }
 }

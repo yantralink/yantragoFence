@@ -10,16 +10,17 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Command state machine: PENDING → QUEUED → SENT → ACK → DONE (or FAILED).
+ * Command state machine: PENDING → QUEUED → SENT → ACK → DONE (or FAILED/TIMEOUT).
  *
  * Per AGENTS.md rule 5: never assume a command succeeded until acknowledgement is received.
  * Per AGENTS.md rule 6: all commands must be auditable via machine_commands + command_attempts.
  *
  * Valid transitions:
  *   PENDING → QUEUED, SENT, FAILED
- *   QUEUED  → SENT, FAILED
- *   SENT    → ACK, FAILED, TIMEOUT (→ FAILED)
- *   ACK     → DONE, FAILED
+ *   QUEUED  → SENT, FAILED, TIMEOUT
+ *   SENT    → ACK, FAILED, TIMEOUT
+ *   ACK     → DONE, FAILED, TIMEOUT
+ *   TIMEOUT → (terminal, treated as failure)
  *   DONE    → (terminal)
  *   FAILED  → (terminal)
  */
@@ -29,7 +30,7 @@ public class CommandStateMachine {
     private static final Logger log = LoggerFactory.getLogger(CommandStateMachine.class);
 
     public enum CommandState {
-        PENDING, QUEUED, SENT, ACK, DONE, FAILED
+        PENDING, QUEUED, SENT, ACK, DONE, FAILED, TIMEOUT
     }
 
     private static final Map<CommandState, Set<CommandState>> TRANSITIONS;
@@ -37,11 +38,12 @@ public class CommandStateMachine {
     static {
         TRANSITIONS = new EnumMap<>(CommandState.class);
         TRANSITIONS.put(CommandState.PENDING, EnumSet.of(CommandState.QUEUED, CommandState.SENT, CommandState.FAILED));
-        TRANSITIONS.put(CommandState.QUEUED, EnumSet.of(CommandState.SENT, CommandState.FAILED));
-        TRANSITIONS.put(CommandState.SENT, EnumSet.of(CommandState.ACK, CommandState.FAILED));
-        TRANSITIONS.put(CommandState.ACK, EnumSet.of(CommandState.DONE, CommandState.FAILED));
+        TRANSITIONS.put(CommandState.QUEUED, EnumSet.of(CommandState.SENT, CommandState.FAILED, CommandState.TIMEOUT));
+        TRANSITIONS.put(CommandState.SENT, EnumSet.of(CommandState.ACK, CommandState.FAILED, CommandState.TIMEOUT));
+        TRANSITIONS.put(CommandState.ACK, EnumSet.of(CommandState.DONE, CommandState.FAILED, CommandState.TIMEOUT));
         TRANSITIONS.put(CommandState.DONE, EnumSet.noneOf(CommandState.class));
         TRANSITIONS.put(CommandState.FAILED, EnumSet.noneOf(CommandState.class));
+        TRANSITIONS.put(CommandState.TIMEOUT, EnumSet.noneOf(CommandState.class));
     }
 
     /**
@@ -69,7 +71,7 @@ public class CommandStateMachine {
      * Returns true if the state is terminal (no further transitions).
      */
     public boolean isTerminal(CommandState state) {
-        return state == CommandState.DONE || state == CommandState.FAILED;
+        return state == CommandState.DONE || state == CommandState.FAILED || state == CommandState.TIMEOUT;
     }
 
     /**

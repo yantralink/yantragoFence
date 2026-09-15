@@ -150,6 +150,7 @@ class _CommandHistoryItem extends StatelessWidget {
     if (c.isAcked) return 'Acknowledged';
     if (c.isDone) return 'Done';
     if (c.isFailed) return 'Failed';
+    if (c.isTimeout) return 'Timed Out';
     return c.status;
   }
 
@@ -157,7 +158,7 @@ class _CommandHistoryItem extends StatelessWidget {
     if (c.isPending) return StatusTone.warning;
     if (c.isAcked) return StatusTone.info;
     if (c.isDone) return StatusTone.success;
-    if (c.isFailed) return StatusTone.danger;
+    if (c.isFailed || c.isTimeout) return StatusTone.danger;
     return StatusTone.neutral;
   }
 }

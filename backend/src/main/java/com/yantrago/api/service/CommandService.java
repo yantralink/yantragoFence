@@ -8,6 +8,7 @@ import com.yantrago.api.model.Device;
 import com.yantrago.api.model.Machine;
 import com.yantrago.api.model.MachineCommand;
 import com.yantrago.api.queue.CommandProducer;
+import com.yantrago.api.repository.CommandAttemptRepository;
 import com.yantrago.api.repository.CommandRepository;
 import com.yantrago.api.repository.DeviceRepository;
 import com.yantrago.api.repository.MachineRepository;
@@ -38,6 +39,7 @@ public class CommandService {
     private static final Logger log = LoggerFactory.getLogger(CommandService.class);
 
     private final CommandRepository commandRepository;
+    private final CommandAttemptRepository commandAttemptRepository;
     private final MachineRepository machineRepository;
     private final DeviceRepository deviceRepository;
     private final CommandStateMachine stateMachine;
@@ -47,6 +49,7 @@ public class CommandService {
     private final CommandProducer commandProducer;
 
     public CommandService(CommandRepository commandRepository,
+                          CommandAttemptRepository commandAttemptRepository,
                           MachineRepository machineRepository,
                           DeviceRepository deviceRepository,
                           CommandStateMachine stateMachine,
@@ -55,6 +58,7 @@ public class CommandService {
                           PermissionEvaluator permissionEvaluator,
                           CommandProducer commandProducer) {
         this.commandRepository = commandRepository;
+        this.commandAttemptRepository = commandAttemptRepository;
         this.machineRepository = machineRepository;
         this.deviceRepository = deviceRepository;
         this.stateMachine = stateMachine;
@@ -176,6 +180,8 @@ public class CommandService {
     /**
      * Records a new attempt for a command and increments the attempt count.
      * Called when a command is sent to the gateway.
+     *
+     * Per AGENTS.md rule 6: every attempt must be auditable in command_attempts.
      */
     @Transactional
     public void recordAttempt(UUID commandId, int attemptNumber, String status, String error) {
@@ -187,6 +193,24 @@ public class CommandService {
             command.setLastError(error);
         }
         commandRepository.save(command);
+
+        // Persist the attempt in command_attempts for full auditability
+        CommandAttempt attempt = new CommandAttempt();
+        attempt.setCommandId(commandId);
+        attempt.setAttemptNumber(attemptNumber);
+        attempt.setStatus(status);
+        attempt.setError(error);
+        LocalDateTime now = LocalDateTime.now();
+        if ("SENT".equals(status) || "QUEUED".equals(status)) {
+            attempt.setSentAt(now);
+        }
+        if ("ACK".equals(status) || "DONE".equals(status)) {
+            attempt.setAckedAt(now);
+        }
+        if ("FAILED".equals(status) || "TIMEOUT".equals(status)) {
+            attempt.setAckedAt(now);
+        }
+        commandAttemptRepository.save(attempt);
 
         log.info("Recorded attempt {} for command {} status={}", attemptNumber, commandId, status);
     }

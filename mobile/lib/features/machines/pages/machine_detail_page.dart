@@ -5,6 +5,7 @@ import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
+import 'package:yantrago/features/commands/providers/command_socket_provider.dart';
 import 'package:yantrago/features/commands/widgets/command_history_section.dart';
 import 'package:yantrago/features/commands/widgets/command_status_widget.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
@@ -33,6 +34,8 @@ class MachineDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final machine = ref.watch(machineDetailProvider(machineId));
+    // Keep the per-machine command status socket alive while this page is mounted.
+    ref.watch(commandSocketProvider(machineId));
 
     return Scaffold(
       appBar: AppBar(
@@ -72,7 +75,7 @@ class MachineDetailPage extends ConsumerWidget {
                 const SizedBox(height: 16),
                 OnOffButton(machineId: m.id, imei: m.imei ?? ''),
                 const SizedBox(height: 12),
-                const CommandStatusWidget(),
+                CommandStatusWidget(machineId: m.id),
                 const SizedBox(height: 8),
                 Center(
                   child: Text(

@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/config/app_config.dart';
 import 'package:yantrago/core/storage/secure_storage.dart';
+import 'package:yantrago/models/command_push_event.dart';
 
 /// Push notification provider (Phase 5).
 ///
@@ -135,10 +136,32 @@ class PushNotificationService {
     _onNotificationTap = callback;
   }
 
+  /// Callback invoked when an FCM data payload carries a command lifecycle
+  /// event (Phase 6). Set by the app shell to refresh the command UI.
+  void Function(CommandPushEvent event)? _onCommandEvent;
+
+  /// Registers a callback for command push events.
+  void setOnCommandEvent(void Function(CommandPushEvent event) callback) {
+    _onCommandEvent = callback;
+  }
+
+  /// Dispatches a command lifecycle event from an FCM data payload, if it is
+  /// a command alert. Runs regardless of whether a notification body exists.
+  void _dispatchCommandEvent(Map<String, dynamic> data) {
+    final event = CommandPushEvent.fromData(data);
+    if (event != null) {
+      _onCommandEvent?.call(event);
+    }
+  }
+
   /// Handles a foreground FCM message by showing a local notification.
   void _handleForegroundMessage(RemoteMessage message) {
-    final notification = message.notification;
     final data = message.data;
+    // Phase 6: dispatch command lifecycle events before any notification
+    // gating so the command UI refreshes regardless of payload shape.
+    _dispatchCommandEvent(data);
+
+    final notification = message.notification;
 
     if (notification != null) {
       // Deduplication: skip if this inbox item was already shown
@@ -172,6 +195,8 @@ class PushNotificationService {
   /// Handles a notification tap (background or terminated).
   void _handleMessageOpenedApp(RemoteMessage message) {
     final data = message.data;
+    // Phase 6: refresh the command UI for command lifecycle events.
+    _dispatchCommandEvent(data);
     final inboxId = data['inboxId'];
     // Navigation to detail page is handled by the app router
     // via a global navigator key or state provider
