@@ -37,7 +37,7 @@ public class CommandStateMachine {
 
     static {
         TRANSITIONS = new EnumMap<>(CommandState.class);
-        TRANSITIONS.put(CommandState.PENDING, EnumSet.of(CommandState.QUEUED, CommandState.SENT, CommandState.FAILED));
+        TRANSITIONS.put(CommandState.PENDING, EnumSet.of(CommandState.QUEUED, CommandState.SENT, CommandState.ACK, CommandState.FAILED));
         TRANSITIONS.put(CommandState.QUEUED, EnumSet.of(CommandState.SENT, CommandState.FAILED, CommandState.TIMEOUT));
         TRANSITIONS.put(CommandState.SENT, EnumSet.of(CommandState.ACK, CommandState.FAILED, CommandState.TIMEOUT));
         TRANSITIONS.put(CommandState.ACK, EnumSet.of(CommandState.DONE, CommandState.FAILED, CommandState.TIMEOUT));

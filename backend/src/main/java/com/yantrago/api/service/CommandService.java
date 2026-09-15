@@ -20,6 +20,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -109,7 +111,21 @@ public class CommandService {
         // Publish command to RabbitMQ for the device gateway to consume.
         // Per AGENTS.md rule 4: device communication is asynchronous via RabbitMQ.
         // Per AGENTS.md rule 5: never assume success until ack is received.
-        commandProducer.sendCommand(command.getId(), command.getMachineId(), imei, command.getCommandType());
+        //
+        // Defer publish until after the transaction commits to avoid a race condition:
+        // if we publish inside the transaction, the gateway can process the command and
+        // send back the SENT/ACK result before the command row is visible in the DB,
+        // causing "Command not found" errors in CommandResultConsumer.
+        final UUID commandId = command.getId();
+        final UUID machineId = command.getMachineId();
+        final String cmdType = command.getCommandType();
+        final String imeiFinal = imei;
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                commandProducer.sendCommand(commandId, machineId, imeiFinal, cmdType);
+            }
+        });
 
         return toResponse(command);
     }

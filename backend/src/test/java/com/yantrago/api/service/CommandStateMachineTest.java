@@ -39,6 +39,13 @@ class CommandStateMachineTest {
     }
 
     @Test
+    @DisplayName("PENDING → ACK is valid (device can ACK before SENT result is processed)")
+    void pendingToAckIsValid() {
+        assertDoesNotThrow(() ->
+                stateMachine.validateTransition(CommandState.PENDING, CommandState.ACK));
+    }
+
+    @Test
     @DisplayName("QUEUED → SENT is valid")
     void queuedToSentIsValid() {
         assertDoesNotThrow(() ->
