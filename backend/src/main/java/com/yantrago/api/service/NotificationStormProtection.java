@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -26,6 +27,11 @@ import java.util.UUID;
  * When rate limited, the inbox item is still created (so the user sees it
  * when they open the app) but push delivery is suppressed for that user.
  *
+ * Command notifications (COMMAND_ACK, MACHINE_ON, MACHINE_OFF, COMMAND_FAILED)
+ * are excluded from the per-type rate limit because they are user-initiated —
+ * each command press should produce a push, regardless of how many were sent
+ * in the last hour. The per-minute limit still applies to prevent true abuse.
+ *
  * Per AGENTS.md rule 12: production feature with logging.
  */
 @Service
@@ -36,6 +42,11 @@ public class NotificationStormProtection {
     private final StringRedisTemplate redisTemplate;
     private final int maxPerMinute;
     private final int maxPerAlertTypePerHour;
+
+    // Alert types that are user-initiated and should bypass per-type rate limiting
+    private static final Set<String> COMMAND_ALERT_TYPES = Set.of(
+            "COMMAND_ACK", "MACHINE_ON", "MACHINE_OFF", "COMMAND_FAILED"
+    );
 
     // Redis key prefixes
     private static final String PER_MINUTE_KEY = "notify:rate:user:min:";
@@ -68,7 +79,10 @@ public class NotificationStormProtection {
                 return false;
             }
 
-            if (alertType != null) {
+            // Skip per-type rate limiting for user-initiated command notifications.
+            // These are direct responses to user actions (button presses) and should
+            // always deliver a push. The per-minute limit above still applies.
+            if (alertType != null && !COMMAND_ALERT_TYPES.contains(alertType)) {
                 String typeKey = PER_TYPE_KEY + userId + ":" + alertType;
                 Long typeCount = redisTemplate.opsForValue().increment(typeKey);
                 if (typeCount != null && typeCount == 1) {
