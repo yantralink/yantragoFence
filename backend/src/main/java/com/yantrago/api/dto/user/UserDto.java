@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
 import java.util.UUID;
 
 public class UserDto {
@@ -16,6 +17,7 @@ public class UserDto {
     private Boolean isActive;
     private Boolean isLocked;
     private String preferredLocale;
+    private List<String> roles;
 
     public UserDto() {}
 
@@ -26,6 +28,11 @@ public class UserDto {
 
     public UserDto(UUID id, UUID organizationId, String email, String fullName,
                    String phone, Boolean isActive, Boolean isLocked, String preferredLocale) {
+        this(id, organizationId, email, fullName, phone, isActive, isLocked, preferredLocale, List.of());
+    }
+
+    public UserDto(UUID id, UUID organizationId, String email, String fullName,
+                   String phone, Boolean isActive, Boolean isLocked, String preferredLocale, List<String> roles) {
         this.id = id;
         this.organizationId = organizationId;
         this.email = email;
@@ -34,6 +41,7 @@ public class UserDto {
         this.isActive = isActive;
         this.isLocked = isLocked;
         this.preferredLocale = preferredLocale;
+        this.roles = roles;
     }
 
     public UUID getId() { return id; }
@@ -52,4 +60,6 @@ public class UserDto {
     public void setIsLocked(Boolean isLocked) { this.isLocked = isLocked; }
     public String getPreferredLocale() { return preferredLocale; }
     public void setPreferredLocale(String preferredLocale) { this.preferredLocale = preferredLocale; }
+    public List<String> getRoles() { return roles; }
+    public void setRoles(List<String> roles) { this.roles = roles; }
 }

@@ -13,6 +13,7 @@ interface User {
   phone?: string;
   isActive: boolean;
   isLocked: boolean;
+  roles?: string[];
 }
 
 interface Organization {
@@ -222,6 +223,7 @@ export default function AdminsPage() {
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Organization</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -232,6 +234,7 @@ export default function AdminsPage() {
                   <tr key={user.id}>
                     <td className="px-4 py-2 text-sm text-gray-900">{user.fullName || '—'}</td>
                     <td className="px-4 py-2 text-sm text-gray-500">{user.email}</td>
+                    <td className="px-4 py-2 text-sm text-gray-500">{user.roles?.join(', ') || '—'}</td>
                     <td className="px-4 py-2 text-sm text-gray-500">{orgName(user.organizationId)}</td>
                     <td className="px-4 py-2 text-sm">
                       <span className={user.isActive ? 'text-green-600' : 'text-red-600'}>

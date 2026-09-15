@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -54,8 +55,8 @@ public class UserService {
     public Page<UserDto> listUsers(Pageable pageable) {
         UUID orgId = ownerContextService.getOrganizationIdOrNull();
         Page<User> users = (orgId != null)
-                ? userRepository.findByOrganizationId(orgId, pageable)
-                : userRepository.findAll(pageable);
+                ? userRepository.findAdminsByOrganizationId(orgId, pageable)
+                : userRepository.findAllAdmins(pageable);
         return users.map(this::toDto);
     }
 
@@ -181,6 +182,10 @@ public class UserService {
     }
 
     private UserDto toDto(User user) {
+        List<String> roleNames = jdbcTemplate.queryForList(
+                "SELECT r.name FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?",
+                String.class, user.getId()
+        );
         return new UserDto(
                 user.getId(),
                 user.getOrganizationId(),
@@ -189,7 +194,8 @@ public class UserService {
                 user.getPhone(),
                 user.getIsActive(),
                 user.getIsLocked(),
-                user.getPreferredLocale()
+                user.getPreferredLocale(),
+                roleNames
         );
     }
 }
