@@ -81,17 +81,27 @@ class _MachineLocationMapPageState
 
           return Column(
             children: <Widget>[
+              // Map — 75% of available height
               Expanded(
+                flex: 3,
                 child: WebViewWidget(controller: controller),
               ),
-              // Address bar
-              _AddressBar(
-                latitude: loc.latitude,
-                longitude: loc.longitude,
-                address: address,
+              // Bottom panel — 25% of available height
+              Expanded(
+                flex: 1,
+                child: Column(
+                  children: <Widget>[
+                    // Address bar
+                    _AddressBar(
+                      latitude: loc.latitude,
+                      longitude: loc.longitude,
+                      address: address,
+                    ),
+                    // Theft protection bottom panel
+                    _TheftProtectionPanel(machineId: widget.machineId),
+                  ],
+                ),
               ),
-              // Theft protection bottom panel
-              _TheftProtectionPanel(machineId: widget.machineId),
             ],
           );
         },
@@ -196,7 +206,6 @@ class _AddressBar extends StatelessWidget {
           ],
         ),
         error: (_, __) => _AddressContent(
-          label: 'Current Location',
           lines: <String>[
             '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}'
           ],
@@ -205,12 +214,11 @@ class _AddressBar extends StatelessWidget {
         ),
         data: (addr) {
           final lines = addr != null
-              ? addr.toDetailLines()
+              ? addr.toShortLines()
               : <String>[
                   '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}'
                 ];
           return _AddressContent(
-            label: 'Current Location',
             lines: lines,
             latitude: latitude,
             longitude: longitude,
@@ -222,13 +230,11 @@ class _AddressBar extends StatelessWidget {
 }
 
 class _AddressContent extends StatelessWidget {
-  final String label;
   final List<String> lines;
   final double latitude;
   final double longitude;
 
   const _AddressContent({
-    required this.label,
     required this.lines,
     required this.latitude,
     required this.longitude,
@@ -250,17 +256,27 @@ class _AddressContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Icon(Icons.location_on, color: colors.primary, size: 20),
             const SizedBox(width: 8),
-            Text(label, style: text.labelMedium),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: lines
+                    .map((line) => Text(
+                          line,
+                          style: text.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ))
+                    .toList(),
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 4),
-        ...lines.map((line) => Text(
-              line,
-              style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-            )),
         const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerRight,
@@ -289,8 +305,7 @@ class _AddressContent extends StatelessWidget {
   }
 }
 
-/// Theft protection bottom panel — shows two cards (Geofence + Movement)
-/// and a toggle to enable/disable protection.
+/// Theft protection bottom panel — shows a toggle to enable/disable protection.
 class _TheftProtectionPanel extends ConsumerWidget {
   final String machineId;
 
@@ -383,101 +398,10 @@ class _TheftProtectionPanel extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              // Two cards: Geofence + Movement
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _InfoCard(
-                      icon: Icons.location_searching,
-                      label: 'Geofence',
-                      value: status.geofenceActive
-                          ? '${status.geofenceRadiusMeters ?? 200}m'
-                          : 'Off',
-                      active: status.geofenceActive,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _InfoCard(
-                      icon: Icons.speed,
-                      label: 'Movement',
-                      value: status.movementRuleActive ? 'Active' : 'Off',
-                      active: status.movementRuleActive,
-                    ),
-                  ),
-                ],
-              ),
             ],
           ),
         );
       },
-    );
-  }
-}
-
-/// Compact info card for the bottom panel — shows icon + label + value.
-class _InfoCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool active;
-
-  const _InfoCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.active,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    final TextTheme text = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: active
-            ? colors.primaryContainer.withValues(alpha: 0.3)
-            : colors.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: active
-              ? colors.primary.withValues(alpha: 0.3)
-              : colors.outlineVariant,
-        ),
-      ),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            icon,
-            size: 20,
-            color: active ? colors.primary : colors.onSurfaceVariant,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  style: text.labelSmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-                Text(
-                  value,
-                  style: text.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: active ? colors.primary : colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

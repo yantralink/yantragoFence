@@ -52,6 +52,33 @@ class ResolvedAddress {
     if (country != null && country!.isNotEmpty) lines.add(country!);
     return lines.isEmpty ? [displayName] : lines;
   }
+
+  /// Returns a compact 1-2 line address for tight UI layouts.
+  ///
+  /// Line 1: Road (or first available component)
+  /// Line 2: Area (neighbourhood/suburb/city)
+  ///
+  /// Excludes state, postcode, and country to keep the display short.
+  List<String> toShortLines() {
+    final lines = <String>[];
+    if (road != null && road!.isNotEmpty) {
+      lines.add(road!);
+    }
+    final area = [
+      neighbourhood,
+      suburb,
+      city,
+    ].where((s) => s != null && s.isNotEmpty).join(', ');
+    if (area.isNotEmpty) {
+      lines.add(area);
+    }
+    if (lines.isEmpty) {
+      // Fall back to a trimmed displayName (first comma segment)
+      final parts = displayName.split(',').take(2).join(',').trim();
+      if (parts.isNotEmpty) lines.add(parts);
+    }
+    return lines;
+  }
 }
 
 final reverseGeocodingProvider =

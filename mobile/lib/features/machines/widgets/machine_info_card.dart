@@ -85,13 +85,6 @@ class _CompactMetadata extends StatelessWidget {
         _FieldData(label: 'Machine ID', value: machine.machineId),
       if (machine.imei != null && machine.imei!.isNotEmpty)
         _FieldData(label: 'IMEI', value: machine.imei!),
-      if (machine.protocolType != null && machine.protocolType!.isNotEmpty)
-        _FieldData(label: 'Protocol', value: machine.protocolType!),
-      _FieldData(label: 'State', value: _stateLabel(machine)),
-      if (machine.model != null && machine.model!.isNotEmpty)
-        _FieldData(label: 'Model', value: machine.model!),
-      if (machine.simNumber != null && machine.simNumber!.isNotEmpty)
-        _FieldData(label: 'SIM', value: machine.simNumber!),
     ];
 
     // Pair fields side-by-side, two per row.
@@ -103,12 +96,6 @@ class _CompactMetadata extends StatelessWidget {
     }
 
     return Column(children: rows);
-  }
-
-  String _stateLabel(Machine m) {
-    if (m.isFencingOn) return 'Fence ON';
-    if (m.isFault) return 'Fault';
-    return 'Fence OFF';
   }
 }
 

@@ -92,9 +92,6 @@ class _LocationContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-    final bool hasAddress = addressLines.isNotEmpty &&
-        addressLines.first !=
-            '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
 
     return InkWell(
       onTap: () => _openInAppMap(context),
@@ -143,26 +140,6 @@ class _LocationContent extends StatelessWidget {
                         color: colors.onSurfaceVariant,
                         fontStyle: FontStyle.italic,
                       ),
-                    ),
-                  ],
-                  if (hasAddress && !isGeocoding) ...<Widget>[
-                    const SizedBox(height: 6),
-                    Row(
-                      children: <Widget>[
-                        Icon(
-                          Icons.map_outlined,
-                          size: 14,
-                          color: colors.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Tap to view on map',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.primary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ],
