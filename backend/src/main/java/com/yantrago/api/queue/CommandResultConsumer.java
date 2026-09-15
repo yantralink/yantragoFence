@@ -177,7 +177,7 @@ public class CommandResultConsumer {
         transition.setEventId(eventId);
         transition.setCorrelationId(command.getId()); // use command ID as correlation ID
         transition.setOccurredAt(occurredAt);
-        transition.setAlertId(command.getId()); // use command ID as alertId for traceability
+        transition.setAlertId(null); // command notifications have no alerts table row — leave null to satisfy FK
         transition.setOrganizationId(command.getOrganizationId());
         transition.setMachineId(command.getMachineId());
         transition.setDeviceId(command.getDeviceId());
