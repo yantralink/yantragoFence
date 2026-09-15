@@ -42,13 +42,16 @@ public class CommandDispatchService {
     private final DeviceConnectionRegistry connectionRegistry;
     private final CommandResultProducer commandResultProducer;
     private final ConcoxV5ProtocolHandler concoxV5ProtocolHandler;
+    private final PendingCommandRegistry pendingCommandRegistry;
 
     public CommandDispatchService(DeviceConnectionRegistry connectionRegistry,
                                     CommandResultProducer commandResultProducer,
-                                    ConcoxV5ProtocolHandler concoxV5ProtocolHandler) {
+                                    ConcoxV5ProtocolHandler concoxV5ProtocolHandler,
+                                    PendingCommandRegistry pendingCommandRegistry) {
         this.connectionRegistry = connectionRegistry;
         this.commandResultProducer = commandResultProducer;
         this.concoxV5ProtocolHandler = concoxV5ProtocolHandler;
+        this.pendingCommandRegistry = pendingCommandRegistry;
     }
 
     /**
@@ -87,6 +90,8 @@ public class CommandDispatchService {
         boolean sent = connectionRegistry.sendCommand(imei, commandPacket);
 
         if (sent) {
+            // Register pending command so the ACK can be correlated back
+            pendingCommandRegistry.register(imei, commandId);
             // Publish SENT status — ACK will come later when device replies
             commandResultProducer.publishCommandResult(new CommandResultMessage(
                     commandId, CommandResultMessage.STATUS_SENT, 1, null, Instant.now()

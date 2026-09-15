@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Command result service — processes ACK/reply from devices and publishes
@@ -25,9 +26,12 @@ public class CommandResultService implements VehicleCommandService {
     private static final Logger log = LoggerFactory.getLogger(CommandResultService.class);
 
     private final CommandResultProducer commandResultProducer;
+    private final PendingCommandRegistry pendingCommandRegistry;
 
-    public CommandResultService(CommandResultProducer commandResultProducer) {
+    public CommandResultService(CommandResultProducer commandResultProducer,
+                                  PendingCommandRegistry pendingCommandRegistry) {
         this.commandResultProducer = commandResultProducer;
+        this.pendingCommandRegistry = pendingCommandRegistry;
     }
 
     @Override
@@ -43,27 +47,27 @@ public class CommandResultService implements VehicleCommandService {
         log.info("Command reply: imei={} success={} resultText={} fuelCutOff={}",
                 imei, success, resultText, fuelCutOff);
 
-        // In a full implementation, we'd look up the pending command by IMEI
-        // and publish the ACK/DONE/FAILED result.
-        // For now, we publish a generic ACK result.
-        // The commandId would be resolved from a pending command map.
-        // This will be fully wired in Phase 13 when the fencing protocol is added.
-
-        // Publish ACK or FAILED based on the device's reply
         String status = success ? CommandResultMessage.STATUS_ACK : CommandResultMessage.STATUS_FAILED;
         String error = success ? null : "Device reported command failure: " + resultText;
 
-        // Note: commandId is not available here since the device reply doesn't contain it.
-        // In production, we'd maintain a pending command map keyed by IMEI.
-        // For now, we log the result — the full wiring will be done in Phase 13.
-        log.info("Command reply processed: imei={} status={} error={}", imei, status, error);
+        // Look up the pending commandId by IMEI
+        UUID commandId = pendingCommandRegistry.remove(imei);
+        if (commandId == null) {
+            log.warn("No pending command for imei={} — reply ignored (success={} resultText={})",
+                    imei, success, resultText);
+            return;
+        }
+
+        // Publish the ACK/FAILED result to the backend via RabbitMQ
+        publishResult(commandId, status, error);
+        log.info("Command reply processed: imei={} commandId={} status={} error={}", imei, commandId, status, error);
     }
 
     /**
      * Publishes a command result for a specific command ID.
      * Called when the commandId is known (e.g. from a pending command map).
      */
-    public void publishResult(java.util.UUID commandId, String status, String error) {
+    public void publishResult(UUID commandId, String status, String error) {
         CommandResultMessage message = new CommandResultMessage(
                 commandId, status, 1, error, Instant.now()
         );
