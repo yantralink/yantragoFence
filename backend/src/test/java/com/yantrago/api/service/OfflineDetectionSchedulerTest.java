@@ -157,6 +157,20 @@ class OfflineDetectionSchedulerTest {
     }
 
     @Test
+    @DisplayName("syncDeviceState excludes devices with null organization_id (unassigned inventory)")
+    void syncDeviceState_excludesNullOrgDevices() {
+        when(jdbcTemplate.queryForList(anyString(), eq(UUID.class), any(), any(), any()))
+                .thenReturn(List.of());
+
+        scheduler.detectOfflineDevices();
+
+        // syncDeviceState runs first; verify its SQL filters out null organization_id
+        verify(jdbcTemplate).update(
+                org.mockito.ArgumentMatchers.argThat((String sql) ->
+                        sql.contains("d.organization_id IS NOT NULL")));
+    }
+
+    @Test
     @DisplayName("Device with no org or machine binding — skipped")
     void noOrgOrMachineBinding_skipped() {
         when(jdbcTemplate.queryForList(anyString(), eq(UUID.class), any(), any(), any()))

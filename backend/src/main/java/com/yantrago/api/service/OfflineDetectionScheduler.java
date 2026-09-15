@@ -97,6 +97,7 @@ public class OfflineDetectionScheduler {
                         "SELECT d.id, d.organization_id, d.machine_id, d.last_seen_at " +
                         "FROM devices d " +
                         "WHERE d.is_active = true AND d.machine_id IS NOT NULL " +
+                        "AND d.organization_id IS NOT NULL " +
                         "ON CONFLICT (device_id) DO UPDATE SET " +
                         "  last_heartbeat_at = excluded.last_heartbeat_at, " +
                         "  machine_id = excluded.machine_id"
