@@ -46,8 +46,8 @@ public class NotificationHealthIndicators {
                 if (props == null) {
                     return Health.unknown().withDetail("error", "Queue not found").build();
                 }
-                Long messageCount = (Long) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT);
-                Long consumerCount = (Long) props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT);
+                Number messageCount = (Number) props.get(RabbitAdmin.QUEUE_MESSAGE_COUNT);
+                Number consumerCount = (Number) props.get(RabbitAdmin.QUEUE_CONSUMER_COUNT);
 
                 // SIG 27: record queue depth metric for monitoring
                 if (messageCount != null) {
@@ -55,15 +55,15 @@ public class NotificationHealthIndicators {
                 }
 
                 Health.Builder builder = Health.up();
-                if (messageCount != null && messageCount > QUEUE_DEPTH_CRITICAL) {
+                if (messageCount != null && messageCount.longValue() > QUEUE_DEPTH_CRITICAL) {
                     builder = Health.down();
-                } else if (messageCount != null && messageCount > QUEUE_DEPTH_WARNING) {
+                } else if (messageCount != null && messageCount.longValue() > QUEUE_DEPTH_WARNING) {
                     builder = Health.up().withDetail("warning", "Queue depth above warning threshold");
                 }
 
                 return builder
-                        .withDetail("queueDepth", messageCount != null ? messageCount : -1)
-                        .withDetail("consumers", consumerCount != null ? consumerCount : 0)
+                        .withDetail("queueDepth", messageCount != null ? messageCount.longValue() : -1)
+                        .withDetail("consumers", consumerCount != null ? consumerCount.intValue() : 0)
                         .withDetail("warningThreshold", QUEUE_DEPTH_WARNING)
                         .withDetail("criticalThreshold", QUEUE_DEPTH_CRITICAL)
                         .build();
