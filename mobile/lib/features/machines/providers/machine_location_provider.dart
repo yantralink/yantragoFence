@@ -9,7 +9,7 @@ import 'package:yantrago/models/machine_location.dart';
 /// Watches [currentUserProvider] so location is re-fetched on user change.
 /// Returns null (not an error) when the machine has no location data yet.
 final machineLocationProvider =
-    FutureProvider.family<MachineLocation?, String>((ref, machineId) async {
+    FutureProvider.autoDispose.family<MachineLocation?, String>((ref, machineId) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return null;
 

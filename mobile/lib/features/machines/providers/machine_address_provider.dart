@@ -7,7 +7,7 @@ import 'package:yantrago/features/machines/providers/machine_location_provider.d
 ///
 /// Watches machineLocationProvider for the coordinates, then calls
 /// ReverseGeocodingService to resolve them to an address.
-final machineAddressProvider = FutureProvider.family<ResolvedAddress?, String>(
+final machineAddressProvider = FutureProvider.autoDispose.family<ResolvedAddress?, String>(
     (ref, machineId) async {
   final location = await ref.watch(machineLocationProvider(machineId).future);
   if (location == null) return null;

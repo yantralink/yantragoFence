@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:yantrago/core/utils/date_utils.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
@@ -132,6 +133,15 @@ class _LocationContent extends StatelessWidget {
                           ),
                         ),
                       )),
+                  if (location.recordedAt != null) ...<Widget>[
+                    const SizedBox(height: 2),
+                    Text(
+                      'Updated ${AppDateUtils.timeAgo(location.recordedAt)}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                   if (isGeocoding) ...<Widget>[
                     const SizedBox(height: 4),
                     Text(

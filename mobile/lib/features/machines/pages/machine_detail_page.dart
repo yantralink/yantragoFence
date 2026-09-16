@@ -8,6 +8,8 @@ import 'package:yantrago/features/commands/providers/command_provider.dart';
 import 'package:yantrago/features/commands/providers/command_socket_provider.dart';
 import 'package:yantrago/features/commands/widgets/command_history_section.dart';
 import 'package:yantrago/features/commands/widgets/command_status_widget.dart';
+import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
+import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
 import 'package:yantrago/features/machines/widgets/location_card.dart';
@@ -54,10 +56,13 @@ class MachineDetailPage extends ConsumerWidget {
             ref.invalidate(machineDetailProvider(machineId));
             ref.invalidate(machineTelemetryProvider(machineId));
             ref.invalidate(machineCommandsProvider(machineId));
+            ref.invalidate(machineLocationProvider(machineId));
+            ref.invalidate(machineAddressProvider(machineId));
             await Future.wait([
               ref.read(machineDetailProvider(machineId).future),
               ref.read(machineTelemetryProvider(machineId).future),
               ref.read(machineCommandsProvider(machineId).future),
+              ref.read(machineLocationProvider(machineId).future),
             ]);
           },
           child: AppPageBody(
