@@ -57,7 +57,7 @@ jobs:
       - name: Build APK
         working-directory: mobile
         run: |
-          flutter build apk --release \
+          flutter build apk --release --split-per-abi \
             --dart-define=API_BASE_URL=https://yantrago.com \
             --dart-define=WS_BASE_URL=wss://yantrago.com/ws \
             --verbose 2>&1 || {
@@ -75,11 +75,15 @@ jobs:
         run: |
           ls -la build/app/outputs/flutter-apk/ || echo "APK not found"
 
-      - name: Rename APK with version
+      - name: Rename per-ABI APKs
         working-directory: mobile
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk \
-             build/app/outputs/flutter-apk/yantrago-android.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+             build/app/outputs/flutter-apk/yantrago-android-arm64.apk
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
+             build/app/outputs/flutter-apk/yantrago-android-arm32.apk
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk \
+             build/app/outputs/flutter-apk/yantrago-android-x64.apk
 
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v1
@@ -89,8 +93,12 @@ jobs:
           body: |
             ## YantraGO Android App
 
-            ### Download
-            Download `yantrago-android.apk` below and install on your Android device.
+            ### Download (choose your device architecture)
+            - **yantrago-android-arm64.apk** — 64-bit ARM (most modern phones, ~20MB)
+            - **yantrago-android-arm32.apk** — 32-bit ARM (older phones, ~18MB)
+            - **yantrago-android-x64.apk** — x86_64 (emulators, ~20MB)
+
+            Not sure which one? Install [Droid Hardware Info](https://play.google.com/store/apps/details?id=com.droidhardinfo) and check the "Architecture" field, or try the arm64 version first.
 
             ### Login
             - **Super Admin:** superadmin@yantrago.com / password
@@ -98,17 +106,23 @@ jobs:
 
             ### Server
             Connects to: https://yantrago.com
-          files: mobile/build/app/outputs/flutter-apk/yantrago-android.apk
+          files: |
+            mobile/build/app/outputs/flutter-apk/yantrago-android-arm64.apk
+            mobile/build/app/outputs/flutter-apk/yantrago-android-arm32.apk
+            mobile/build/app/outputs/flutter-apk/yantrago-android-x64.apk
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload APK artifact
+      - name: Upload APK artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: yantrago-android-apk
-          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          path: |
+            mobile/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            mobile/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            mobile/build/app/outputs/flutter-apk/app-x86_64-release.apk
           retention-days: 30
           compression-level: 0
