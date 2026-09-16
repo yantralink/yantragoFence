@@ -65,17 +65,19 @@ public class LocationService {
     @Transactional
     public void updateLocation(UUID deviceId, UUID organizationId, UUID machineId, String imei,
                                 Double latitude, Double longitude,
-                                Double speed, Double course, LocalDateTime recordedAt) {
+                                Double speed, Double course, Boolean ignitionOn,
+                                LocalDateTime recordedAt) {
         // Upsert current location
         locationRepository.upsertDeviceLocation(deviceId, organizationId, machineId, latitude, longitude,
                 speed, course, recordedAt);
 
-        // Add to history buffer for batch insert
+        // Add to history buffer for batch insert (ignition enables engine-state
+        // replay alongside the GPS trail; null = unknown)
         locationPersistenceService.addToBuffer(
                 UUID.randomUUID(), organizationId, deviceId, machineId, imei,
-                latitude, longitude, speed, course, recordedAt);
+                latitude, longitude, speed, course, ignitionOn, recordedAt);
 
-        log.debug("Updated location for device={} lat={} lon={}", deviceId, latitude, longitude);
+        log.debug("Updated location for device={} lat={} lon={} ignition={}", deviceId, latitude, longitude, ignitionOn);
     }
 
     /**

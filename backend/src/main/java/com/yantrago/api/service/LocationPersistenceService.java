@@ -84,14 +84,15 @@ public class LocationPersistenceService {
      */
     public void addToBuffer(UUID id, UUID organizationId, UUID deviceId, UUID machineId,
                             String imei, Double latitude, Double longitude,
-                            Double speed, Double course, LocalDateTime recordedAt) {
+                            Double speed, Double course, Boolean ignitionOn,
+                            LocalDateTime recordedAt) {
         if (bufferedCount.get() >= MAX_QUEUE_SIZE) {
             log.warn("Location buffer full ({}), flushing immediately", MAX_QUEUE_SIZE);
             flushLocationBuffer();
         }
 
         locationBuffer.offer(new LocationRecord(id, organizationId, deviceId, machineId,
-                imei, latitude, longitude, speed, course, recordedAt));
+                imei, latitude, longitude, speed, course, ignitionOn, recordedAt));
         int currentSize = bufferedCount.incrementAndGet();
 
         if (currentSize >= BATCH_SIZE) {
@@ -125,8 +126,8 @@ public class LocationPersistenceService {
         try {
             String sql = "INSERT INTO location_history " +
                     "(id, organization_id, device_id, machine_id, imei, latitude, longitude, " +
-                    "speed, course, recorded_at, received_at) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                    "speed, course, ignition_on, recorded_at, received_at) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
             jdbcTemplate.batchUpdate(sql, batch, batch.size(), (ps, record) -> {
                 ps.setObject(1, record.id());
@@ -146,7 +147,12 @@ public class LocationPersistenceService {
                 } else {
                     ps.setNull(9, java.sql.Types.DOUBLE);
                 }
-                ps.setTimestamp(10, java.sql.Timestamp.valueOf(record.recordedAt()));
+                if (record.ignitionOn() != null) {
+                    ps.setBoolean(10, record.ignitionOn());
+                } else {
+                    ps.setNull(10, java.sql.Types.BOOLEAN);
+                }
+                ps.setTimestamp(11, java.sql.Timestamp.valueOf(record.recordedAt()));
             });
 
             log.debug("Flushed {} location history records to DB", count);
@@ -168,6 +174,7 @@ public class LocationPersistenceService {
             Double longitude,
             Double speed,
             Double course,
+            Boolean ignitionOn,
             LocalDateTime recordedAt
     ) {}
 }
