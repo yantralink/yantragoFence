@@ -111,13 +111,13 @@ public class TelemetryConsumer {
             // Only update fields that are present in the message (null = no data).
             updateDeviceState(message.getDeviceId(), message.getBattery(),
                     message.getCharging(), message.getGsmSignal(),
-                    message.getVoltage(), recordedAt);
+                    message.getVoltage(), message.getIgnitionOn(), recordedAt);
 
             // Broadcast to WebSocket subscribers via /topic/telemetry/{machineId}
             telemetryBroadcastService.broadcastTelemetry(
                     machineId, message.getDeviceId(),
                     message.getVoltage(), message.getBattery(), message.getGsmSignal(),
-                    message.getCharging()
+                    message.getCharging(), message.getIgnitionOn()
             );
 
             // Evaluate alert rules after successful ingestion.
@@ -137,8 +137,9 @@ public class TelemetryConsumer {
 
     /**
      * Updates the latest device state (battery_pct, charging, gsm_signal,
-     * voltage, last_telemetry_at) on the devices table. Uses COALESCE so
-     * that null fields in the message do not overwrite existing values.
+     * voltage, ignition_on, last_telemetry_at) on the devices table. Uses
+     * COALESCE so that null fields in the message do not overwrite existing
+     * values.
      *
      * Per AGENTS.md rule 7: this is a RabbitMQ consumer with no HTTP/JWT context;
      * the deviceId is trusted because it was resolved from the device's IMEI
@@ -146,7 +147,7 @@ public class TelemetryConsumer {
      */
     private void updateDeviceState(UUID deviceId, Double battery,
                                     Boolean charging, Integer gsmSignal,
-                                    Double voltage, LocalDateTime recordedAt) {
+                                    Double voltage, Boolean ignitionOn, LocalDateTime recordedAt) {
         try {
             jdbcTemplate.update(
                     "UPDATE devices SET " +
@@ -154,13 +155,14 @@ public class TelemetryConsumer {
                             "charging = COALESCE(?, charging), " +
                             "gsm_signal = COALESCE(?, gsm_signal), " +
                             "voltage = COALESCE(?, voltage), " +
+                            "ignition_on = COALESCE(?, ignition_on), " +
                             "last_telemetry_at = ?, " +
                             "updated_at = now() " +
                             "WHERE id = ?",
-                    battery, charging, gsmSignal, voltage, recordedAt, deviceId
+                    battery, charging, gsmSignal, voltage, ignitionOn, recordedAt, deviceId
             );
-            log.debug("Updated device state: deviceId={} battery={} charging={} gsm={} voltage={}",
-                    deviceId, battery, charging, gsmSignal, voltage);
+            log.debug("Updated device state: deviceId={} battery={} charging={} gsm={} voltage={} ignition={}",
+                    deviceId, battery, charging, gsmSignal, voltage, ignitionOn);
         } catch (Exception e) {
             log.error("Failed to update device state for deviceId={}: {}", deviceId, e.getMessage());
         }

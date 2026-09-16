@@ -20,16 +20,23 @@ public class TelemetryLatestDto {
     private Boolean charging;
     private Integer gsmSignal;
     private Double voltage;
+    private Boolean ignitionOn;   // true = ACC high (engine on), null = unknown
     private LocalDateTime lastTelemetryAt;
 
     public TelemetryLatestDto() {}
 
     public TelemetryLatestDto(Double batteryPct, Boolean charging, Integer gsmSignal,
                               Double voltage, LocalDateTime lastTelemetryAt) {
+        this(batteryPct, charging, gsmSignal, voltage, null, lastTelemetryAt);
+    }
+
+    public TelemetryLatestDto(Double batteryPct, Boolean charging, Integer gsmSignal,
+                              Double voltage, Boolean ignitionOn, LocalDateTime lastTelemetryAt) {
         this.batteryPct = batteryPct;
         this.charging = charging;
         this.gsmSignal = gsmSignal;
         this.voltage = voltage;
+        this.ignitionOn = ignitionOn;
         this.lastTelemetryAt = lastTelemetryAt;
     }
 
@@ -41,6 +48,8 @@ public class TelemetryLatestDto {
     public void setGsmSignal(Integer gsmSignal) { this.gsmSignal = gsmSignal; }
     public Double getVoltage() { return voltage; }
     public void setVoltage(Double voltage) { this.voltage = voltage; }
+    public Boolean getIgnitionOn() { return ignitionOn; }
+    public void setIgnitionOn(Boolean ignitionOn) { this.ignitionOn = ignitionOn; }
     public LocalDateTime getLastTelemetryAt() { return lastTelemetryAt; }
     public void setLastTelemetryAt(LocalDateTime lastTelemetryAt) { this.lastTelemetryAt = lastTelemetryAt; }
 }

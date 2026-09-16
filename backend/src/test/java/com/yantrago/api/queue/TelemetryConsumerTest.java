@@ -75,17 +75,18 @@ class TelemetryConsumerTest {
         // Verify battery reading persisted to time-series table
         verify(telemetryService).storeBatteryReadings(any());
 
-        // Verify device state updated with battery, charging, gsm, voltage
+        // Verify device state updated with battery, charging, gsm, voltage, ignition
         verify(jdbcTemplate).update(
                 eq("UPDATE devices SET " +
                         "battery_pct = COALESCE(?, battery_pct), " +
                         "charging = COALESCE(?, charging), " +
                         "gsm_signal = COALESCE(?, gsm_signal), " +
                         "voltage = COALESCE(?, voltage), " +
+                        "ignition_on = COALESCE(?, ignition_on), " +
                         "last_telemetry_at = ?, " +
                         "updated_at = now() " +
                         "WHERE id = ?"),
-                eq(60.0), eq(true), eq(3), eq(null), any(), eq(deviceId)
+                eq(60.0), eq(true), eq(3), eq(null), eq(null), any(), eq(deviceId)
         );
     }
 
@@ -100,7 +101,28 @@ class TelemetryConsumerTest {
 
         verify(telemetryBroadcastService).broadcastTelemetry(
                 eq(machineId), eq(deviceId),
-                eq(null), eq(60.0), eq(3), eq(true)
+                eq(null), eq(60.0), eq(3), eq(true), eq(null)
+        );
+    }
+
+    @Test
+    @DisplayName("handleTelemetry should persist and broadcast ignition status")
+    void handleTelemetry_shouldPersistAndBroadcastIgnition() {
+        TelemetryMessage msg = new TelemetryMessage(
+                deviceId, imei, null, 60.0, 3, true, true, Instant.now()
+        );
+
+        consumer.handleTelemetry(msg);
+
+        // Verify device state update carries ignition_on = true
+        verify(jdbcTemplate).update(
+                contains("ignition_on = COALESCE(?, ignition_on)"),
+                eq(60.0), eq(true), eq(3), eq(null), eq(true), any(), eq(deviceId)
+        );
+        // Verify broadcast carries ignitionOn = true
+        verify(telemetryBroadcastService).broadcastTelemetry(
+                eq(machineId), eq(deviceId),
+                eq(null), eq(60.0), eq(3), eq(true), eq(true)
         );
     }
 
@@ -132,10 +154,11 @@ class TelemetryConsumerTest {
         verify(telemetryService, never()).storeGsmReadings(any());
 
         // But device state should still be updated (COALESCE preserves existing values,
-        // only charging=false is new). voltage=null is also passed (COALESCE preserves).
+        // only charging=false is new). voltage=null and ignitionOn=null are also passed
+        // (COALESCE preserves).
         verify(jdbcTemplate).update(
                 anyString(),
-                eq(null), eq(false), eq(null), eq(null), any(), eq(deviceId)
+                eq(null), eq(false), eq(null), eq(null), eq(null), any(), eq(deviceId)
         );
     }
 
@@ -164,7 +187,7 @@ class TelemetryConsumerTest {
 
         // Telemetry should still be persisted despite alert evaluation failure
         verify(telemetryService).storeBatteryReadings(any());
-        verify(jdbcTemplate).update(anyString(), eq(60.0), eq(true), eq(3), eq(null), any(), eq(deviceId));
+        verify(jdbcTemplate).update(anyString(), eq(60.0), eq(true), eq(3), eq(null), eq(null), any(), eq(deviceId));
     }
 
     @Test
@@ -189,10 +212,11 @@ class TelemetryConsumerTest {
                         "charging = COALESCE(?, charging), " +
                         "gsm_signal = COALESCE(?, gsm_signal), " +
                         "voltage = COALESCE(?, voltage), " +
+                        "ignition_on = COALESCE(?, ignition_on), " +
                         "last_telemetry_at = ?, " +
                         "updated_at = now() " +
                         "WHERE id = ?"),
-                eq(null), eq(null), eq(null), eq(12.22), any(), eq(deviceId)
+                eq(null), eq(null), eq(null), eq(12.22), eq(null), any(), eq(deviceId)
         );
     }
 }

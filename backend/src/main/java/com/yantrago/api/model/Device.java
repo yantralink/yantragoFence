@@ -56,6 +56,11 @@ public class Device extends BaseEntity {
     @Column(name = "voltage")
     private Double voltage;
 
+    // ACC (ignition) status from heartbeat 0x13 / GPS 0x22 / alarm 0x26 (V49 migration).
+    // true = ACC high (engine on), false = ACC low, null = unknown.
+    @Column(name = "ignition_on")
+    private Boolean ignitionOn;
+
     public java.util.UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(java.util.UUID organizationId) { this.organizationId = organizationId; }
     public java.util.UUID getMachineId() { return machineId; }
@@ -82,4 +87,6 @@ public class Device extends BaseEntity {
     public void setLastTelemetryAt(LocalDateTime lastTelemetryAt) { this.lastTelemetryAt = lastTelemetryAt; }
     public Double getVoltage() { return voltage; }
     public void setVoltage(Double voltage) { this.voltage = voltage; }
+    public Boolean getIgnitionOn() { return ignitionOn; }
+    public void setIgnitionOn(Boolean ignitionOn) { this.ignitionOn = ignitionOn; }
 }

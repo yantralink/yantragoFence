@@ -27,6 +27,7 @@ public class MachineDto {
     private Boolean charging;         // true = external power connected
     private Integer gsmSignal;        // 0–4, null if no data
     private Double voltage;           // external power voltage in volts, null if no 0x94 packet
+    private Boolean ignitionOn;       // true = ACC high (engine on), null = unknown
     private LocalDateTime lastTelemetryAt;
     // Resolved names for display
     private String organizationName;
@@ -97,4 +98,6 @@ public class MachineDto {
     public void setLastTelemetryAt(LocalDateTime lastTelemetryAt) { this.lastTelemetryAt = lastTelemetryAt; }
     public Double getVoltage() { return voltage; }
     public void setVoltage(Double voltage) { this.voltage = voltage; }
+    public Boolean getIgnitionOn() { return ignitionOn; }
+    public void setIgnitionOn(Boolean ignitionOn) { this.ignitionOn = ignitionOn; }
 }

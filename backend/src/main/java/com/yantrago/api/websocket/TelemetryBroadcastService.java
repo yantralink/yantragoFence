@@ -38,10 +38,11 @@ public class TelemetryBroadcastService {
      * @param battery battery percentage (optional)
      * @param gsmSignal GSM signal strength (optional)
      * @param charging true if external power connected (optional)
+     * @param ignitionOn true if ACC high / engine on (optional, null = unknown)
      */
     public void broadcastTelemetry(UUID machineId, UUID deviceId,
                                     Double voltage, Double battery, Integer gsmSignal,
-                                    Boolean charging) {
+                                    Boolean charging, Boolean ignitionOn) {
         if (machineId == null) {
             log.debug("Skipping telemetry broadcast: machineId is null (device={})", deviceId);
             return;
@@ -57,10 +58,12 @@ public class TelemetryBroadcastService {
         payload.put("battery", battery);
         payload.put("gsmSignal", gsmSignal);
         payload.put("charging", charging);
+        payload.put("ignitionOn", ignitionOn);
         payload.put("timestamp", LocalDateTime.now().toString());
 
         messagingTemplate.convertAndSend(destination, payload);
-        log.debug("Broadcasted telemetry to {} voltage={} battery={} charging={}", destination, voltage, battery, charging);
+        log.debug("Broadcasted telemetry to {} voltage={} battery={} charging={} ignition={}",
+                destination, voltage, battery, charging, ignitionOn);
     }
 
     /**
