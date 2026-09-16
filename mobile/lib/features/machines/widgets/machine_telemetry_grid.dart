@@ -5,6 +5,7 @@ import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
 import 'package:yantrago/features/dashboard/widgets/battery_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/faults_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/gsm_status_widget.dart';
+import 'package:yantrago/features/dashboard/widgets/ignition_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/voltage_widget.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
 import 'package:yantrago/models/machine.dart';
@@ -41,12 +42,14 @@ class MachineTelemetryGrid extends ConsumerWidget {
         charging: machine.charging,
         gsmSignal: machine.gsmSignal,
         voltage: machine.voltage,
+        ignitionOn: machine.ignitionOn,
       ),
       error: (_, __) => Telemetry(
         battery: machine.batteryPct,
         charging: machine.charging,
         gsmSignal: machine.gsmSignal,
         voltage: machine.voltage,
+        ignitionOn: machine.ignitionOn,
       ),
     );
 
@@ -76,6 +79,7 @@ class MachineTelemetryGrid extends ConsumerWidget {
     // Use the reusable dashboard widgets which already handle null states
     // (showing "No report received" when data is unavailable).
     return <Widget>[
+      IgnitionWidget(ignitionOn: telemetry.ignitionOn),
       BatteryWidget(battery: telemetry.battery, charging: telemetry.charging),
       FaultsWidget(count: faultsCount),
       GsmStatusWidget(signal: telemetry.gsmSignal),

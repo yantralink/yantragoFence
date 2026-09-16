@@ -43,6 +43,15 @@ class MachineInfoCard extends StatelessWidget {
                 tone: _statusTone(machine),
                 dot: true,
               ),
+              // Engine chip — only shown once the device has reported ACC.
+              if (machine.ignitionOn != null) ...<Widget>[
+                const SizedBox(width: 6),
+                AppStatusBadge(
+                  label: machine.ignitionOn! ? 'Engine ON' : 'Engine OFF',
+                  tone: machine.ignitionOn! ? StatusTone.success : StatusTone.neutral,
+                  dot: machine.ignitionOn!,
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
