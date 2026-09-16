@@ -26,7 +26,7 @@ jobs:
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
+          password: ${{ secrets.STAGING_PASSWORD }}
           script: |
             set -e
             cd /opt/yantrago
