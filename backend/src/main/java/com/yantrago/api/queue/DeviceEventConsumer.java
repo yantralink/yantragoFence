@@ -34,7 +34,12 @@ public class DeviceEventConsumer {
     /**
      * Maps BR05 protocol alarm codes to YantraGO alert types.
      * Only codes that warrant alert generation are mapped; others are logged
-     * but do not create incidents (e.g. 0x00 Normal, 0xFF ACC off).
+     * but do not create incidents (e.g. 0x00 Normal).
+     *
+     * ACC state codes (0xFE on / 0xFF off) are handled separately as a
+     * state pair: 0xFE opens an INFO ACC_ON incident (notifies "engine
+     * started"), 0xFF resolves it — ACC off is a return to normal, not a
+     * problem, so it does not open its own incident.
      */
     private static final Map<Integer, AlarmMapping> ALARM_CODE_MAP = Map.of(
             0x0E, new AlarmMapping("EXTERNAL_POWER_LOW", "WARNING",
@@ -46,6 +51,9 @@ public class DeviceEventConsumer {
             0x19, new AlarmMapping("INTERNAL_BATTERY_LOW", "WARNING",
                     "Internal backup battery is low")
     );
+
+    private static final int ALARM_ACC_ON = 0xFE;
+    private static final int ALARM_ACC_OFF = 0xFF;
 
     private final DeviceHeartbeatService deviceHeartbeatService;
     private final TelemetryBroadcastService telemetryBroadcastService;
@@ -118,13 +126,6 @@ public class DeviceEventConsumer {
             return;
         }
 
-        AlarmMapping mapping = ALARM_CODE_MAP.get(alarmCode);
-        if (mapping == null) {
-            log.info("Unmapped alarm code 0x{} from deviceId={} — no alert generated",
-                    String.format("%02X", alarmCode), message.getDeviceId());
-            return;
-        }
-
         // Resolve machineId from the device record (never from message payload)
         UUID deviceId = message.getDeviceId();
         if (deviceId == null) {
@@ -135,6 +136,19 @@ public class DeviceEventConsumer {
         DeviceResolverService.DeviceInfo deviceInfo = deviceResolverService.resolve(deviceId);
         if (deviceInfo == null || deviceInfo.machineId() == null) {
             log.warn("Cannot generate alarm alert: device not found or no machine bound: deviceId={}", deviceId);
+            return;
+        }
+
+        // ACC state pair: 0xFE opens the ACC_ON incident, 0xFF closes it.
+        if (alarmCode == ALARM_ACC_ON || alarmCode == ALARM_ACC_OFF) {
+            handleAccAlarm(alarmCode, deviceInfo, message);
+            return;
+        }
+
+        AlarmMapping mapping = ALARM_CODE_MAP.get(alarmCode);
+        if (mapping == null) {
+            log.info("Unmapped alarm code 0x{} from deviceId={} — no alert generated",
+                    String.format("%02X", alarmCode), message.getDeviceId());
             return;
         }
 
@@ -156,6 +170,43 @@ public class DeviceEventConsumer {
                     mapping.alertType(), machineId, String.format("%02X", alarmCode));
         } catch (Exception e) {
             log.error("Failed to generate alert from alarm code 0x{} for machine={}: {}",
+                    String.format("%02X", alarmCode), machineId, e.getMessage());
+        }
+    }
+
+    /**
+     * Handles the BR05 ACC alarm pair (0xFE on / 0xFF off). ACC on opens an
+     * INFO ACC_ON incident (which notifies via the outbox); ACC off resolves
+     * any open ACC_ON incident. Repeated 0xFE while already open increments
+     * the occurrence count via processAlertEvent deduplication.
+     */
+    private void handleAccAlarm(int alarmCode, DeviceResolverService.DeviceInfo deviceInfo,
+                                 DeviceEventMessage message) {
+        UUID machineId = deviceInfo.machineId();
+        Instant triggeredAt = message.getTimestamp() != null ? message.getTimestamp() : Instant.now();
+
+        try {
+            if (alarmCode == ALARM_ACC_ON) {
+                canonicalAlertService.processAlertEvent(
+                        machineId,
+                        "ACC_ON",
+                        "INFO",
+                        "Ignition ON — engine started",
+                        triggeredAt,
+                        null, null, null
+                );
+                log.info("Generated ACC_ON alert for machine={} (engine started)", machineId);
+            } else {
+                canonicalAlertService.resolveIncident(
+                        deviceInfo.organizationId(),
+                        machineId,
+                        "ACC_ON",
+                        "Ignition OFF — engine stopped"
+                );
+                log.info("Resolved ACC_ON incident for machine={} (engine stopped)", machineId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to handle ACC alarm 0x{} for machine={}: {}",
                     String.format("%02X", alarmCode), machineId, e.getMessage());
         }
     }
