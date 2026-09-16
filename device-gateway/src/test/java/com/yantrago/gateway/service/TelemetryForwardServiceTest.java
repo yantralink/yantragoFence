@@ -153,7 +153,7 @@ class TelemetryForwardServiceTest {
     @Test
     @DisplayName("forwardTelemetry (interface method) should publish battery and GSM from heartbeat")
     void forwardTelemetry_interface_shouldPublishBatteryAndGsm() {
-        telemetryForwardService.forwardTelemetry(deviceId, imei, 60.0, 3, true);
+        telemetryForwardService.forwardTelemetry(deviceId, imei, 60.0, 3, true, true);
 
         ArgumentCaptor<TelemetryMessage> captor = ArgumentCaptor.forClass(TelemetryMessage.class);
         verify(telemetryProducer).publishTelemetry(captor.capture());
@@ -163,12 +163,13 @@ class TelemetryForwardServiceTest {
         assertNull(captor.getValue().getVoltage());
         assertEquals(60.0, captor.getValue().getBattery());
         assertEquals(3, captor.getValue().getGsmSignal());
+        assertEquals(true, captor.getValue().getIgnitionOn());
     }
 
     @Test
     @DisplayName("forwardTelemetry (interface method) should skip when deviceId is null")
     void forwardTelemetry_interface_shouldSkipWhenDeviceIdIsNull() {
-        telemetryForwardService.forwardTelemetry(null, imei, 60.0, 3, true);
+        telemetryForwardService.forwardTelemetry(null, imei, 60.0, 3, true, null);
 
         verify(telemetryProducer, never()).publishTelemetry(any());
     }

@@ -192,10 +192,10 @@ class ConcoxV5ProtocolHandlerTest {
         // Now send the heartbeat
         handler.handlePacket(packet, "client-heartbeat-test");
 
-        // Verify telemetry was forwarded with battery=60.0, gsmSignal=3, charging=true
+        // Verify telemetry was forwarded with battery=60.0, gsmSignal=3, charging=true, accOn=false
         verify(gpsIngestService).forwardTelemetry(
                 eq(UUID.fromString(testDeviceId)), eq(testImei),
-                eq(60.0), eq(3), eq(true)
+                eq(60.0), eq(3), eq(true), eq(false)
         );
         // Verify heartbeat was recorded (login + heartbeat = 2 calls)
         verify(deviceHeartbeatService, times(2)).recordHeartbeat(testImei);
@@ -253,10 +253,10 @@ class ConcoxV5ProtocolHandlerTest {
         // Now send the alarm packet
         handler.handlePacket(packet, "client-alarm-test");
 
-        // Verify telemetry was forwarded with battery=60.0, gsmSignal=3, charging=true
+        // Verify telemetry was forwarded with battery=60.0, gsmSignal=3, charging=true, accOn=false
         verify(gpsIngestService).forwardTelemetry(
                 eq(UUID.fromString(testDeviceId)), eq(testImei),
-                eq(60.0), eq(3), eq(true)
+                eq(60.0), eq(3), eq(true), eq(false)
         );
 
         // Verify alarm event was published with alarm code 0x0E
@@ -335,7 +335,7 @@ class ConcoxV5ProtocolHandlerTest {
 
         // Should not throw and should not forward any telemetry
         assertDoesNotThrow(() -> handler.handlePacket(packet, "client-short-alarm"));
-        verify(gpsIngestService, never()).forwardTelemetry(any(), any(), any(), any(), any());
+        verify(gpsIngestService, never()).forwardTelemetry(any(), any(), any(), any(), any(), any());
     }
 
     @Test
