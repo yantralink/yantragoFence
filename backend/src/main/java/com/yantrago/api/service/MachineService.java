@@ -141,9 +141,10 @@ public class MachineService {
                         device.getCharging(),
                         device.getGsmSignal(),
                         device.getVoltage(),
+                        device.getIgnitionOn(),
                         device.getLastTelemetryAt()
                 ))
-                .orElse(new TelemetryLatestDto(null, null, null, null, null));
+                .orElse(new TelemetryLatestDto(null, null, null, null, null, null));
     }
 
     @Transactional
@@ -424,6 +425,7 @@ public class MachineService {
             dto.setCharging(device.getCharging());
             dto.setGsmSignal(device.getGsmSignal());
             dto.setVoltage(device.getVoltage());
+            dto.setIgnitionOn(device.getIgnitionOn());
             dto.setLastTelemetryAt(device.getLastTelemetryAt());
         });
         // Populate customer name if assigned

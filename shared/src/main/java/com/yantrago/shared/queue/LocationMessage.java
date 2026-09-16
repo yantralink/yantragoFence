@@ -20,11 +20,16 @@ public class LocationMessage implements Serializable {
     private Double speed;
     private Double course;
     private Instant timestamp;
+    private Boolean ignitionOn;  // true = ACC high (engine on), false = ACC low, null = unknown
 
     public LocationMessage() {
     }
 
     public LocationMessage(UUID deviceId, String imei, Double latitude, Double longitude, Double speed, Double course, Instant timestamp) {
+        this(deviceId, imei, latitude, longitude, speed, course, timestamp, null);
+    }
+
+    public LocationMessage(UUID deviceId, String imei, Double latitude, Double longitude, Double speed, Double course, Instant timestamp, Boolean ignitionOn) {
         this.deviceId = deviceId;
         this.imei = imei;
         this.latitude = latitude;
@@ -32,6 +37,7 @@ public class LocationMessage implements Serializable {
         this.speed = speed;
         this.course = course;
         this.timestamp = timestamp;
+        this.ignitionOn = ignitionOn;
     }
 
     public UUID getDeviceId() {
@@ -88,5 +94,13 @@ public class LocationMessage implements Serializable {
 
     public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public Boolean getIgnitionOn() {
+        return ignitionOn;
+    }
+
+    public void setIgnitionOn(Boolean ignitionOn) {
+        this.ignitionOn = ignitionOn;
     }
 }

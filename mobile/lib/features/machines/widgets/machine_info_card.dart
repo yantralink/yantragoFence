@@ -17,7 +17,15 @@ import 'package:yantrago/models/machine.dart';
 class MachineInfoCard extends StatelessWidget {
   final Machine machine;
 
-  const MachineInfoCard({super.key, required this.machine});
+  /// Live ACC override from the telemetry socket. When non-null it wins
+  /// over [Machine.ignitionOn] (REST snapshot) so the Engine chip updates
+  /// in real time. Null = no socket frame yet — fall back to the snapshot.
+  final bool? liveIgnitionOn;
+
+  const MachineInfoCard({super.key, required this.machine, this.liveIgnitionOn});
+
+  /// Effective ACC status: live socket value first, REST snapshot fallback.
+  bool? get _effectiveIgnitionOn => liveIgnitionOn ?? machine.ignitionOn;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +51,15 @@ class MachineInfoCard extends StatelessWidget {
                 tone: _statusTone(machine),
                 dot: true,
               ),
+              // Engine chip — only shown once the device has reported ACC.
+              if (_effectiveIgnitionOn != null) ...<Widget>[
+                const SizedBox(width: 6),
+                AppStatusBadge(
+                  label: _effectiveIgnitionOn! ? 'Engine ON' : 'Engine OFF',
+                  tone: _effectiveIgnitionOn! ? StatusTone.success : StatusTone.neutral,
+                  dot: _effectiveIgnitionOn!,
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),

@@ -91,5 +91,35 @@ void main() {
       expect(telemetry.voltage, isNull);
       expect(telemetry.timestamp, isNull);
     });
+
+    test('maps ignitionOn from backend TelemetryLatestDto', () {
+      final json = <String, dynamic>{
+        'batteryPct': 60.0,
+        'charging': true,
+        'gsmSignal': 3,
+        'voltage': null,
+        'ignitionOn': true,
+        'lastTelemetryAt': '2025-09-11T12:00:00',
+      };
+
+      final telemetry = Telemetry.fromJson(json);
+
+      expect(telemetry.ignitionOn, true);
+    });
+
+    test('ignitionOn is null when backend has not reported ACC', () {
+      final json = <String, dynamic>{
+        'batteryPct': 60.0,
+        'charging': true,
+        'gsmSignal': 3,
+        'voltage': null,
+        'ignitionOn': null,
+        'lastTelemetryAt': '2025-09-11T12:00:00',
+      };
+
+      final telemetry = Telemetry.fromJson(json);
+
+      expect(telemetry.ignitionOn, isNull);
+    });
   });
 }

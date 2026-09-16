@@ -173,10 +173,10 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
                     deviceHeartbeatService.recordHeartbeat(imei);
                     publishDeviceEvent(imei, DeviceEventMessage.EVENT_HEARTBEAT);
 
-                    // Forward battery/GSM telemetry from heartbeat — heartbeats are the
+                    // Forward battery/GSM/ACC telemetry from heartbeat — heartbeats are the
                     // primary source of battery level data since 0x22 GPS packets do not
                     // include voltage level or terminal info bytes.
-                    forwardTelemetryFromHeartbeat(imei, batteryPct, gsmSignal, charging);
+                    forwardTelemetryFromHeartbeat(imei, batteryPct, gsmSignal, charging, accOn);
                 } catch (Exception e) {
                     log.error("[V5] Failed to sync lock state from heartbeat: {}", e.getMessage());
                 }
@@ -508,8 +508,8 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
 
             String imei = clientImeiMap.get(clientId);
             if (imei != null) {
-                // Forward telemetry (battery + GSM) from alarm packet
-                forwardTelemetryFromHeartbeat(imei, batteryPct, gsmSignal, charging);
+                // Forward telemetry (battery + GSM + ACC) from alarm packet
+                forwardTelemetryFromHeartbeat(imei, batteryPct, gsmSignal, charging, ignitionOn);
 
                 // Forward location if GPS located
                 if (gpsLocated) {
@@ -681,7 +681,8 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
      * Per AGENTS.md rule 17: use shared message contracts (TelemetryMessage).
      */
     private void forwardTelemetryFromHeartbeat(String imei, Integer batteryPct,
-                                                Integer gsmSignal, boolean charging) {
+                                                Integer gsmSignal, boolean charging,
+                                                boolean ignitionOn) {
         try {
             String deviceIdStr = deviceMappingCacheService.getDeviceIdByImei(imei);
             if (deviceIdStr == null) {
@@ -694,11 +695,12 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
                     deviceId, imei,
                     batteryPct != null ? batteryPct.doubleValue() : null,
                     gsmSignal,
-                    charging
+                    charging,
+                    ignitionOn
             );
 
-            log.debug("[V5] Forwarded heartbeat/alarm telemetry: imei={} battery={}%, gsm={}, charging={}",
-                    imei, batteryPct, gsmSignal, charging);
+            log.debug("[V5] Forwarded heartbeat/alarm telemetry: imei={} battery={}%, gsm={}, charging={}, ignition={}",
+                    imei, batteryPct, gsmSignal, charging, ignitionOn ? "ON" : "OFF");
         } catch (Exception e) {
             log.error("[V5] Failed to forward heartbeat telemetry: imei={} err={}", imei, e.getMessage());
         }

@@ -73,6 +73,7 @@ public class LocationConsumer {
                     message.getLongitude(),
                     message.getSpeed(),
                     message.getCourse(),
+                    message.getIgnitionOn(),
                     recordedAt
             );
 

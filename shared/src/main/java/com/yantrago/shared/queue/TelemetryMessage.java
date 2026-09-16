@@ -18,28 +18,30 @@ public class TelemetryMessage implements Serializable {
     private Double battery;
     private Integer gsmSignal;
     private Boolean charging;  // true = external power connected, false = on battery
+    private Boolean ignitionOn;  // true = ACC high (engine on), false = ACC low, null = unknown
     private Instant timestamp;
 
     public TelemetryMessage() {
     }
 
     public TelemetryMessage(UUID deviceId, String imei, Double voltage, Double battery, Integer gsmSignal, Instant timestamp) {
-        this.deviceId = deviceId;
-        this.imei = imei;
-        this.voltage = voltage;
-        this.battery = battery;
-        this.gsmSignal = gsmSignal;
-        this.timestamp = timestamp;
+        this(deviceId, imei, voltage, battery, gsmSignal, null, null, timestamp);
     }
 
     public TelemetryMessage(UUID deviceId, String imei, Double voltage, Double battery,
                             Integer gsmSignal, Boolean charging, Instant timestamp) {
+        this(deviceId, imei, voltage, battery, gsmSignal, charging, null, timestamp);
+    }
+
+    public TelemetryMessage(UUID deviceId, String imei, Double voltage, Double battery,
+                            Integer gsmSignal, Boolean charging, Boolean ignitionOn, Instant timestamp) {
         this.deviceId = deviceId;
         this.imei = imei;
         this.voltage = voltage;
         this.battery = battery;
         this.gsmSignal = gsmSignal;
         this.charging = charging;
+        this.ignitionOn = ignitionOn;
         this.timestamp = timestamp;
     }
 
@@ -89,6 +91,14 @@ public class TelemetryMessage implements Serializable {
 
     public void setCharging(Boolean charging) {
         this.charging = charging;
+    }
+
+    public Boolean getIgnitionOn() {
+        return ignitionOn;
+    }
+
+    public void setIgnitionOn(Boolean ignitionOn) {
+        this.ignitionOn = ignitionOn;
     }
 
     public Instant getTimestamp() {

@@ -32,9 +32,11 @@ public interface GpsIngestService {
      * @param batteryPct internal battery percentage (0–100), or null if unavailable
      * @param gsmSignal  GSM signal level (0–4), or null if unavailable
      * @param charging   true if external power connected, false if on battery
+     * @param ignitionOn true if ACC high (engine on), false if ACC low, null if unknown
      */
     void forwardTelemetry(UUID deviceId, String imei,
-                          Double batteryPct, Integer gsmSignal, Boolean charging);
+                          Double batteryPct, Integer gsmSignal, Boolean charging,
+                          Boolean ignitionOn);
 
     /**
      * Forwards an external voltage reading extracted from the 0x94 info

@@ -76,6 +76,7 @@ public class TelemetryForwardService implements GpsIngestService {
                 request.getGsmSignalStrength() != null
                         ? request.getGsmSignalStrength() : null,
                 request.getExternalPowerConnected(), // charging status from Terminal Info Bit2
+                request.getIgnitionOn(), // ACC status from 0x22 ACC byte / 0x26 Terminal Info Bit1
                 timestamp
         );
         telemetryProducer.publishTelemetry(telemetryMessage);
@@ -89,7 +90,8 @@ public class TelemetryForwardService implements GpsIngestService {
                     request.getLng(),
                     request.getSpeedKph(),
                     request.getHeading(),
-                    timestamp
+                    timestamp,
+                    request.getIgnitionOn()
             );
             deviceEventProducer.publishLocation(locationMessage);
         }
@@ -117,7 +119,8 @@ public class TelemetryForwardService implements GpsIngestService {
      */
     @Override
     public void forwardTelemetry(UUID deviceId, String imei,
-                                  Double batteryPct, Integer gsmSignal, Boolean charging) {
+                                  Double batteryPct, Integer gsmSignal, Boolean charging,
+                                  Boolean ignitionOn) {
         if (deviceId == null) {
             log.warn("Skipping telemetry forward: deviceId is null");
             return;
@@ -125,11 +128,11 @@ public class TelemetryForwardService implements GpsIngestService {
         // BR05 does not provide voltage in volts — only a 7-level enum mapped to percentage.
         // We pass null for voltage and use batteryPct for the battery field.
         TelemetryMessage message = new TelemetryMessage(
-                deviceId, imei, null, batteryPct, gsmSignal, charging, Instant.now()
+                deviceId, imei, null, batteryPct, gsmSignal, charging, ignitionOn, Instant.now()
         );
         telemetryProducer.publishTelemetry(message);
-        log.debug("Forwarded heartbeat/alarm telemetry: deviceId={} battery={}%, gsm={}, charging={}",
-                deviceId, batteryPct, gsmSignal, charging);
+        log.debug("Forwarded heartbeat/alarm telemetry: deviceId={} battery={}%, gsm={}, charging={}, ignition={}",
+                deviceId, batteryPct, gsmSignal, charging, ignitionOn);
     }
 
     /**

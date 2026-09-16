@@ -16,6 +16,7 @@ class Telemetry {
   final int? battery;
   final int? gsmSignal;
   final bool? charging;
+  final bool? ignitionOn; // true = ACC high (engine on), null = unknown
   final DateTime? timestamp;
 
   const Telemetry({
@@ -26,6 +27,7 @@ class Telemetry {
     this.battery,
     this.gsmSignal,
     this.charging,
+    this.ignitionOn,
     this.timestamp,
   });
 
@@ -42,6 +44,7 @@ class Telemetry {
           (json['battery'] as num?)?.toInt(),
       gsmSignal: (json['gsmSignal'] as num?)?.toInt(),
       charging: json['charging'] as bool?,
+      ignitionOn: json['ignitionOn'] as bool?,
       timestamp: json['lastTelemetryAt'] != null
           ? DateTime.tryParse(json['lastTelemetryAt'] as String)
           : (json['timestamp'] != null

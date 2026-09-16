@@ -22,6 +22,7 @@ class Machine {
   final bool? charging;
   final int? gsmSignal;
   final double? voltage;
+  final bool? ignitionOn; // true = ACC high (engine on), null = unknown
   final DateTime? lastTelemetryAt;
 
   const Machine({
@@ -46,6 +47,7 @@ class Machine {
     this.charging,
     this.gsmSignal,
     this.voltage,
+    this.ignitionOn,
     this.lastTelemetryAt,
   });
 
@@ -79,6 +81,7 @@ class Machine {
       charging: json['charging'] as bool?,
       gsmSignal: (json['gsmSignal'] as num?)?.toInt(),
       voltage: (json['voltage'] as num?)?.toDouble(),
+      ignitionOn: json['ignitionOn'] as bool?,
       lastTelemetryAt: json['lastTelemetryAt'] != null
           ? DateTime.tryParse(json['lastTelemetryAt'] as String)
           : null,
@@ -89,4 +92,6 @@ class Machine {
   bool get isFencingOn => status == 'FENCING_ON' || status == 'ACTIVE';
   bool get isFault => status == 'FAULT';
   bool get isInStock => status == 'IN_STOCK';
+  /// Engine on/off from ACC. Null means the device has not reported ACC yet.
+  bool? get isIgnitionOn => ignitionOn;
 }
