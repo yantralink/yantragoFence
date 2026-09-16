@@ -1,9 +1,13 @@
-# Deploy Staging — deploy on merge to main
+# Deploy Staging — build JARs in CI, upload to Vultr server, restart services
 #
-# The staging docker-compose (infra/docker/docker-compose.staging.yml)
-# builds the backend/gateway images ON THE SERVER from source (build:
-# contexts), so no Docker registry is involved. CI only needs to SSH in,
-# update the checkout, and let compose build and start the stack.
+# Server layout (see /opt/yantrago):
+#   backend/app.jar, gateway/app.jar — run as systemd services
+#     (yantrago-backend.service, yantrago-gateway.service)
+#   config/ — application-prod.yml, push.env, etc. (managed on the server)
+#
+# There is no Docker on the server: CI builds the bootJars, uploads them
+# over SCP, and restarts the systemd services. Flyway migrations (V49/V50)
+# apply automatically when the backend boots.
 name: Deploy Staging
 
 on:
@@ -21,17 +25,75 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to staging server
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Build backend JAR
+        run: ./gradlew :backend:bootJar -x test --no-daemon
+
+      - name: Build gateway JAR
+        run: ./gradlew :device-gateway:bootJar -x test --no-daemon
+
+      - name: Stage JARs for upload
+        run: |
+          mkdir -p deploy/backend deploy/gateway
+          cp backend/build/libs/backend-1.0.0.jar deploy/backend/app.jar
+          cp device-gateway/build/libs/device-gateway-1.0.0.jar deploy/gateway/app.jar
+          ls -la deploy/backend deploy/gateway
+
+      - name: Upload backend JAR
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          source: deploy/backend/app.jar
+          target: /opt/yantrago/backend/
+          strip_components: 2
+
+      - name: Upload gateway JAR
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          source: deploy/gateway/app.jar
+          target: /opt/yantrago/gateway/
+          strip_components: 2
+
+      - name: Restart services and verify
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
-          password: ${{ secrets.STAGING_PASSWORD }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          command_timeout: 10m
           script: |
             set -e
-            cd /opt/yantrago
-            git fetch origin main
-            git reset --hard origin/main
-            docker compose -f infra/docker/docker-compose.staging.yml pull
-            docker compose -f infra/docker/docker-compose.staging.yml up -d --build
-            docker image prune -f
+            systemctl restart yantrago-backend
+            systemctl restart yantrago-gateway
+            sleep 10
+            systemctl is-active yantrago-gateway
+            # Wait for the backend to come healthy (Flyway migrations run on boot)
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:8080/actuator/health | grep -q UP; then
+                echo "Backend healthy after ${i} checks"
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "Backend failed to become healthy"
+                journalctl -u yantrago-backend -n 50 --no-pager
+                exit 1
+              fi
+              sleep 5
+            done
+            systemctl is-active yantrago-backend yantrago-gateway
+            echo "Deploy complete"
