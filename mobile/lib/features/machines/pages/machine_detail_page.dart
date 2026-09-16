@@ -12,6 +12,7 @@ import 'package:yantrago/features/machines/providers/machine_address_provider.da
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
+import 'package:yantrago/features/machines/providers/telemetry_socket_provider.dart';
 import 'package:yantrago/features/machines/widgets/location_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_info_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_telemetry_grid.dart';
@@ -72,7 +73,12 @@ class MachineDetailPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                MachineInfoCard(machine: m),
+                MachineInfoCard(
+                  machine: m,
+                  // Live ACC override from the telemetry socket — the info
+                  // card's Engine chip updates without pull-to-refresh.
+                  liveIgnitionOn: ref.watch(telemetrySocketProvider(m.id))?.ignitionOn,
+                ),
                 const SizedBox(height: 8),
                 LocationCard(machineId: m.id),
                 const SizedBox(height: 8),

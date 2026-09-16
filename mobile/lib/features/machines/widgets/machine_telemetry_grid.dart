@@ -8,6 +8,7 @@ import 'package:yantrago/features/dashboard/widgets/gsm_status_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/ignition_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/voltage_widget.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
+import 'package:yantrago/features/machines/providers/telemetry_socket_provider.dart';
 import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/telemetry.dart';
 
@@ -35,23 +36,29 @@ class MachineTelemetryGrid extends ConsumerWidget {
     final telemetryAsync = ref.watch(machineTelemetryProvider(machine.id));
     final alertsAsync = ref.watch(machineAlertsProvider(machine.id));
 
-    final Telemetry telemetry = telemetryAsync.when(
-      data: (t) => t,
-      loading: () => Telemetry(
-        battery: machine.batteryPct,
-        charging: machine.charging,
-        gsmSignal: machine.gsmSignal,
-        voltage: machine.voltage,
-        ignitionOn: machine.ignitionOn,
-      ),
-      error: (_, __) => Telemetry(
-        battery: machine.batteryPct,
-        charging: machine.charging,
-        gsmSignal: machine.gsmSignal,
-        voltage: machine.voltage,
-        ignitionOn: machine.ignitionOn,
-      ),
-    );
+    // Live socket updates override the REST snapshot once a frame arrives.
+    // Watching this provider also keeps the WebSocket connected while the
+    // details screen is mounted.
+    final liveTelemetry = ref.watch(telemetrySocketProvider(machine.id));
+
+    final Telemetry telemetry = liveTelemetry ??
+        telemetryAsync.when(
+          data: (t) => t,
+          loading: () => Telemetry(
+            battery: machine.batteryPct,
+            charging: machine.charging,
+            gsmSignal: machine.gsmSignal,
+            voltage: machine.voltage,
+            ignitionOn: machine.ignitionOn,
+          ),
+          error: (_, __) => Telemetry(
+            battery: machine.batteryPct,
+            charging: machine.charging,
+            gsmSignal: machine.gsmSignal,
+            voltage: machine.voltage,
+            ignitionOn: machine.ignitionOn,
+          ),
+        );
 
     final int? faultsCount = alertsAsync.maybeWhen(
       data: (list) => list.length,

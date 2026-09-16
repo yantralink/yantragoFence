@@ -48,6 +48,8 @@ class AppConfig {
   // WebSocket STOMP destinations
   static const String wsTopicLocation = '/topic/locations';
   static const String wsTopicTelemetry = '/topic/telemetry';
+  static String wsTopicTelemetryMachine(String machineId) =>
+      '/topic/telemetry/$machineId';
   static String wsTopicCommand(String machineId) => '/topic/command/$machineId';
   static const String wsTopicDeviceEvent = '/topic/devices';
   // User-specific notification invalidation queue (Phase 3/4)
