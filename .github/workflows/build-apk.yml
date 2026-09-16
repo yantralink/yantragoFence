@@ -57,7 +57,7 @@ jobs:
       - name: Build APK
         working-directory: mobile
         run: |
-          flutter build apk --release --split-per-abi \
+          flutter build apk --release \
             --dart-define=API_BASE_URL=https://yantrago.com \
             --dart-define=WS_BASE_URL=wss://yantrago.com/ws \
             --verbose 2>&1 || {
