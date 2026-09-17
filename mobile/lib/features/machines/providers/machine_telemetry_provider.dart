@@ -8,11 +8,14 @@ import 'package:yantrago/models/telemetry.dart';
 /// a machine from GET /api/v1/machines/{id}/telemetry/latest.
 ///
 /// Watches [currentUserProvider] so telemetry is re-fetched on user change.
+/// autoDispose drops the cached snapshot when the details screen is closed,
+/// so the next visit re-fetches instead of showing a stale (possibly empty)
+/// battery value from earlier in the session.
 /// Per AGENTS.md rule 7: organization_id comes from JWT, never from request body.
 /// Per AGENTS.md rule 22: never call API directly from widgets — go through
 /// a provider.
 final machineTelemetryProvider =
-    FutureProvider.family<Telemetry, String>((ref, machineId) async {
+    FutureProvider.autoDispose.family<Telemetry, String>((ref, machineId) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     throw StateError('Not authenticated');
