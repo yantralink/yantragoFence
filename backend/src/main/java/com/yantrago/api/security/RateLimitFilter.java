@@ -24,6 +24,11 @@ import java.util.concurrent.ConcurrentMap;
  * Per-IP and per-user rate limiting using Bucket4j.
  * Limits: 100 requests per minute per IP, 60 requests per minute per authenticated user.
  * Returns HTTP 429 (Too Many Requests) when the limit is exceeded.
+ *
+ * The per-IP limit is skipped for loopback addresses: all HTTP traffic arrives
+ * through the local nginx reverse proxy, so every external client shares
+ * remoteAddr=127.0.0.1 and an IP bucket there would throttle all users
+ * collectively. The per-user limit still applies to every request.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -43,11 +48,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String ip = getClientIp(request);
 
-        Bucket ipBucket = ipBuckets.computeIfAbsent(ip, k -> createBucket(IP_LIMIT_PER_MINUTE));
-        if (!ipBucket.tryConsume(1)) {
-            log.warn("Rate limit exceeded for IP={}", ip);
-            sendTooManyRequests(response, "Rate limit exceeded. Try again later.");
-            return;
+        if (!isLoopback(ip)) {
+            Bucket ipBucket = ipBuckets.computeIfAbsent(ip, k -> createBucket(IP_LIMIT_PER_MINUTE));
+            if (!ipBucket.tryConsume(1)) {
+                log.warn("Rate limit exceeded for IP={}", ip);
+                sendTooManyRequests(response, "Rate limit exceeded. Try again later.");
+                return;
+            }
         }
 
         // Per-user limit (if authenticated)
@@ -67,6 +74,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private Bucket createBucket(int limitPerMinute) {
         Bandwidth limit = Bandwidth.classic(limitPerMinute, Refill.intervally(limitPerMinute, Duration.ofMinutes(1)));
         return Bucket.builder().addLimit(limit).build();
+    }
+
+    private boolean isLoopback(String ip) {
+        return "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip);
     }
 
     private String getClientIp(HttpServletRequest request) {
