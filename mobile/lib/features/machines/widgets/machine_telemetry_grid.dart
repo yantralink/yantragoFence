@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
 import 'package:yantrago/features/dashboard/widgets/battery_widget.dart';
+import 'package:yantrago/features/dashboard/widgets/external_battery_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/faults_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/gsm_status_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/ignition_widget.dart';
@@ -87,6 +88,10 @@ class MachineTelemetryGrid extends ConsumerWidget {
     // (showing "No report received" when data is unavailable).
     return <Widget>[
       IgnitionWidget(ignitionOn: telemetry.ignitionOn),
+      ExternalBatteryWidget(
+        voltage: telemetry.voltage,
+        charging: telemetry.charging,
+      ),
       BatteryWidget(battery: telemetry.battery, charging: telemetry.charging),
       FaultsWidget(count: faultsCount),
       GsmStatusWidget(signal: telemetry.gsmSignal),

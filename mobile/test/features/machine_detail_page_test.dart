@@ -198,11 +198,14 @@ void main() {
   testWidgets('telemetry grid shows unavailable state, not fabricated values',
       (tester) async {
     await _pump(tester, _overrides(machine: _machine()));
-    // Ignition, Battery, GSM, Voltage show unavailable; Faults shows 0 (no active faults).
-    expect(find.text('Unavailable'), findsNWidgets(4));
+    // Ignition, Ext. Battery, Battery, GSM, Voltage show unavailable;
+    // Faults shows 0 (no active faults).
+    expect(find.text('Unavailable'), findsNWidgets(5));
     expect(find.text('No report received'), findsNWidgets(3));
     // Ignition unavailable uses its own status text.
     expect(find.text('No ACC report'), findsOneWidget);
+    // Ext. Battery unavailable uses its own status text (voltage-specific).
+    expect(find.text('No voltage report'), findsOneWidget);
     // "No active faults" appears in FaultsWidget + _FaultsSection, but the
     // extra Ignition tile pushes _FaultsSection below the test viewport, so
     // only the in-viewport grid tile is built.
