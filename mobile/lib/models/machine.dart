@@ -88,8 +88,8 @@ class Machine {
     );
   }
 
-  bool get isOnlineStatus => isOnline || status == 'ACTIVE';
-  bool get isFencingOn => status == 'FENCING_ON' || status == 'ACTIVE';
+  bool get isOnlineStatus => isOnline;
+  bool get isFencingOn => status == 'FENCING_ON';
   bool get isFault => status == 'FAULT';
   bool get isInStock => status == 'IN_STOCK';
   /// Engine on/off from ACC. Null means the device has not reported ACC yet.

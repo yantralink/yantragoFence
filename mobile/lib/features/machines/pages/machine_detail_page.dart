@@ -71,15 +71,15 @@ class MachineDetailPage extends ConsumerWidget {
                 MachineInfoCard(
                   machine: m,
                   // Live ACC override from the telemetry socket — the info
-                  // card's Engine chip updates without pull-to-refresh.
+                  // card's Machine Running chip updates without pull-to-refresh.
                   liveIgnitionOn: ref.watch(telemetrySocketProvider(m.id))?.ignitionOn,
                 ),
-                const SizedBox(height: 8),
-                LocationCard(machineId: m.id),
                 const SizedBox(height: 8),
                 MachineTelemetryGrid(machine: m),
                 const SizedBox(height: 16),
                 OnOffButton(machineId: m.id, imei: m.imei ?? ''),
+                const SizedBox(height: 8),
+                LocationCard(machineId: m.id),
                 const SizedBox(height: 12),
                 CommandStatusWidget(machineId: m.id),
                 const SizedBox(height: 8),
