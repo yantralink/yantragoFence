@@ -35,7 +35,9 @@ int? voltageToExternalBatteryPct(double? voltage) {
       (voltage - kExternalBatteryMinVoltage) / window * 100.0;
   if (pct <= 0) return 0;
   if (pct >= 100) return 100;
-  return pct.floor();
+  // Floor so charge is never overstated; the epsilon cancels binary
+  // floating-point noise on exact boundary voltages (e.g. 10.95 V → 15%).
+  return (pct + 1e-9).floor();
 }
 
 /// Maps a battery percentage to its display zone.
