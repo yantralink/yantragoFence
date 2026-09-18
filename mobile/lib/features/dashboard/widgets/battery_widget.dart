@@ -19,7 +19,7 @@ class BatteryWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (battery == null) {
       return const AppMetricCard(
-        label: 'Battery',
+        label: 'Charging Status',
         icon: Icons.battery_std,
         state: AppMetricState.unavailable,
         statusText: 'No report received',
@@ -44,7 +44,7 @@ class BatteryWidget extends StatelessWidget {
         : Icons.battery_std;
 
     return AppMetricCard(
-      label: 'Battery',
+      label: 'Charging Status',
       icon: icon,
       state: AppMetricState.available,
       value: '$level',

@@ -31,7 +31,7 @@ class ExternalBatteryWidget extends StatelessWidget {
     final int? pct = voltageToExternalBatteryPct(voltage);
     if (pct == null) {
       return const AppMetricCard(
-        label: 'Ext. Battery',
+        label: 'Battery',
         icon: Icons.battery_std,
         state: AppMetricState.unavailable,
         statusText: 'No voltage report',
@@ -41,13 +41,21 @@ class ExternalBatteryWidget extends StatelessWidget {
     final bool isCharging = charging == true;
     final BatteryZone zone = externalBatteryZone(pct);
 
-    // Charging takes precedence for the status line — it's more actionable
-    // than the zone label and disambiguates "100% while engine running".
+    // Below 15% always shows "Battery Low" and at 100% "Battery Full" —
+    // both take precedence over the charging indicator.
     final String statusText;
     final StatusTone statusTone;
     final IconData icon;
 
-    if (isCharging) {
+    if (pct < 15) {
+      statusText = 'Battery Low';
+      statusTone = StatusTone.danger;
+      icon = Icons.battery_alert;
+    } else if (pct == 100) {
+      statusText = 'Battery Full';
+      statusTone = StatusTone.success;
+      icon = Icons.battery_full;
+    } else if (isCharging) {
       statusText = 'Charging';
       statusTone = StatusTone.success;
       icon = Icons.battery_charging_full;
@@ -73,7 +81,7 @@ class ExternalBatteryWidget extends StatelessWidget {
     }
 
     return AppMetricCard(
-      label: 'Ext. Battery',
+      label: 'Battery',
       icon: icon,
       state: AppMetricState.available,
       value: '$pct',

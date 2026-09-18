@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
-import 'package:yantrago/features/commands/providers/command_socket_provider.dart';
-import 'package:yantrago/features/commands/widgets/command_status_widget.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
@@ -25,7 +23,7 @@ import 'package:yantrago/features/machines/widgets/on_off_button.dart';
 /// Layout priority: the Turn ON / Turn OFF controls must be visible in
 /// the initial viewport without scrolling. Telemetry uses a 2-column grid,
 /// the info card uses a compact 2-column metadata layout, and inter-section
-/// spacing is minimized. Command Status may require scrolling.
+/// spacing is minimized.
 class MachineDetailPage extends ConsumerWidget {
   final String machineId;
 
@@ -34,8 +32,6 @@ class MachineDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final machine = ref.watch(machineDetailProvider(machineId));
-    // Keep the per-machine command status socket alive while this page is mounted.
-    ref.watch(commandSocketProvider(machineId));
 
     return Scaffold(
       appBar: AppBar(
@@ -81,8 +77,6 @@ class MachineDetailPage extends ConsumerWidget {
                 const SizedBox(height: 8),
                 LocationCard(machineId: m.id),
                 const SizedBox(height: 12),
-                CommandStatusWidget(machineId: m.id),
-                const SizedBox(height: 8),
                 Center(
                   child: Text(
                     'Machine state changes only after device confirmation.',

@@ -17,7 +17,7 @@ class FaultsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (count == null) {
       return const AppMetricCard(
-        label: 'Faults',
+        label: 'Fence Fault',
         icon: Icons.error_outline,
         state: AppMetricState.unavailable,
         statusText: 'No report received',
@@ -26,7 +26,7 @@ class FaultsWidget extends StatelessWidget {
     final int n = count!;
     if (n == 0) {
       return const AppMetricCard(
-        label: 'Faults',
+        label: 'Fence Fault',
         icon: Icons.check_circle_outline,
         state: AppMetricState.available,
         value: '0',
@@ -35,7 +35,7 @@ class FaultsWidget extends StatelessWidget {
       );
     }
     return AppMetricCard(
-      label: 'Faults',
+      label: 'Fence Fault',
       icon: Icons.error_outline,
       state: AppMetricState.available,
       value: '$n',

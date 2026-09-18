@@ -19,7 +19,7 @@ class GsmStatusWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (signal == null) {
       return const AppMetricCard(
-        label: 'GSM Signal',
+        label: 'Device Signal',
         icon: Icons.signal_cellular_alt,
         state: AppMetricState.unavailable,
         statusText: 'No report received',
@@ -40,7 +40,7 @@ class GsmStatusWidget extends StatelessWidget {
                 ? 'Poor signal'
                 : 'No signal';
     return AppMetricCard(
-      label: 'GSM Signal',
+      label: 'Device Signal',
       icon: Icons.signal_cellular_alt,
       state: AppMetricState.available,
       value: '$level',
