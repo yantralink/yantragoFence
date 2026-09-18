@@ -24,7 +24,7 @@ import 'package:yantrago/models/command_status_update.dart';
 ///
 /// Subscribes to `/topic/command/{machineId}` and applies incoming
 /// `CommandStatusUpdate`s to the shared `commandProvider`, then invalidates
-/// `machineCommandsProvider(machineId)` so the REST history re-fetches.
+/// `commandHistoryProvider` so the REST history re-fetches.
 class CommandSocketController extends StateNotifier<CommandSocketState> {
   final Ref _ref;
   final String machineId;
@@ -117,7 +117,7 @@ class CommandSocketController extends StateNotifier<CommandSocketState> {
     );
 
     // REST refresh on (re)connect — invalidate provider to re-fetch
-    _ref.invalidate(machineCommandsProvider(machineId));
+    _ref.invalidate(commandHistoryProvider);
   }
 
   void _onCommandStatus(StompFrame frame) {
@@ -127,7 +127,7 @@ class CommandSocketController extends StateNotifier<CommandSocketState> {
       final update = CommandStatusUpdate.fromJson(json);
       if (update.machineId != machineId) return;
       _ref.read(commandProvider.notifier).applyStatusUpdate(update);
-      _ref.invalidate(machineCommandsProvider(machineId));
+      _ref.invalidate(commandHistoryProvider);
     } catch (e) {
       // Never surface raw exceptions to the UI — log and swallow.
       debugPrint('CommandSocket: failed to handle status frame: $e');

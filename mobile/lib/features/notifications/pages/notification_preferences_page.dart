@@ -20,7 +20,7 @@ class NotificationPreferencesPage extends ConsumerWidget {
     final prefs = ref.watch(notificationPreferencesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notification Preferences')),
+      appBar: AppBar(title: const Text('Notification')),
       body: prefs.when(
         loading: () =>
             AppStatePanel.loading(message: 'Loading preferences…'),

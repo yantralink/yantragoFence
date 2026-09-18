@@ -71,7 +71,7 @@ class _YantraGoAppState extends ConsumerState<YantraGoApp>
               ),
             );
       }
-      ref.invalidate(machineCommandsProvider(event.machineId));
+      ref.invalidate(commandHistoryProvider);
     });
 
     await pushService.initialize();
@@ -99,12 +99,9 @@ class _YantraGoAppState extends ConsumerState<YantraGoApp>
       ref.invalidate(unreadCountProvider);
       // Also refresh the socket controller (reconnect if needed)
       ref.read(notificationSocketProvider.notifier).refresh();
-      // Phase 6: refresh the last command's machine history on resume so a
-      // push that landed while backgrounded is reflected in the UI.
-      final last = ref.read(commandProvider).lastCommand;
-      if (last != null) {
-        ref.invalidate(machineCommandsProvider(last.machineId));
-      }
+      // Phase 6: refresh command history on resume so a push that landed
+      // while backgrounded is reflected in the UI.
+      ref.invalidate(commandHistoryProvider);
     }
   }
 

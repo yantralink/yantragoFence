@@ -1,93 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
-import 'package:yantrago/core/widgets/app_surface_card.dart';
-import 'package:yantrago/features/commands/providers/command_provider.dart';
 import 'package:yantrago/models/command.dart';
 
-/// Command history section — shows recent ON/OFF commands for a machine.
-///
-/// Displays the last 10 commands with type, status badge, timestamp, and
-/// error (if any). Follows the same visual pattern as the Faults section.
-///
-/// Per AGENTS.md rule 22: no direct API calls from widgets — go through a provider.
-class CommandHistorySection extends ConsumerWidget {
-  final String machineId;
-
-  const CommandHistorySection({super.key, required this.machineId});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final commands = ref.watch(machineCommandsProvider(machineId));
-
-    return commands.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      ),
-      error: (_, __) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          'Unable to load command history. Pull down to refresh.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ),
-      data: (list) {
-        if (list.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  Icons.history,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'No command history yet',
-                    style: Theme.of(context).textTheme.bodySmall,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            AppSurfaceCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  ...list.map((c) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _CommandRow(command: c),
-                      )),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _CommandRow extends StatelessWidget {
+/// A single command history row: status icon, command type, optional
+/// machine name (for cross-machine lists), relative timestamp, error,
+/// and status badge.
+class CommandRow extends StatelessWidget {
   final Command command;
+  final String? machineName;
 
-  const _CommandRow({required this.command});
+  const CommandRow({super.key, required this.command, this.machineName});
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +26,16 @@ class _CommandRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              if (machineName != null)
+                Text(
+                  machineName!,
+                  style: text.bodySmall?.copyWith(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               Text(
                 _typeLabel(command.commandType),
                 style: text.bodyMedium?.copyWith(

@@ -6,6 +6,7 @@ import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/auth/pages/splash_page.dart';
 import 'package:yantrago/features/auth/pages/login_page.dart';
+import 'package:yantrago/features/commands/pages/command_history_page.dart';
 import 'package:yantrago/features/machines/pages/machine_list_page.dart';
 import 'package:yantrago/features/machines/pages/machine_detail_page.dart';
 import 'package:yantrago/features/machines/pages/machine_location_map_page.dart';
@@ -16,6 +17,9 @@ import 'package:yantrago/features/notifications/pages/notification_preferences_p
 import 'package:yantrago/features/notifications/providers/notification_socket_provider.dart';
 import 'package:yantrago/features/notifications/widgets/notification_badge.dart';
 import 'package:yantrago/features/profile/pages/profile_page.dart';
+import 'package:yantrago/features/profile/pages/account_details_page.dart';
+import 'package:yantrago/features/profile/pages/language_settings_page.dart';
+import 'package:yantrago/features/profile/pages/theft_protection_settings_page.dart';
 
 /// App router — GoRouter with auth guards.
 ///
@@ -111,6 +115,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/app/profile',
             builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/app/profile/account',
+            builder: (context, state) => const AccountDetailsPage(),
+          ),
+          GoRoute(
+            path: '/app/profile/language',
+            builder: (context, state) => const LanguageSettingsPage(),
+          ),
+          GoRoute(
+            path: '/app/profile/theft-protection',
+            builder: (context, state) => const TheftProtectionSettingsPage(),
+          ),
+          GoRoute(
+            path: '/app/profile/commands',
+            builder: (context, state) => const CommandHistoryPage(),
           ),
         ],
       ),

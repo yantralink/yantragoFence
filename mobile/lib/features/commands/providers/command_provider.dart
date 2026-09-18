@@ -74,24 +74,114 @@ final commandProvider =
   return CommandNotifier(ref.watch(apiClientProvider));
 });
 
-/// Machine commands provider — fetches command history filtered by machine ID.
-///
-/// Calls GET /api/v1/commands?machineId={uuid} to show only the commands
-/// belonging to the machine shown on the detail page.
-/// Per AGENTS.md rule 22: no direct API calls from widgets — go through a provider.
-final machineCommandsProvider =
-    FutureProvider.family<List<Command>, String>((ref, machineId) async {
-  final user = ref.watch(currentUserProvider);
-  if (user == null) return [];
+/// Command history state — accumulated pages of commands.
+class CommandHistoryState {
+  final List<Command> commands;
+  final bool hasMore;
+  final bool loadingMore;
 
-  final dio = ref.watch(apiClientProvider);
-  final response =
-      await dio.get('${AppConfig.commandsEndpoint}?machineId=$machineId&size=10&sort=createdAt,desc');
-  final data = response.data;
-  final List<dynamic> list = data is Map<String, dynamic>
-      ? data['content'] as List
-      : data as List;
-  return list
-      .map((c) => Command.fromJson(c as Map<String, dynamic>))
-      .toList();
+  const CommandHistoryState({
+    this.commands = const [],
+    this.hasMore = false,
+    this.loadingMore = false,
+  });
+}
+
+/// Command history notifier — fetches all commands for the current
+/// tenant (every machine), newest first, one page at a time.
+///
+/// Calls GET /api/v1/commands (no machineId) which the backend scopes to
+/// the caller's organization from the JWT.
+/// Per AGENTS.md rule 22: no direct API calls from widgets — go through a provider.
+class CommandHistoryNotifier
+    extends StateNotifier<AsyncValue<CommandHistoryState>> {
+  CommandHistoryNotifier(this._dio) : super(const AsyncValue.loading());
+
+  final Dio _dio;
+  static const int _pageSize = 20;
+  int _page = 0;
+
+  Future<void> load() async {
+    state = const AsyncValue.loading();
+    try {
+      final result = await _fetchPage(0);
+      _page = 0;
+      state = AsyncValue.data(
+        CommandHistoryState(
+          commands: result.commands,
+          hasMore: result.hasMore,
+        ),
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  /// Appends the next page. Rethrows on failure so the page can show a
+  /// snackbar; already-loaded commands are kept.
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || !current.hasMore || current.loadingMore) return;
+    state = AsyncValue.data(
+      CommandHistoryState(
+        commands: current.commands,
+        hasMore: current.hasMore,
+        loadingMore: true,
+      ),
+    );
+    try {
+      final result = await _fetchPage(_page + 1);
+      _page++;
+      state = AsyncValue.data(
+        CommandHistoryState(
+          commands: <Command>[...current.commands, ...result.commands],
+          hasMore: result.hasMore,
+        ),
+      );
+    } catch (_) {
+      state = AsyncValue.data(
+        CommandHistoryState(
+          commands: current.commands,
+          hasMore: current.hasMore,
+        ),
+      );
+      rethrow;
+    }
+  }
+
+  Future<({List<Command> commands, bool hasMore})> _fetchPage(
+    int page,
+  ) async {
+    final response = await _dio.get(
+      '${AppConfig.commandsEndpoint}?page=$page&size=$_pageSize&sort=createdAt,desc',
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      final List<dynamic> list = data['content'] as List? ?? const [];
+      final int number = (data['number'] as num?)?.toInt() ?? page;
+      final int totalPages = (data['totalPages'] as num?)?.toInt() ?? 1;
+      return (
+        commands: list
+            .map((c) => Command.fromJson(c as Map<String, dynamic>))
+            .toList(),
+        hasMore: number + 1 < totalPages,
+      );
+    }
+    final List<dynamic> list = data as List;
+    return (
+      commands: list
+          .map((c) => Command.fromJson(c as Map<String, dynamic>))
+          .toList(),
+      hasMore: false,
+    );
+  }
+}
+
+final commandHistoryProvider = StateNotifierProvider.autoDispose<
+    CommandHistoryNotifier, AsyncValue<CommandHistoryState>>((ref) {
+  final notifier = CommandHistoryNotifier(ref.watch(apiClientProvider));
+  if (ref.watch(currentUserProvider) != null) {
+    notifier.load();
+  }
+  return notifier;
 });

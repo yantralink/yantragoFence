@@ -191,9 +191,12 @@ void main() {
       );
       expect(find.text('Demo User'), findsOneWidget);
       expect(find.text('demo@example.invalid'), findsOneWidget);
-      expect(find.text('CUSTOMER'), findsOneWidget);
-      expect(find.text('Demo Farm'), findsOneWidget);
-      expect(find.text('+91 98765 43210'), findsOneWidget);
+      // Settings menu entries (details moved to their own screens).
+      expect(find.text('Account Details'), findsOneWidget);
+      expect(find.text('Notification'), findsOneWidget);
+      expect(find.text('Language Settings'), findsOneWidget);
+      expect(find.text('Theft Protection Settings'), findsOneWidget);
+      expect(find.text('Command History'), findsOneWidget);
       expect(find.text('Log out'), findsOneWidget);
     });
 

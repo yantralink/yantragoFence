@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/widgets/app_page_body.dart';
-import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
-import 'package:yantrago/features/commands/providers/command_provider.dart';
 import 'package:yantrago/features/commands/providers/command_socket_provider.dart';
-import 'package:yantrago/features/commands/widgets/command_history_section.dart';
 import 'package:yantrago/features/commands/widgets/command_status_widget.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
@@ -56,13 +53,11 @@ class MachineDetailPage extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(machineDetailProvider(machineId));
             ref.invalidate(machineTelemetryProvider(machineId));
-            ref.invalidate(machineCommandsProvider(machineId));
             ref.invalidate(machineLocationProvider(machineId));
             ref.invalidate(machineAddressProvider(machineId));
             await Future.wait([
               ref.read(machineDetailProvider(machineId).future),
               ref.read(machineTelemetryProvider(machineId).future),
-              ref.read(machineCommandsProvider(machineId).future),
               ref.read(machineLocationProvider(machineId).future),
             ]);
           },
@@ -94,9 +89,6 @@ class MachineDetailPage extends ConsumerWidget {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
-                const SizedBox(height: 16),
-                const AppSectionHeader(title: 'Command History', compact: true),
-                CommandHistorySection(machineId: m.id),
               ],
             ),
           ),
