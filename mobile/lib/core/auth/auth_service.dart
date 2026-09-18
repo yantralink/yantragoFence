@@ -39,7 +39,12 @@ class AuthService {
   /// Logs out the current user.
   Future<void> logout() async {
     try {
-      await _dio.post('/api/v1/auth/logout');
+      final refreshToken = await SecureStorage.getRefreshToken();
+      if (refreshToken != null) {
+        await _dio.post('/api/v1/auth/logout', data: {
+          'refreshToken': refreshToken,
+        });
+      }
     } finally {
       await SecureStorage.clearAll();
     }
