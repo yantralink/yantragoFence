@@ -105,12 +105,17 @@ public class AuthService {
         persistRefreshToken(refreshTokenStr, user);
 
         long expiresIn = jwtService.getAccessTtlSeconds();
+        String primaryRole = roles.isEmpty() ? "viewer" : roles.split(",")[0];
         LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
                 user.getId().toString(),
                 user.getEmail(),
                 user.getFullName(),
                 user.getOrganizationId() != null ? user.getOrganizationId().toString() : null,
-                organizationName
+                organizationName,
+                primaryRole,
+                user.getIsActive(),
+                user.getPreferredLocale(),
+                user.getPhone()
         );
 
         log.info("User {} logged in successfully", user.getEmail());

@@ -35,6 +35,10 @@ public class LoginResponse {
         private String fullName;
         private String organizationId;
         private String organizationName;
+        private String role;
+        private Boolean active;
+        private String preferredLocale;
+        private String phoneNumber;
 
         public UserInfo() {}
 
@@ -44,6 +48,15 @@ public class LoginResponse {
             this.fullName = fullName;
             this.organizationId = organizationId;
             this.organizationName = organizationName;
+        }
+
+        public UserInfo(String id, String email, String fullName, String organizationId, String organizationName,
+                        String role, Boolean active, String preferredLocale, String phoneNumber) {
+            this(id, email, fullName, organizationId, organizationName);
+            this.role = role;
+            this.active = active;
+            this.preferredLocale = preferredLocale;
+            this.phoneNumber = phoneNumber;
         }
 
         public String getId() { return id; }
@@ -56,5 +69,13 @@ public class LoginResponse {
         public void setOrganizationId(String organizationId) { this.organizationId = organizationId; }
         public String getOrganizationName() { return organizationName; }
         public void setOrganizationName(String organizationName) { this.organizationName = organizationName; }
+        public String getRole() { return role; }
+        public void setRole(String role) { this.role = role; }
+        public Boolean getActive() { return active; }
+        public void setActive(Boolean active) { this.active = active; }
+        public String getPreferredLocale() { return preferredLocale; }
+        public void setPreferredLocale(String preferredLocale) { this.preferredLocale = preferredLocale; }
+        public String getPhoneNumber() { return phoneNumber; }
+        public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     }
 }

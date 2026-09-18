@@ -84,7 +84,8 @@ public class AuthController {
                 organizationName,
                 role,
                 user.getIsActive(),
-                user.getPreferredLocale()
+                user.getPreferredLocale(),
+                user.getPhone()
         );
         return ResponseEntity.ok(response);
     }
@@ -125,12 +126,13 @@ public class AuthController {
                 organizationName,
                 role,
                 user.getIsActive(),
-                user.getPreferredLocale()
+                user.getPreferredLocale(),
+                user.getPhone()
         );
         return ResponseEntity.ok(response);
     }
 
-    public record UserInfoResponse(String id, String email, String fullName, String organizationId, String organizationName, String role, Boolean active, String preferredLocale) {}
+    public record UserInfoResponse(String id, String email, String fullName, String organizationId, String organizationName, String role, Boolean active, String preferredLocale, String phoneNumber) {}
 
     public record UpdateLocaleRequest(String locale) {}
 }
