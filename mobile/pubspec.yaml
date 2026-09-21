@@ -4,11 +4,13 @@ publish_to: 'none'
 version: 1.0.0+2
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: '>=3.10.0'
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.47.2'
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   # State management
@@ -23,11 +25,14 @@ dependencies:
   # Secure storage
   flutter_secure_storage: ^9.0.0
 
+  # Device preferences (language — non-sensitive, must survive logout)
+  shared_preferences: ^2.2.0
+
   # WebSocket / STOMP
   stomp_dart_client: ^0.4.4
 
   # Internationalization
-  intl: ^0.18.0
+  intl: ^0.20.0
 
   # Maps (Leaflet.js via WebView)
   webview_flutter: ^4.10.0
@@ -46,6 +51,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
 
   assets:
     - assets/icons/

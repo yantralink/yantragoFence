@@ -20,13 +20,17 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.10.0'
+          flutter-version: '3.47.2'
           channel: 'stable'
           cache: true
 
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
+
+      - name: Generate localizations
+        working-directory: mobile
+        run: flutter gen-l10n
 
       - name: Analyze
         working-directory: mobile
