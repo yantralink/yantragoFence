@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Faults widget — displays the count of active faults as a metric card.
 ///
@@ -15,31 +16,32 @@ class FaultsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (count == null) {
-      return const AppMetricCard(
-        label: 'Fence Fault',
+      return AppMetricCard(
+        label: l10n.metricLabelFenceFault,
         icon: Icons.error_outline,
         state: AppMetricState.unavailable,
-        statusText: 'No report received',
+        statusText: l10n.metricNoReport,
       );
     }
     final int n = count!;
     if (n == 0) {
-      return const AppMetricCard(
-        label: 'Fence Fault',
+      return AppMetricCard(
+        label: l10n.metricLabelFenceFault,
         icon: Icons.check_circle_outline,
         state: AppMetricState.available,
-        value: '0',
-        statusText: 'No active faults',
+        value: '0', // always-en: numeric value, Latin digits
+        statusText: l10n.faultsNone,
         statusTone: StatusTone.success,
       );
     }
     return AppMetricCard(
-      label: 'Fence Fault',
+      label: l10n.metricLabelFenceFault,
       icon: Icons.error_outline,
       state: AppMetricState.available,
-      value: '$n',
-      statusText: n == 1 ? '1 active fault' : '$n active faults',
+      value: '$n', // always-en: numeric value, Latin digits
+      statusText: l10n.faultsCount(n),
       statusTone: n >= 3 ? StatusTone.danger : StatusTone.warning,
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Recharge status widget — displays charging status as a shared metric card.
 ///
@@ -14,21 +15,22 @@ class RechargeStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (charging == null) {
-      return const AppMetricCard(
-        label: 'Recharge',
+      return AppMetricCard(
+        label: l10n.metricLabelRecharge,
         icon: Icons.battery_charging_full,
         state: AppMetricState.unavailable,
-        statusText: 'No report received',
+        statusText: l10n.metricNoReport,
       );
     }
     final bool isCharging = charging!;
     return AppMetricCard(
-      label: 'Recharge',
+      label: l10n.metricLabelRecharge,
       icon: isCharging ? Icons.battery_charging_full : Icons.battery_alert,
       state: AppMetricState.available,
-      value: isCharging ? 'Charging' : 'Not charging',
-      statusText: isCharging ? 'Power connected' : 'On battery',
+      value: isCharging ? l10n.batteryCharging : l10n.batteryNotCharging,
+      statusText: isCharging ? l10n.powerConnected : l10n.batteryOnBattery,
       statusTone: isCharging ? StatusTone.success : StatusTone.neutral,
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Machine status widget — displays engine on/off status (device ACC)
 /// as a shared metric card.
@@ -16,21 +17,23 @@ class IgnitionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (ignitionOn == null) {
-      return const AppMetricCard(
-        label: 'Machine Status',
+      return AppMetricCard(
+        label: l10n.metricLabelMachineStatus,
         icon: Icons.key,
         state: AppMetricState.unavailable,
-        statusText: 'No ACC report',
+        statusText: l10n.metricNoAccReport,
       );
     }
     return AppMetricCard(
-      label: 'Machine Status',
+      label: l10n.metricLabelMachineStatus,
       icon: Icons.key,
       state: AppMetricState.available,
       statusTone: ignitionOn! ? StatusTone.success : StatusTone.neutral,
-      value: ignitionOn! ? 'ON' : 'OFF',
-      statusText: ignitionOn! ? 'Machine running' : 'Machine stopped',
+      value: ignitionOn! ? 'ON' : 'OFF', // always-en: raw state code
+      statusText:
+          ignitionOn! ? l10n.machineRunning : l10n.machineStopped,
     );
   }
 }

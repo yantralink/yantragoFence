@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/utils/date_utils.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/alert.dart';
 
 /// Alert card — list item for a device alert.
@@ -19,6 +21,7 @@ class AlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme colors = Theme.of(context).colorScheme;
     final StatusTone tone = _tone(alert);
@@ -39,14 +42,14 @@ class AlertCard extends StatelessWidget {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        alert.alertType,
+                        alert.alertType, // always-en: raw alert type code
                         style: text.titleSmall,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
                     AppStatusBadge(
-                      label: alert.severity,
+                      label: alert.severity, // always-en: raw severity code
                       tone: tone,
                       dot: true,
                     ),
@@ -63,13 +66,13 @@ class AlertCard extends StatelessWidget {
                 Row(
                   children: <Widget>[
                     Text(
-                      _relative(alert.createdAt),
+                      relativeTime(l10n, alert.createdAt),
                       style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                     ),
                     if (alert.acknowledged) ...<Widget>[
                       const SizedBox(width: 8),
                       Text(
-                        'Acknowledged',
+                        l10n.statusAcknowledged,
                         style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                       ),
                     ],
@@ -93,14 +96,6 @@ class AlertCard extends StatelessWidget {
     if (a.isCritical) return Icons.error_outline;
     if (a.isWarning) return Icons.warning_amber_outlined;
     return Icons.info_outline;
-  }
-
-  String _relative(DateTime t) {
-    final Duration d = DateTime.now().difference(t);
-    if (d.inMinutes < 1) return 'just now';
-    if (d.inHours < 1) return '${d.inMinutes} min ago';
-    if (d.inDays < 1) return '${d.inHours} h ago';
-    return '${d.inDays} d ago';
   }
 }
 

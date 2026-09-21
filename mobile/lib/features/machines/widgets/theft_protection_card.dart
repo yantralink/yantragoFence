@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/machines/providers/theft_protection_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Theft Protection card — shows protection status and toggle button.
 ///
@@ -28,7 +29,7 @@ class TheftProtectionCard extends ConsumerWidget {
               Icon(Icons.shield_outlined,
                   color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(width: 12),
-              const Text('Loading theft protection…'),
+              Text(context.l10n.loadingTheftProtection),
             ],
           ),
         ),
@@ -41,7 +42,7 @@ class TheftProtectionCard extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Could not load theft protection status',
+                context.l10n.theftProtectionLoadFailed,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
@@ -49,7 +50,7 @@ class TheftProtectionCard extends ConsumerWidget {
               onPressed: () => ref
                   .read(theftProtectionNotifierProvider(machineId).notifier)
                   .load(),
-              child: const Text('Retry'),
+              child: Text(context.l10n.retry),
             ),
           ],
         ),
@@ -73,6 +74,7 @@ class _ProtectionContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final ColorScheme colors = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
     final bool enabled = status.protectionEnabled;
@@ -95,13 +97,13 @@ class _ProtectionContent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      'Theft Protection',
+                      l10n.theftProtection,
                       style: text.bodyLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      enabled ? 'Active' : 'Not Protected',
+                      enabled ? l10n.statusActive : l10n.notProtected,
                       style: text.bodySmall?.copyWith(
                         color: enabled
                             ? colors.primary
@@ -133,6 +135,7 @@ class _ProtectionContent extends ConsumerWidget {
                     color: colors.onSurfaceVariant, size: 18),
                 const SizedBox(width: 8),
                 Text(
+                  // always-en: radius digits + unit
                   'Geofence: ${status.geofenceRadiusMeters ?? 200}m',
                   style: text.bodySmall,
                 ),
@@ -142,7 +145,7 @@ class _ProtectionContent extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Speed alert active',
+                    l10n.speedAlertActive,
                     style: text.bodySmall,
                   ),
                 ),
@@ -150,7 +153,7 @@ class _ProtectionContent extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Tap to view on map',
+              l10n.tapToViewOnMap,
               style: text.bodySmall?.copyWith(
                 color: colors.primary,
                 fontWeight: FontWeight.w500,
@@ -159,7 +162,7 @@ class _ProtectionContent extends ConsumerWidget {
           ] else ...<Widget>[
             const SizedBox(height: 8),
             Text(
-              'Enable after installing on your farm to prevent false alerts during transport.',
+              l10n.theftProtectionHint,
               style: text.bodySmall?.copyWith(
                 color: colors.onSurfaceVariant,
               ),

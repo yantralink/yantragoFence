@@ -7,6 +7,7 @@ import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
 import 'package:yantrago/features/commands/widgets/command_row.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Command History page — all ON/OFF commands across every machine in
 /// the tenant, newest first, paged with Load more. Reachable from the
@@ -23,22 +24,22 @@ class CommandHistoryPage extends ConsumerWidget {
     final names = <String, String>{
       for (final m in machines ?? const []) m.id: m.name,
     };
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Command History')),
+      appBar: AppBar(title: Text(l10n.commandHistory)),
       body: history.when(
-        loading: () => AppStatePanel.loading(message: 'Loading commands…'),
+        loading: () => AppStatePanel.loading(message: l10n.loadingCommands),
         error: (_, __) => AppStatePanel.error(
-          message: 'Unable to load command history. Please try again.',
+          message: l10n.commandHistoryLoadFailed,
           onRetry: () =>
               ref.read(commandHistoryProvider.notifier).load(),
         ),
         data: (state) {
           if (state.commands.isEmpty) {
             return AppStatePanel.empty(
-              title: 'No commands yet',
-              message:
-                  'Commands you send to your machines will appear here.',
+              title: l10n.noCommands,
+              message: l10n.commandsEmptyMessageAllMachines,
             );
           }
           return RefreshIndicator(
@@ -82,7 +83,7 @@ class CommandHistoryPage extends ConsumerWidget {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('Load more'),
+                            : Text(l10n.loadMore),
                       ),
                     ),
                   ],
@@ -101,7 +102,7 @@ class CommandHistoryPage extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not load more commands')),
+          SnackBar(content: Text(context.l10n.loadMoreFailed)),
         );
       }
     }

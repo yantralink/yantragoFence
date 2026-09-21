@@ -8,6 +8,7 @@ import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/alert.dart';
 
 /// Alert detail page — shows a single alert with machine drill-down.
@@ -25,20 +26,21 @@ class AlertDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(alertDetailProvider(alertId));
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Alert Details')),
+      appBar: AppBar(title: Text(l10n.alertDetailsTitle)),
       body: detail.when(
-        loading: () => AppStatePanel.loading(message: 'Loading alert…'),
+        loading: () => AppStatePanel.loading(message: l10n.loadingAlert),
         error: (_, __) => AppStatePanel.error(
-          message: 'Unable to load alert. Please try again.',
+          message: l10n.alertLoadFailed,
           onRetry: () =>
               ref.refresh(alertDetailProvider(alertId).future),
         ),
         data: (alert) {
           if (alert == null) {
             return AppStatePanel.empty(
-              title: 'Alert not found',
+              title: l10n.alertNotFound,
               icon: Icons.warning_amber_outlined,
               onRetry: () => context.pop(),
             );
@@ -64,6 +66,7 @@ class _DetailContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
     final StatusTone tone = _tone(alert);
 
     return AppPageBody(
@@ -81,12 +84,12 @@ class _DetailContent extends StatelessWidget {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        alert.alertType,
+                        alert.alertType, // always-en: raw alert type code
                         style: text.titleLarge,
                       ),
                     ),
                     AppStatusBadge(
-                      label: alert.severity,
+                      label: alert.severity, // always-en: raw severity code
                       tone: tone,
                       dot: true,
                     ),
@@ -107,31 +110,31 @@ class _DetailContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _DetailRow(
-                  label: 'Status',
+                  label: l10n.detailStatus,
                   value: alert.acknowledged
-                      ? 'Acknowledged'
-                      : 'Unacknowledged',
+                      ? l10n.statusAcknowledged
+                      : l10n.statusUnacknowledged,
                 ),
                 _DetailRow(
-                  label: 'Alert Type',
-                  value: alert.alertType,
+                  label: l10n.detailAlertType,
+                  value: alert.alertType, // always-en: raw alert type code
                 ),
                 _DetailRow(
-                  label: 'Severity',
-                  value: alert.severity,
+                  label: l10n.detailSeverity,
+                  value: alert.severity, // always-en: raw severity code
                 ),
                 if (alert.triggeredAt != null)
                   _DetailRow(
-                    label: 'Triggered',
+                    label: l10n.detailTriggered,
                     value: _formatDateTime(alert.triggeredAt!),
                   ),
                 _DetailRow(
-                  label: 'Created',
+                  label: l10n.detailCreated,
                   value: _formatDateTime(alert.createdAt),
                 ),
                 if (alert.acknowledgedAt != null)
                   _DetailRow(
-                    label: 'Acknowledged At',
+                    label: l10n.detailAcknowledgedAt,
                     value: _formatDateTime(alert.acknowledgedAt!),
                   ),
               ],
@@ -142,7 +145,7 @@ class _DetailContent extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton.icon(
               icon: const Icon(Icons.devices_outlined),
-              label: const Text('View Machine'),
+              label: Text(l10n.viewMachine),
               onPressed: onMachineTap,
             ),
           ],

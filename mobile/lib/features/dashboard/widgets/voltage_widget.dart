@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Voltage widget — displays current voltage reading as a shared metric card.
 ///
@@ -13,21 +14,22 @@ class VoltageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (voltage == null) {
-      return const AppMetricCard(
-        label: 'Voltage',
+      return AppMetricCard(
+        label: l10n.metricLabelVoltage,
         icon: Icons.bolt,
         state: AppMetricState.unavailable,
-        statusText: 'No report received',
+        statusText: l10n.metricNoReport,
       );
     }
     return AppMetricCard(
-      label: 'Voltage',
+      label: l10n.metricLabelVoltage,
       icon: Icons.bolt,
       state: AppMetricState.available,
       value: voltage!.toStringAsFixed(2),
-      unit: 'V',
-      statusText: 'Latest sample',
+      unit: 'V', // always-en: unit
+      statusText: l10n.statusLatestSample,
     );
   }
 }

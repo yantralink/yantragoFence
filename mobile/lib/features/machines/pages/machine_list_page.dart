@@ -8,6 +8,7 @@ import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/widgets/machine_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Machine list page — shows all machines assigned to the current user.
 ///
@@ -20,20 +21,22 @@ class MachineListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final machines = ref.watch(machineListProvider);
     final user = ref.watch(currentUserProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
+      // always-en: organization display name / brand fallback
       appBar: AppBar(title: Text(user?.organizationName ?? 'YantraGO')),
       body: machines.when(
-        loading: () => AppStatePanel.loading(message: 'Loading machines…'),
+        loading: () => AppStatePanel.loading(message: l10n.loadingMachines),
         error: (_, __) => AppStatePanel.error(
-          message: 'Unable to load machines. Please try again.',
+          message: l10n.machinesLoadFailed,
           onRetry: () => ref.refresh(machineListProvider.future),
         ),
         data: (list) {
           if (list.isEmpty) {
             return AppStatePanel.empty(
-              title: 'No machines assigned yet',
-              message: 'Your machines will appear here once your organization assigns them.',
+              title: l10n.machinesEmptyTitle,
+              message: l10n.machinesEmptyMessage,
               icon: Icons.precision_manufacturing_outlined,
               onRetry: () => ref.refresh(machineListProvider.future),
             );
@@ -48,8 +51,8 @@ class MachineListPage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   AppSectionHeader(
-                    title: 'Machines',
-                    aside: '${list.length} assigned',
+                    title: l10n.machinesTitle,
+                    aside: l10n.machinesAssignedCount(list.length),
                   ),
                   ...list.map((m) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),

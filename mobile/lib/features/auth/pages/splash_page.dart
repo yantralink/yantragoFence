@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:yantrago/core/auth/auth_state.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Splash page — shown on app start while checking existing auth session.
 ///
@@ -84,7 +85,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
               ),
               const SizedBox(height: 24),
               Text(
-                'YantraGO',
+                'YantraGO', // always-en: brand name
                 style: text.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colors.primary,
@@ -92,7 +93,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Machine Management Platform',
+                context.l10n.splashTagline,
                 style: text.bodyMedium?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),

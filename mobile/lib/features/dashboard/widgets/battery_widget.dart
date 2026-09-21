@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Battery widget — displays battery percentage and charging status.
 ///
@@ -17,12 +18,13 @@ class BatteryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (battery == null) {
-      return const AppMetricCard(
-        label: 'Charging Status',
+      return AppMetricCard(
+        label: l10n.metricLabelChargingStatus,
         icon: Icons.battery_std,
         state: AppMetricState.unavailable,
-        statusText: 'No report received',
+        statusText: l10n.metricNoReport,
       );
     }
     final int level = battery!;
@@ -37,18 +39,18 @@ class BatteryWidget extends StatelessWidget {
 
     // Charging takes precedence for the status line — it's more actionable
     // than "Healthy/Low/Critical" which the user can infer from the %.
-    final String statusText = isCharging ? 'Charging' : 'On battery';
+    final String statusText = isCharging ? l10n.batteryCharging : l10n.batteryOnBattery;
     final StatusTone statusTone = isCharging ? StatusTone.success : levelTone;
     final IconData icon = isCharging
         ? Icons.battery_charging_full
         : Icons.battery_std;
 
     return AppMetricCard(
-      label: 'Charging Status',
+      label: l10n.metricLabelChargingStatus,
       icon: icon,
       state: AppMetricState.available,
-      value: '$level',
-      unit: '%',
+      value: '$level', // always-en: numeric value, Latin digits
+      unit: '%', // always-en: unit
       statusText: statusText,
       statusTone: statusTone,
     );

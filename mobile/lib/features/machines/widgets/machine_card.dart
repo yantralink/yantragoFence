@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/utils/date_utils.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
+import 'package:yantrago/features/machines/widgets/machine_status_labels.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/machine.dart';
 
 /// Machine card — list item for a machine.
@@ -18,6 +21,7 @@ class MachineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme colors = Theme.of(context).colorScheme;
     final StatusTone tone = _statusTone(machine);
@@ -47,7 +51,7 @@ class MachineCard extends StatelessWidget {
                     if (subtitle.isNotEmpty) ...<Widget>[
                       const SizedBox(height: 2),
                       Text(
-                        subtitle,
+                        subtitle, // always-en: machine ID / IMEI
                         style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -57,7 +61,7 @@ class MachineCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               AppStatusBadge(
-                label: _statusLabel(machine),
+                label: machineStatusLabel(l10n, machine),
                 tone: tone,
                 dot: true,
               ),
@@ -73,14 +77,15 @@ class MachineCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      _stateLabel(machine),
+                      machineStateLabel(l10n, machine),
                       style: text.bodyMedium,
                     ),
                     if (machine.lastSeenAt != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
-                          'Last seen ${_relative(machine.lastSeenAt!)}',
+                          l10n.lastSeenAt(
+                              relativeTime(l10n, machine.lastSeenAt)),
                           style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
                         ),
                       ),
@@ -95,36 +100,12 @@ class MachineCard extends StatelessWidget {
     );
   }
 
-  String _statusLabel(Machine m) {
-    if (m.isFault) return 'Fault';
-    if (m.isOnlineStatus && m.isFencingOn) return 'Online';
-    if (m.isOnlineStatus) return 'Online';
-    if (m.isInStock) return 'In stock';
-    return 'Offline';
-  }
-
-  String _stateLabel(Machine m) {
-    if (m.isFault) return 'Fault reported';
-    if (m.isFencingOn) return 'Fence ON · confirmed';
-    if (m.isOnlineStatus) return 'Fence OFF · confirmed';
-    if (m.isInStock) return 'In stock';
-    return 'State unknown';
-  }
-
   StatusTone _statusTone(Machine m) {
     if (m.isFault) return StatusTone.danger;
     if (m.isOnlineStatus && m.isFencingOn) return StatusTone.success;
     if (m.isOnlineStatus) return StatusTone.info;
     if (m.isInStock) return StatusTone.info;
     return StatusTone.neutral;
-  }
-
-  String _relative(DateTime t) {
-    final Duration d = DateTime.now().difference(t);
-    if (d.inSeconds < 60) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes} min ago';
-    if (d.inHours < 24) return '${d.inHours} h ago';
-    return '${d.inDays} d ago';
   }
 }
 

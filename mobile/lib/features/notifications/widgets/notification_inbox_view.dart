@@ -8,6 +8,7 @@ import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/notifications/providers/notification_provider.dart';
 import 'package:yantrago/features/notifications/widgets/notification_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/notification_inbox.dart';
 
 /// Reusable notification inbox list view — embedded inside the Alerts page
@@ -26,26 +27,27 @@ class NotificationInboxView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final inbox = ref.watch(notificationInboxProvider);
     final filter = ref.watch(notificationFilterProvider);
+    final l10n = context.l10n;
 
     return inbox.when(
       loading: () =>
-          AppStatePanel.loading(message: 'Loading notifications…'),
+          AppStatePanel.loading(message: l10n.loadingNotifications),
       error: (error, _) {
         final isOffline = _isOfflineError(error);
         return AppStatePanel.error(
           message: isOffline
-              ? 'You are offline. Please check your internet connection.'
-              : 'Unable to load notifications. Please try again.',
+              ? l10n.errorOffline
+              : l10n.notificationsLoadFailed,
           onRetry: () => ref.refresh(notificationInboxProvider.future),
         );
       },
       data: (page) {
         if (page.isEmpty) {
           return AppStatePanel.empty(
-            title: 'No notifications',
+            title: l10n.noNotifications,
             message: filter.unreadOnly
-                ? 'You have no unread notifications.'
-                : 'Device alerts will appear here when triggered.',
+                ? l10n.noUnreadNotifications
+                : l10n.notificationsEmptyMessage,
             icon: Icons.notifications_none_outlined,
             onRetry: () => ref.refresh(notificationInboxProvider.future),
           );
@@ -58,8 +60,8 @@ class NotificationInboxView extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               AppSectionHeader(
-                title: filter.unreadOnly ? 'Unread' : 'All',
-                aside: '${page.totalElements} total',
+                title: filter.unreadOnly ? l10n.headerUnread : l10n.filterAll,
+                aside: l10n.totalCount(page.totalElements),
               ),
               ...page.items.map((n) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -136,91 +138,92 @@ class _NotificationFilterSheetState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text('Filter Notifications',
+          Text(l10n.filterNotifications,
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 16),
           SwitchListTile(
-            title: const Text('Unread only'),
+            title: Text(l10n.unreadOnly),
             value: _unreadOnly,
             onChanged: (v) => setState(() => _unreadOnly = v),
           ),
           const Divider(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text('Alert Type'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(l10n.alertTypeFilterLabel),
           ),
           Wrap(
             spacing: 8,
             children: <Widget>[
               _FilterChip(
-                label: 'All',
+                label: l10n.filterAll,
                 selected: _alertType == null,
                 onSelected: (_) => setState(() => _alertType = null),
               ),
               _FilterChip(
-                label: 'Low Battery',
+                label: l10n.alertLowBattery,
                 selected: _alertType == 'LOW_BATTERY',
                 onSelected: (_) => setState(() => _alertType = 'LOW_BATTERY'),
               ),
               _FilterChip(
-                label: 'Voltage Drop',
+                label: l10n.alertVoltageDrop,
                 selected: _alertType == 'VOLTAGE_DROP',
                 onSelected: (_) =>
                     setState(() => _alertType = 'VOLTAGE_DROP'),
               ),
               _FilterChip(
-                label: 'GSM Signal',
+                label: l10n.chipGsmSignal,
                 selected: _alertType == 'GSM_SIGNAL_LOW',
                 onSelected: (_) =>
                     setState(() => _alertType = 'GSM_SIGNAL_LOW'),
               ),
               _FilterChip(
-                label: 'Device Offline',
+                label: l10n.alertDeviceOffline,
                 selected: _alertType == 'DEVICE_OFFLINE',
                 onSelected: (_) =>
                     setState(() => _alertType = 'DEVICE_OFFLINE'),
               ),
               _FilterChip(
-                label: 'SIM Expiry',
+                label: l10n.alertSimExpiry,
                 selected: _alertType == 'SIM_EXPIRY',
                 onSelected: (_) => setState(() => _alertType = 'SIM_EXPIRY'),
               ),
               _FilterChip(
-                label: 'Machine On',
+                label: l10n.chipMachineOn,
                 selected: _alertType == 'MACHINE_ON',
                 onSelected: (_) => setState(() => _alertType = 'MACHINE_ON'),
               ),
               _FilterChip(
-                label: 'Machine Off',
+                label: l10n.chipMachineOff,
                 selected: _alertType == 'MACHINE_OFF',
                 onSelected: (_) => setState(() => _alertType = 'MACHINE_OFF'),
               ),
               _FilterChip(
-                label: 'Command Ack',
+                label: l10n.chipCommandAck,
                 selected: _alertType == 'COMMAND_ACK',
                 onSelected: (_) =>
                     setState(() => _alertType = 'COMMAND_ACK'),
               ),
               _FilterChip(
-                label: 'Command Failed',
+                label: l10n.alertCommandFailed,
                 selected: _alertType == 'COMMAND_FAILED',
                 onSelected: (_) =>
                     setState(() => _alertType = 'COMMAND_FAILED'),
               ),
               _FilterChip(
-                label: 'Movement',
+                label: l10n.chipMovement,
                 selected: _alertType == 'MACHINE_MOVING',
                 onSelected: (_) =>
                     setState(() => _alertType = 'MACHINE_MOVING'),
               ),
               _FilterChip(
-                label: 'Geofence',
+                label: l10n.chipGeofence,
                 selected: _alertType == 'GEOFENCE_BREACH',
                 onSelected: (_) =>
                     setState(() => _alertType = 'GEOFENCE_BREACH'),
@@ -238,7 +241,7 @@ class _NotificationFilterSheetState
                   .setAlertType(_alertType);
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Apply'),
+            child: Text(l10n.apply),
           ),
         ],
       ),
@@ -282,6 +285,7 @@ class NotificationPaginationControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Row(
@@ -290,17 +294,17 @@ class NotificationPaginationControls extends StatelessWidget {
           if (page.hasPrevious)
             TextButton.icon(
               icon: const Icon(Icons.chevron_left),
-              label: const Text('Previous'),
+              label: Text(l10n.previous),
               onPressed: onPrevious,
             ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Page ${page.page + 1} of ${page.totalPages}'),
+            child: Text(l10n.pageOf(page.page + 1, page.totalPages)),
           ),
           if (page.hasNext)
             TextButton.icon(
               icon: const Icon(Icons.chevron_right),
-              label: const Text('Next'),
+              label: Text(l10n.next),
               onPressed: onNext,
             ),
         ],

@@ -12,7 +12,11 @@ import 'package:yantrago/features/notifications/pages/notifications_inbox_page.d
 import 'package:yantrago/features/notifications/providers/notification_provider.dart';
 import 'package:yantrago/features/notifications/widgets/notification_card.dart';
 import 'package:yantrago/features/notifications/widgets/notification_badge.dart';
+import 'package:yantrago/features/notifications/widgets/alert_type_labels.dart';
+import 'package:yantrago/l10n/generated/app_localizations.dart';
 import 'package:yantrago/models/notification_inbox.dart';
+
+final AppLocalizations _l10n = AppLocalizations('en');
 
 NotificationInbox _notification({
   String id = 'n1',
@@ -114,7 +118,7 @@ void main() {
       expect(n.severity, 'WARNING');
       expect(n.isRead, false);
       expect(n.observedValue, 15.0);
-      expect(n.alertTypeLabel, 'Low Battery');
+      expect(alertTypeLabel(_l10n, n.alertType), 'Low Battery');
       expect(n.recipientCustomerId, 'c1');
       expect(n.recipientCustomerName, 'John Farmer');
       expect(n.isAcknowledged, false);
@@ -144,12 +148,12 @@ void main() {
     });
 
     test('alertTypeLabel returns display label for known types', () {
-      expect(_notification(alertType: 'LOW_BATTERY').alertTypeLabel, 'Low Battery');
-      expect(_notification(alertType: 'VOLTAGE_DROP').alertTypeLabel, 'Voltage Drop');
-      expect(_notification(alertType: 'GSM_SIGNAL_LOW').alertTypeLabel, 'Low GSM Signal');
-      expect(_notification(alertType: 'DEVICE_OFFLINE').alertTypeLabel, 'Device Offline');
-      expect(_notification(alertType: 'SIM_EXPIRY').alertTypeLabel, 'SIM Expiry');
-      expect(_notification(alertType: 'CUSTOM_TYPE').alertTypeLabel, 'CUSTOM TYPE');
+      expect(alertTypeLabel(_l10n, 'LOW_BATTERY'), 'Low Battery');
+      expect(alertTypeLabel(_l10n, 'VOLTAGE_DROP'), 'Voltage Drop');
+      expect(alertTypeLabel(_l10n, 'GSM_SIGNAL_LOW'), 'Low GSM Signal');
+      expect(alertTypeLabel(_l10n, 'DEVICE_OFFLINE'), 'Device Offline');
+      expect(alertTypeLabel(_l10n, 'SIM_EXPIRY'), 'SIM Expiry');
+      expect(alertTypeLabel(_l10n, 'CUSTOM_TYPE'), 'CUSTOM TYPE');
     });
 
     test('state helpers work correctly', () {

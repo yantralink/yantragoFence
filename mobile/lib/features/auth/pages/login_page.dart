@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:yantrago/core/auth/auth_state.dart';
+import 'package:yantrago/core/network/network_error_messages.dart';
+import 'package:yantrago/core/utils/validation_error_messages.dart';
 import 'package:yantrago/core/utils/validators.dart';
 import 'package:yantrago/core/widgets/app_action_button.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
+import 'package:yantrago/core/widgets/language_picker_row.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Login page — full implementation with form validation and auth flow.
 ///
@@ -48,9 +52,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!mounted) return;
     setState(() => _isLoading = false);
 
+    final l10n = context.l10n;
     final state = ref.read(authStateProvider);
     if (state is AuthError) {
-      _showErrorSnackBar(state.message);
+      _showErrorSnackBar(networkErrorMessage(l10n, state.code));
     } else if (state is Authenticated) {
       context.go('/app/machines');
     }
@@ -70,12 +75,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     // Listen to auth state changes for error handling
     ref.listen<AuthState>(authStateProvider, (previous, next) {
       if (next is AuthError && mounted) {
-        _showErrorSnackBar(next.message);
+        _showErrorSnackBar(networkErrorMessage(l10n, next.code));
       }
     });
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
+
+    // Map a validation code to its localized message inside the widget
+    // layer — validators themselves stay context-free.
+    String? validate(String? value, ValidationErrorCode? code) =>
+        code == null ? null : validationErrorMessage(l10n, code);
 
     return Scaffold(
       body: AppPageBody(
@@ -98,7 +109,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'YantraGO',
+                    'YantraGO', // always-en: brand name
                     textAlign: TextAlign.center,
                     style: text.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -107,7 +118,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Machine Management Platform',
+                    l10n.splashTagline,
                     textAlign: TextAlign.center,
                     style: text.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
@@ -121,12 +132,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     keyboardType: TextInputType.text,
                     textInputAction: TextInputAction.next,
                     autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Email or Phone',
-                      prefixIcon: Icon(Icons.person_outlined),
-                      hintText: 'admin@yantrago.com or +91 98765 43210',
+                    decoration: InputDecoration(
+                      labelText: l10n.loginIdentifierLabel,
+                      prefixIcon: const Icon(Icons.person_outlined),
+                      hintText: l10n.loginIdentifierHint,
                     ),
-                    validator: Validators.required,
+                    validator: (v) =>
+                        validate(v, Validators.required(v)),
                   ),
                   const SizedBox(height: 16),
 
@@ -137,7 +149,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _handleLogin(),
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: l10n.loginPasswordLabel,
                       prefixIcon: const Icon(Icons.lock_outlined),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -152,13 +164,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         },
                       ),
                     ),
-                    validator: Validators.password,
+                    validator: (v) =>
+                        validate(v, Validators.password(v)),
                   ),
                   const SizedBox(height: 24),
 
                   // Login button
                   AppActionButton(
-                    label: 'Login',
+                    label: l10n.loginButton,
                     style: AppActionButtonStyle.primary,
                     busy: _isLoading,
                     onPressed: _isLoading ? null : _handleLogin,
@@ -167,12 +180,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
                   // Info text
                   Text(
-                    'Customers: log in with your phone number.\nAdmins: log in with your email.',
+                    l10n.loginHint,
                     textAlign: TextAlign.center,
                     style: text.bodySmall?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Pre-login language picker — native names, immediate
+                  // switch, device-persisted (survives logout).
+                  const LanguagePickerRow(),
                 ],
               ),
             ),

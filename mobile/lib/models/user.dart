@@ -8,7 +8,9 @@ class User {
   final String role;
   final String? phoneNumber;
   final bool active;
-  final String preferredLocale;
+  /// Preferred notification language from the server. Null = unset (the
+  /// user has not chosen; notifications fall back to English). Phase 5.
+  final String? preferredLocale;
 
   const User({
     required this.id,
@@ -19,7 +21,7 @@ class User {
     required this.role,
     this.phoneNumber,
     required this.active,
-    this.preferredLocale = 'en',
+    this.preferredLocale,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -32,7 +34,7 @@ class User {
       role: json['role'] as String? ?? 'USER',
       phoneNumber: json['phoneNumber'] as String?,
       active: json['active'] as bool? ?? json['isActive'] as bool? ?? true,
-      preferredLocale: json['preferredLocale'] as String? ?? 'en',
+      preferredLocale: json['preferredLocale'] as String?,
     );
   }
 

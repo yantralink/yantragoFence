@@ -199,42 +199,4 @@ class NotificationInbox {
 
   /// Command failed (FAILED state).
   bool get isFailed => incidentState == 'FAILED';
-
-  /// Display label for the alert type.
-  String get alertTypeLabel {
-    switch (alertType) {
-      case 'LOW_BATTERY':
-        return 'Low Battery';
-      case 'VOLTAGE_DROP':
-        return 'Voltage Drop';
-      case 'GSM_SIGNAL_LOW':
-        return 'Low GSM Signal';
-      case 'DEVICE_OFFLINE':
-        return 'Device Offline';
-      case 'SIM_EXPIRY':
-        return 'SIM Expiry';
-      case 'EXTERNAL_POWER_LOW':
-        return 'External Power Low';
-      case 'EXTERNAL_POWER_CUT':
-        return 'External Power Cut';
-      case 'LOW_POWER_SHUTDOWN':
-        return 'Low Power Shutdown';
-      case 'INTERNAL_BATTERY_LOW':
-        return 'Internal Battery Low';
-      case 'COMMAND_ACK':
-        return 'Command Acknowledged';
-      case 'MACHINE_ON':
-        return 'Machine Turned On';
-      case 'MACHINE_OFF':
-        return 'Machine Turned Off';
-      case 'COMMAND_FAILED':
-        return 'Command Failed';
-      case 'MACHINE_MOVING':
-        return 'Machine Moving';
-      case 'GEOFENCE_BREACH':
-        return 'Geo-Fence Breach';
-      default:
-        return alertType.replaceAll('_', ' ');
-    }
-  }
 }

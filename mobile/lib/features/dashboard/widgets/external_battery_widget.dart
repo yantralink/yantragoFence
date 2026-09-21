@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 import 'external_battery_mapper.dart';
 
@@ -28,13 +29,14 @@ class ExternalBatteryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final int? pct = voltageToExternalBatteryPct(voltage);
     if (pct == null) {
-      return const AppMetricCard(
-        label: 'Battery',
+      return AppMetricCard(
+        label: l10n.metricLabelBattery,
         icon: Icons.battery_std,
         state: AppMetricState.unavailable,
-        statusText: 'No voltage report',
+        statusText: l10n.metricNoVoltageReport,
       );
     }
 
@@ -48,44 +50,44 @@ class ExternalBatteryWidget extends StatelessWidget {
     final IconData icon;
 
     if (pct < 15) {
-      statusText = 'Battery Low';
+      statusText = l10n.batteryLow;
       statusTone = StatusTone.danger;
       icon = Icons.battery_alert;
     } else if (pct == 100) {
-      statusText = 'Battery Full';
+      statusText = l10n.batteryFull;
       statusTone = StatusTone.success;
       icon = Icons.battery_full;
     } else if (isCharging) {
-      statusText = 'Charging';
+      statusText = l10n.batteryCharging;
       statusTone = StatusTone.success;
       icon = Icons.battery_charging_full;
     } else {
       switch (zone) {
         case BatteryZone.critical:
-          statusText = 'Critical Low Battery';
+          statusText = l10n.batteryCriticalLow;
           statusTone = StatusTone.danger;
           icon = Icons.battery_alert;
         case BatteryZone.low:
-          statusText = 'Low Battery';
+          statusText = l10n.batteryLowLevel;
           statusTone = StatusTone.warning;
           icon = Icons.battery_std;
         case BatteryZone.normal:
-          statusText = 'Battery level';
+          statusText = l10n.batteryLevel;
           statusTone = StatusTone.neutral;
           icon = Icons.battery_std;
         case BatteryZone.full:
-          statusText = 'Battery Full';
+          statusText = l10n.batteryFull;
           statusTone = StatusTone.success;
           icon = Icons.battery_std;
       }
     }
 
     return AppMetricCard(
-      label: 'Battery',
+      label: l10n.metricLabelBattery,
       icon: icon,
       state: AppMetricState.available,
-      value: '$pct',
-      unit: '%',
+      value: '$pct', // always-en: numeric value, Latin digits
+      unit: '%', // always-en: unit
       statusText: statusText,
       statusTone: statusTone,
     );

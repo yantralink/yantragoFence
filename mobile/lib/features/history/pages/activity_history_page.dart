@@ -9,6 +9,8 @@ import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/history/providers/history_provider.dart';
+import 'package:yantrago/l10n/generated/app_localizations.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/command.dart';
 
 /// Activity history page — shows command history for a machine.
@@ -22,12 +24,13 @@ class ActivityHistoryPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: const Text('Activity History')),
+      appBar: AppBar(title: Text(l10n.activityHistoryTitle)),
       body: machineId == null
           ? AppStatePanel.empty(
-              title: 'Select a machine',
-              message: 'Choose a machine to view its command history.',
+              title: l10n.selectMachine,
+              message: l10n.selectMachineMessage,
               icon: Icons.history,
             )
           : _HistoryBody(machineId: machineId!),
@@ -43,18 +46,19 @@ class _HistoryBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(historyProvider(machineId));
+    final l10n = context.l10n;
 
     return history.when(
-      loading: () => AppStatePanel.loading(message: 'Loading history…'),
+      loading: () => AppStatePanel.loading(message: l10n.loadingHistory),
       error: (_, __) => AppStatePanel.error(
-        message: 'Unable to load history. Please try again.',
+        message: l10n.historyLoadFailed,
         onRetry: () => ref.refresh(historyProvider(machineId).future),
       ),
       data: (list) {
         if (list.isEmpty) {
           return AppStatePanel.empty(
-            title: 'No activity history',
-            message: 'Commands sent to this machine will appear here.',
+            title: l10n.noHistory,
+            message: l10n.historyEmptyMessage,
             icon: Icons.history,
             onRetry: () => ref.refresh(historyProvider(machineId).future),
           );
@@ -67,8 +71,8 @@ class _HistoryBody extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               AppSectionHeader(
-                title: 'Command History',
-                aside: '${list.length} total',
+                title: l10n.commandHistory,
+                aside: l10n.totalCount(list.length),
               ),
               ...list.map((c) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -91,6 +95,7 @@ class _CommandHistoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
     final StatusTone tone = _tone(cmd);
     final IconData icon = cmd.commandType == 'FENCING_ON'
         ? Icons.power_settings_new
@@ -110,14 +115,14 @@ class _CommandHistoryItem extends StatelessWidget {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        cmd.commandType,
+                        cmd.commandType, // always-en: raw command type code
                         style: text.titleSmall,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
                     AppStatusBadge(
-                      label: _statusLabel(cmd),
+                      label: _statusLabel(l10n, cmd),
                       tone: tone,
                       dot: true,
                     ),
@@ -145,13 +150,13 @@ class _CommandHistoryItem extends StatelessWidget {
     );
   }
 
-  String _statusLabel(Command c) {
-    if (c.isPending) return 'Awaiting ACK';
-    if (c.isAcked) return 'Acknowledged';
-    if (c.isDone) return 'Done';
-    if (c.isFailed) return 'Failed';
-    if (c.isTimeout) return 'Timed Out';
-    return c.status;
+  String _statusLabel(AppLocalizations l10n, Command c) {
+    if (c.isPending) return l10n.statusAwaitingAck;
+    if (c.isAcked) return l10n.statusAcknowledged;
+    if (c.isDone) return l10n.statusDone;
+    if (c.isFailed) return l10n.statusFailed;
+    if (c.isTimeout) return l10n.statusTimedOut;
+    return c.status; // always-en: raw command status code
   }
 
   StatusTone _tone(Command c) {

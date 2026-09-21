@@ -38,22 +38,6 @@ class NotificationPreference {
     );
   }
 
-  /// Display label for the channel.
-  String get channelLabel {
-    switch (channel) {
-      case 'PUSH':
-        return 'Push Notifications';
-      case 'EMAIL':
-        return 'Email';
-      case 'SMS':
-        return 'SMS';
-      case 'WHATSAPP':
-        return 'WhatsApp';
-      default:
-        return channel;
-    }
-  }
-
   /// Icon for the channel.
   String get channelIcon {
     switch (channel) {

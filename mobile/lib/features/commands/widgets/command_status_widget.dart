@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/utils/date_utils.dart';
 import 'package:yantrago/core/widgets/app_metadata_row.dart';
 import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
+import 'package:yantrago/l10n/generated/app_localizations.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/command.dart';
 
 /// Command status widget — shows the status of the last sent command.
@@ -23,6 +26,7 @@ class CommandStatusWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final state = ref.watch(commandProvider);
 
     // Treat a command from another machine as no command at all.
@@ -34,8 +38,8 @@ class CommandStatusWidget extends ConsumerWidget {
     if (cmd == null) {
       return AppSurfaceCard(
         child: AppStatePanel.empty(
-          title: 'No recent commands',
-          message: 'Commands sent to this machine will appear here.',
+          title: l10n.noRecentCommands,
+          message: l10n.commandsEmptyMessage,
           icon: Icons.history,
         ),
       );
@@ -45,19 +49,21 @@ class CommandStatusWidget extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          const AppSectionHeader(title: 'Command Status'),
+          AppSectionHeader(title: l10n.commandStatusSection),
           const SizedBox(height: 8),
-          AppMetadataRow(label: 'Command', value: cmd.commandType),
-          AppMetadataRow(label: 'Status', value: _statusLabel(cmd)),
           AppMetadataRow(
-            label: 'Sent',
-            value: _relative(cmd.createdAt),
+              label: l10n.detailCommand,
+              value: cmd.commandType), // always-en: raw command type code
+          AppMetadataRow(label: l10n.detailStatus, value: _statusLabel(l10n, cmd)),
+          AppMetadataRow(
+            label: l10n.detailSent,
+            value: relativeTime(l10n, cmd.createdAt),
           ),
           if (cmd.lastError != null)
-            AppMetadataRow(label: 'Error', value: cmd.lastError),
+            AppMetadataRow(label: l10n.detailError, value: cmd.lastError),
           const SizedBox(height: 8),
           AppStatusBadge(
-            label: _statusLabel(cmd),
+            label: _statusLabel(l10n, cmd),
             tone: _tone(cmd),
             dot: true,
           ),
@@ -66,13 +72,13 @@ class CommandStatusWidget extends ConsumerWidget {
     );
   }
 
-  String _statusLabel(Command c) {
-    if (c.isPending) return 'Awaiting ACK';
-    if (c.isAcked) return 'Acknowledged';
-    if (c.isDone) return 'Done';
-    if (c.isFailed) return 'Failed';
-    if (c.isTimeout) return 'Timed Out';
-    return c.status;
+  String _statusLabel(AppLocalizations l10n, Command c) {
+    if (c.isPending) return l10n.statusAwaitingAck;
+    if (c.isAcked) return l10n.statusAcknowledged;
+    if (c.isDone) return l10n.statusDone;
+    if (c.isFailed) return l10n.statusFailed;
+    if (c.isTimeout) return l10n.statusTimedOut;
+    return c.status; // always-en: raw command status code
   }
 
   StatusTone _tone(Command c) {
@@ -82,13 +88,5 @@ class CommandStatusWidget extends ConsumerWidget {
     if (c.isFailed) return StatusTone.danger;
     if (c.isTimeout) return StatusTone.danger;
     return StatusTone.neutral;
-  }
-
-  String _relative(DateTime t) {
-    final Duration d = DateTime.now().difference(t);
-    if (d.inMinutes < 1) return 'just now';
-    if (d.inHours < 1) return '${d.inMinutes} min ago';
-    if (d.inDays < 1) return '${d.inHours} h ago';
-    return '${d.inDays} d ago';
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/profile/providers/customer_settings_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Theft Protection Settings page — customer-level defaults for new
 /// machines (geofence radius, speed threshold). Values apply only after
@@ -28,7 +29,7 @@ class _TheftProtectionSettingsPageState
     final settingsAsync = ref.watch(customerSettingsNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Theft Protection Settings')),
+      appBar: AppBar(title: Text(context.l10n.theftProtectionSettings)),
       body: settingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -38,13 +39,13 @@ class _TheftProtectionSettingsPageState
               Icon(Icons.error_outline,
                   color: Theme.of(context).colorScheme.error, size: 32),
               const SizedBox(height: 8),
-              const Text('Could not load settings'),
+              Text(context.l10n.settingsLoadFailed),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => ref
                     .read(customerSettingsNotifierProvider.notifier)
                     .load(),
-                child: const Text('Retry'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),
@@ -58,6 +59,7 @@ class _TheftProtectionSettingsPageState
 
           final ColorScheme colors = Theme.of(context).colorScheme;
           final TextTheme text = Theme.of(context).textTheme;
+          final l10n = context.l10n;
           final bool changed = _radiusSlider.round() !=
                   settings.defaultGeofenceRadiusMeters ||
               _speedSlider.round() != settings.defaultSpeedThresholdKmh;
@@ -80,10 +82,11 @@ class _TheftProtectionSettingsPageState
                               color: colors.primary, size: 22),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text('Geofence Radius',
+                            child: Text(l10n.geofenceRadius,
                                 style: text.bodyLarge),
                           ),
                           Text(
+                            // always-en: radius digits + unit
                             '${_radiusSlider.round()} m',
                             style: text.bodyLarge?.copyWith(
                               fontWeight: FontWeight.w600,
@@ -97,7 +100,7 @@ class _TheftProtectionSettingsPageState
                         min: 50,
                         max: 1000,
                         divisions: 19, // 50m steps
-                        label: '${_radiusSlider.round()} m',
+                        label: '${_radiusSlider.round()} m', // always-en: digits + unit
                         onChanged: (v) => setState(() => _radiusSlider = v),
                       ),
                       const SizedBox(height: 8),
@@ -109,9 +112,10 @@ class _TheftProtectionSettingsPageState
                           const SizedBox(width: 8),
                           Expanded(
                             child:
-                                Text('Speed Alert', style: text.bodyLarge),
+                                Text(l10n.speedAlert, style: text.bodyLarge),
                           ),
                           Text(
+                            // always-en: digits + unit
                             '${_speedSlider.round()} km/h',
                             style: text.bodyLarge?.copyWith(
                               fontWeight: FontWeight.w600,
@@ -125,12 +129,12 @@ class _TheftProtectionSettingsPageState
                         min: 1,
                         max: 30,
                         divisions: 29, // 1 km/h steps
-                        label: '${_speedSlider.round()} km/h',
+                        label: '${_speedSlider.round()} km/h', // always-en: digits + unit
                         onChanged: (v) => setState(() => _speedSlider = v),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Alert when machine moves faster than ${_speedSlider.round()} km/h',
+                        l10n.speedAlertThreshold(_speedSlider.round()),
                         style: text.bodySmall
                             ?.copyWith(color: colors.onSurfaceVariant),
                       ),
@@ -141,7 +145,7 @@ class _TheftProtectionSettingsPageState
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
-                    'These defaults apply when you enable theft protection on a new machine. You can still adjust each machine individually.',
+                    l10n.theftProtectionDefaultsNote,
                     style: text.bodySmall
                         ?.copyWith(color: colors.onSurfaceVariant),
                   ),
@@ -154,7 +158,7 @@ class _TheftProtectionSettingsPageState
                         onPressed: _saving
                             ? null
                             : () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
+                        child: Text(context.l10n.cancel),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -168,7 +172,7 @@ class _TheftProtectionSettingsPageState
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2),
                               )
-                            : const Text('Save'),
+                            : Text(context.l10n.save),
                       ),
                     ),
                   ],
@@ -193,9 +197,9 @@ class _TheftProtectionSettingsPageState
       setState(() => _saving = false);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Settings saved'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(context.l10n.settingsSaved),
+            duration: const Duration(seconds: 2),
           ),
         );
       }

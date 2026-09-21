@@ -6,6 +6,7 @@ import 'package:yantrago/core/utils/date_utils.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/machine_location.dart';
 
 /// Location card — shows the machine's current GPS location with a location
@@ -93,6 +94,7 @@ class _LocationContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final l10n = context.l10n;
 
     return InkWell(
       onTap: () => _openInAppMap(context),
@@ -118,7 +120,7 @@ class _LocationContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    'Current Location',
+                    l10n.currentLocation,
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -127,7 +129,7 @@ class _LocationContent extends StatelessWidget {
                   ...addressLines.map((line) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 1),
                         child: Text(
-                          line,
+                          line, // always-en: coordinates
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
@@ -136,7 +138,7 @@ class _LocationContent extends StatelessWidget {
                   if (location.recordedAt != null) ...<Widget>[
                     const SizedBox(height: 2),
                     Text(
-                      'Updated ${AppDateUtils.timeAgo(location.recordedAt)}',
+                      l10n.updatedAt(relativeTime(l10n, location.recordedAt)),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -145,7 +147,7 @@ class _LocationContent extends StatelessWidget {
                   if (isGeocoding) ...<Widget>[
                     const SizedBox(height: 4),
                     Text(
-                      'Resolving address…',
+                      l10n.resolvingAddress,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurfaceVariant,
                         fontStyle: FontStyle.italic,
@@ -202,7 +204,7 @@ class _NoLocation extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'No location data available',
+              context.l10n.noLocationData,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/utils/date_utils.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
+import 'package:yantrago/features/notifications/widgets/alert_type_labels.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/notification_inbox.dart';
 
 /// Notification card — list item for a notification inbox item.
@@ -24,6 +27,7 @@ class NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme colors = Theme.of(context).colorScheme;
     final StatusTone tone = _tone(notification);
@@ -44,7 +48,7 @@ class NotificationCard extends StatelessWidget {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        notification.alertTypeLabel,
+                        alertTypeLabel(l10n, notification.alertType),
                         style: notification.isRead
                             ? text.titleSmall
                             : text.titleSmall?.copyWith(
@@ -55,7 +59,8 @@ class NotificationCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     AppStatusBadge(
-                      label: notification.severity,
+                      label: notification
+                          .severity, // always-en: raw severity code
                       tone: tone,
                       dot: true,
                     ),
@@ -97,33 +102,33 @@ class NotificationCard extends StatelessWidget {
                       ),
                     if (!notification.isRead) const SizedBox(width: 6),
                     Text(
-                      _relative(notification.createdAt),
+                      relativeTime(l10n, notification.createdAt),
                       style: text.bodySmall?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
                     ),
                     const Spacer(),
                     if (notification.incidentState == 'RESOLVED')
-                      const AppStatusBadge(
-                        label: 'Resolved',
+                      AppStatusBadge(
+                        label: l10n.statusResolved,
                         tone: StatusTone.success,
                         dot: true,
                       ),
                     if (notification.isDone)
-                      const AppStatusBadge(
-                        label: 'Done',
+                      AppStatusBadge(
+                        label: l10n.statusDone,
                         tone: StatusTone.success,
                         dot: true,
                       ),
                     if (notification.isAck)
-                      const AppStatusBadge(
-                        label: 'Ack',
+                      AppStatusBadge(
+                        label: l10n.statusAck,
                         tone: StatusTone.info,
                         dot: true,
                       ),
                     if (notification.isFailed)
-                      const AppStatusBadge(
-                        label: 'Failed',
+                      AppStatusBadge(
+                        label: l10n.statusFailed,
                         tone: StatusTone.danger,
                         dot: true,
                       ),
@@ -188,14 +193,6 @@ class NotificationCard extends StatelessWidget {
       default:
         return Icons.notifications_outlined;
     }
-  }
-
-  String _relative(DateTime t) {
-    final Duration d = DateTime.now().difference(t);
-    if (d.inMinutes < 1) return 'just now';
-    if (d.inHours < 1) return '${d.inMinutes} min ago';
-    if (d.inDays < 1) return '${d.inHours} h ago';
-    return '${d.inDays} d ago';
   }
 }
 

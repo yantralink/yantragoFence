@@ -6,6 +6,7 @@ import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/settings/providers/settings_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Settings page — app and machine settings.
 class SettingsPage extends ConsumerWidget {
@@ -14,9 +15,10 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: AppPageBody(
         scrollable: true,
         safeArea: false,
@@ -24,33 +26,39 @@ class SettingsPage extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            const AppSectionHeader(title: 'Connection'),
+            AppSectionHeader(title: l10n.connectionSection),
             AppSurfaceCard(
               child: Column(
                 children: <Widget>[
-                  AppMetadataRow(label: 'API URL', value: settings.apiUrl),
+                  AppMetadataRow(
+                      label: l10n.apiUrlLabel,
+                      value: settings.apiUrl), // always-en: URL
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            const AppSectionHeader(title: 'Notifications'),
+            AppSectionHeader(title: l10n.notificationsSection),
             AppSurfaceCard(
               child: SwitchListTile(
                 secondary: const Icon(Icons.notifications_outlined),
-                title: const Text('Push notifications'),
-                subtitle: const Text('Receive alerts and command updates'),
+                title: Text(l10n.pushNotifications),
+                subtitle: Text(l10n.pushNotificationsSubtitle),
                 value: settings.notificationsEnabled,
                 onChanged: (v) =>
                     ref.read(settingsProvider.notifier).setNotificationsEnabled(v),
               ),
             ),
             const SizedBox(height: 16),
-            const AppSectionHeader(title: 'About'),
+            AppSectionHeader(title: l10n.aboutSection),
             AppSurfaceCard(
               child: Column(
                 children: <Widget>[
-                  const AppMetadataRow(label: 'App', value: 'YantraGO'),
-                  const AppMetadataRow(label: 'Version', value: '1.0.0'),
+                  AppMetadataRow(
+                      label: l10n.aboutAppLabel,
+                      value: 'YantraGO'), // always-en: brand name
+                  AppMetadataRow(
+                      label: l10n.versionLabel,
+                      value: '1.0.0'), // always-en: version
                 ],
               ),
             ),

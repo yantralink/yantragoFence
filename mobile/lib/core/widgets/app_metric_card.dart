@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_semantic_colors.dart';
 import '../theme/app_spacing.dart';
+import '../../l10n/l10n.dart';
 import 'app_surface_card.dart';
 
 /// Shared metric card — label, value, unit, status, and freshness.
@@ -86,12 +87,12 @@ class AppMetricCard extends StatelessWidget {
             header,
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Unavailable',
+              context.l10n.metricUnavailable,
               style: text.titleMedium?.copyWith(color: colors.onSurfaceVariant),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              statusText ?? 'No report received',
+              statusText ?? context.l10n.metricNoReport,
               style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
             ),
           ],
@@ -105,7 +106,7 @@ class AppMetricCard extends StatelessWidget {
             _ValueLine(value: value, unit: unit, dimmed: true),
             const SizedBox(height: AppSpacing.xs),
             _StatusLine(
-              text: statusText ?? 'Stale reading',
+              text: statusText ?? context.l10n.metricStaleReading,
               tone: StatusTone.warning,
               icon: Icons.history,
             ),
@@ -121,7 +122,7 @@ class AppMetricCard extends StatelessWidget {
             _ValueLine(value: value ?? '—', unit: unit, dimmed: true),
             const SizedBox(height: AppSpacing.xs),
             _StatusLine(
-              text: statusText ?? 'Unable to load',
+              text: statusText ?? context.l10n.metricUnableToLoad,
               tone: StatusTone.danger,
               icon: Icons.error_outline,
             ),

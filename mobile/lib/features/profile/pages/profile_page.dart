@@ -9,6 +9,7 @@ import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/profile/providers/profile_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Profile page — identity header plus a settings menu.
 ///
@@ -26,13 +27,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(profileProvider);
+    final l10n = context.l10n;
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profile')),
+        appBar: AppBar(title: Text(l10n.profileTitle)),
         body: AppStatePanel.empty(
-          title: 'Not signed in',
-          message: 'Please log in to view your profile.',
+          title: l10n.notSignedIn,
+          message: l10n.pleaseLogIn,
         ),
       );
     }
@@ -44,7 +46,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         : '?';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(l10n.profileTitle)),
       body: AppPageBody(
         scrollable: true,
         safeArea: false,
@@ -87,37 +89,37 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             const SizedBox(height: 16),
 
             // Settings menu
-            const AppSectionHeader(title: 'Settings'),
+            AppSectionHeader(title: l10n.settingsSection),
             AppSurfaceCard(
               child: Column(
                 children: <Widget>[
                   _SettingsTile(
                     icon: Icons.person_outline,
-                    label: 'Account Details',
+                    label: l10n.accountDetails,
                     onTap: () => context.push('/app/profile/account'),
                   ),
                   _SettingsDivider(),
                   _SettingsTile(
                     icon: Icons.notifications_outlined,
-                    label: 'Notification',
+                    label: l10n.notificationTitle,
                     onTap: () => context.push('/app/notifications/preferences'),
                   ),
                   _SettingsDivider(),
                   _SettingsTile(
                     icon: Icons.language,
-                    label: 'Language Settings',
+                    label: l10n.languageSettings,
                     onTap: () => context.push('/app/profile/language'),
                   ),
                   _SettingsDivider(),
                   _SettingsTile(
                     icon: Icons.shield_outlined,
-                    label: 'Theft Protection Settings',
+                    label: l10n.theftProtectionSettings,
                     onTap: () => context.push('/app/profile/theft-protection'),
                   ),
                   _SettingsDivider(),
                   _SettingsTile(
                     icon: Icons.history,
-                    label: 'Command History',
+                    label: l10n.commandHistory,
                     onTap: () => context.push('/app/profile/commands'),
                   ),
                 ],
@@ -127,7 +129,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
             // Logout
             AppActionButton(
-              label: 'Log out',
+              label: l10n.logOut,
               style: AppActionButtonStyle.destructive,
               icon: Icons.logout,
               onPressed: () => ref.read(authStateProvider.notifier).logout(),

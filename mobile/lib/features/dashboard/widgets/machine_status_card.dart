@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Machine status card — summary of machine counts by status.
 ///
@@ -26,6 +27,7 @@ class MachineStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final AppSemanticColors? semantic =
         Theme.of(context).extension<AppSemanticColors>();
     final TextTheme text = Theme.of(context).textTheme;
@@ -35,12 +37,12 @@ class MachineStatusCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text('Machine Status', style: text.titleMedium),
+          Text(l10n.machineStatusTitle, style: text.titleMedium),
           const SizedBox(height: 16),
           Row(
             children: <Widget>[
               _Count(
-                label: 'Total',
+                label: l10n.countTotal,
                 count: total,
                 tone: StatusTone.info,
                 semantic: semantic,
@@ -49,7 +51,7 @@ class MachineStatusCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               _Count(
-                label: 'Online',
+                label: l10n.countOnline,
                 count: online,
                 tone: StatusTone.success,
                 semantic: semantic,
@@ -58,7 +60,7 @@ class MachineStatusCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               _Count(
-                label: 'Fencing',
+                label: l10n.countFencing,
                 count: fencingOn,
                 tone: StatusTone.warning,
                 semantic: semantic,
@@ -71,7 +73,7 @@ class MachineStatusCard extends StatelessWidget {
           Row(
             children: <Widget>[
               _Count(
-                label: 'Fault',
+                label: l10n.countFault,
                 count: fault,
                 tone: StatusTone.danger,
                 semantic: semantic,
@@ -80,7 +82,7 @@ class MachineStatusCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               _Count(
-                label: 'Offline',
+                label: l10n.countOffline,
                 count: offline,
                 tone: StatusTone.neutral,
                 semantic: semantic,
@@ -126,7 +128,7 @@ class _Count extends StatelessWidget {
         child: Column(
           children: <Widget>[
             Text(
-              '$count',
+              '$count', // always-en: numeric value, Latin digits
               style: text.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: foreground,

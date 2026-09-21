@@ -12,6 +12,7 @@ import 'package:yantrago/features/machines/widgets/location_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_info_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_telemetry_grid.dart';
 import 'package:yantrago/features/machines/widgets/on_off_button.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Machine detail page — shows machine info, location, telemetry, and
 /// ON/OFF controls.
@@ -32,18 +33,19 @@ class MachineDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final machine = ref.watch(machineDetailProvider(machineId));
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
         title: machine.maybeWhen(
           data: (m) => Text(m.name),
-          orElse: () => const Text('Machine Details'),
+          orElse: () => Text(l10n.machineDetailsTitle),
         ),
       ),
       body: machine.when(
-        loading: () => AppStatePanel.loading(message: 'Loading machine…'),
+        loading: () => AppStatePanel.loading(message: l10n.loadingMachine),
         error: (_, __) => AppStatePanel.error(
-          message: 'Unable to load this machine. Please try again.',
+          message: l10n.machineLoadFailed,
         ),
         data: (m) => RefreshIndicator(
           onRefresh: () async {
@@ -79,7 +81,7 @@ class MachineDetailPage extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Center(
                   child: Text(
-                    'Machine state changes only after device confirmation.',
+                    l10n.machineStateConfirmationNote,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),

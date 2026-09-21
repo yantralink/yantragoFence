@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/widgets/app_action_button.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// ON/OFF button — sends fencing ON/OFF commands to a machine.
 ///
@@ -39,8 +40,8 @@ class _OnOffButtonState extends ConsumerState<OnOffButton> {
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Command sent. Waiting for device acknowledgement...'),
+          SnackBar(
+            content: Text(context.l10n.commandSentAwaitingAck),
           ),
         );
       }
@@ -49,7 +50,7 @@ class _OnOffButtonState extends ConsumerState<OnOffButton> {
         final ColorScheme colors = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Failed to send command. Please try again.'),
+            content: Text(context.l10n.commandSendFailed),
             backgroundColor: colors.error,
           ),
         );
@@ -61,11 +62,12 @@ class _OnOffButtonState extends ConsumerState<OnOffButton> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       children: <Widget>[
         Expanded(
           child: AppActionButton(
-            label: 'Turn ON',
+            label: l10n.actionTurnOn,
             style: AppActionButtonStyle.on,
             icon: Icons.power_settings_new,
             busy: _sending,
@@ -75,7 +77,7 @@ class _OnOffButtonState extends ConsumerState<OnOffButton> {
         const SizedBox(width: 16),
         Expanded(
           child: AppActionButton(
-            label: 'Turn OFF',
+            label: l10n.actionTurnOff,
             style: AppActionButtonStyle.off,
             icon: Icons.power_off,
             busy: _sending,

@@ -14,6 +14,7 @@ import 'package:yantrago/features/dashboard/widgets/gsm_status_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/machine_status_card.dart';
 import 'package:yantrago/features/dashboard/widgets/voltage_widget.dart';
 import 'package:yantrago/features/machines/widgets/machine_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Dashboard page — main overview of all machines.
 ///
@@ -32,13 +33,15 @@ class DashboardPage extends ConsumerWidget {
       data: (list) => list.length,
       orElse: () => null,
     );
+    final l10n = context.l10n;
 
     return Scaffold(
+      // always-en: organization display name / brand fallback
       appBar: AppBar(title: Text(user?.organizationName ?? 'YantraGO')),
       body: summary.when(
-        loading: () => AppStatePanel.loading(message: 'Loading dashboard…'),
+        loading: () => AppStatePanel.loading(message: l10n.loadingDashboard),
         error: (_, __) => AppStatePanel.error(
-          message: 'Unable to load the dashboard. Please try again.',
+          message: l10n.dashboardLoadFailed,
           onRetry: () => ref.refresh(dashboardProvider.future),
         ),
         data: (data) => RefreshIndicator(
@@ -50,7 +53,9 @@ class DashboardPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                const AppSectionHeader(title: 'Farm overview', aside: 'Latest sample'),
+                AppSectionHeader(
+                    title: l10n.farmOverview,
+                    aside: l10n.statusLatestSample),
                 MachineStatusCard(
                   total: data.totalMachines,
                   online: data.onlineMachines,
@@ -59,7 +64,7 @@ class DashboardPage extends ConsumerWidget {
                   offline: data.offlineMachines,
                 ),
                 const SizedBox(height: 16),
-                const AppSectionHeader(title: 'Telemetry'),
+                AppSectionHeader(title: l10n.telemetrySection),
                 _MetricGrid(
                   children: <Widget>[
                     BatteryWidget(
@@ -83,7 +88,7 @@ class DashboardPage extends ConsumerWidget {
                     FaultsWidget(count: faultsCount),
                   ],
                 ),
-                const AppSectionHeader(title: 'Your machines'),
+                AppSectionHeader(title: l10n.yourMachines),
                 ...data.machines.take(5).map((m) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: MachineCard(

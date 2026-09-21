@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_spacing.dart';
+import '../../l10n/l10n.dart';
 import 'app_action_button.dart';
 
 /// Shared async-state panel — loading, error, and empty presentation.
@@ -85,7 +86,7 @@ class _Error extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Something went wrong',
+              context.l10n.errorSomethingWentWrong,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -99,7 +100,7 @@ class _Error extends StatelessWidget {
             if (onRetry != null) ...<Widget>[
               const SizedBox(height: AppSpacing.lg),
               AppActionButton(
-                label: 'Try again',
+                label: context.l10n.tryAgain,
                 style: AppActionButtonStyle.primary,
                 icon: Icons.refresh,
                 onPressed: onRetry,
@@ -149,7 +150,7 @@ class _Empty extends StatelessWidget {
             if (onRetry != null) ...<Widget>[
               const SizedBox(height: AppSpacing.lg),
               AppActionButton(
-                label: 'Refresh',
+                label: context.l10n.refresh,
                 style: AppActionButtonStyle.secondary,
                 icon: Icons.refresh,
                 onPressed: onRetry,

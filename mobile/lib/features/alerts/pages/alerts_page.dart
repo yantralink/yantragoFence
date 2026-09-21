@@ -9,6 +9,7 @@ import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
 import 'package:yantrago/features/alerts/widgets/alert_card.dart';
 import 'package:yantrago/features/notifications/providers/notification_provider.dart';
 import 'package:yantrago/features/notifications/widgets/notification_inbox_view.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Alerts page — unified view with Active Alerts and Inbox tabs.
 ///
@@ -63,10 +64,11 @@ class _AlertsPageState extends ConsumerState<AlertsPage>
   @override
   Widget build(BuildContext context) {
     final markAllRead = ref.watch(markAllReadProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Alerts'),
+        title: Text(l10n.alertsTitle),
         actions: <Widget>[
           if (_isInboxTab) ...<Widget>[
             if (markAllRead is AsyncLoading)
@@ -81,22 +83,22 @@ class _AlertsPageState extends ConsumerState<AlertsPage>
             else
               IconButton(
                 icon: const Icon(Icons.done_all),
-                tooltip: 'Mark all as read',
+                tooltip: l10n.markAllRead,
                 onPressed: () =>
                     ref.read(markAllReadProvider.notifier).markAllRead(),
               ),
             IconButton(
               icon: const Icon(Icons.tune),
-              tooltip: 'Filter',
+              tooltip: l10n.filter,
               onPressed: () => _showFilterSheet(context),
             ),
           ],
         ],
         bottom: TabBar(
           controller: _tabController,
-          tabs: const <Widget>[
-            Tab(text: 'Active Alerts'),
-            Tab(text: 'Inbox'),
+          tabs: <Widget>[
+            Tab(text: l10n.activeAlertsTab),
+            Tab(text: l10n.inboxTab),
           ],
         ),
       ),
@@ -126,18 +128,19 @@ class _ActiveAlertsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final alerts = ref.watch(alertsProvider);
+    final l10n = context.l10n;
 
     return alerts.when(
-      loading: () => AppStatePanel.loading(message: 'Loading alerts…'),
+      loading: () => AppStatePanel.loading(message: l10n.loadingAlerts),
       error: (_, __) => AppStatePanel.error(
-        message: 'Unable to load alerts. Please try again.',
+        message: l10n.alertsLoadFailed,
         onRetry: () => ref.refresh(alertsProvider.future),
       ),
       data: (list) {
         if (list.isEmpty) {
           return AppStatePanel.empty(
-            title: 'No active alerts',
-            message: 'Active device alerts will appear here.',
+            title: l10n.noActiveAlerts,
+            message: l10n.activeAlertsEmptyMessage,
             icon: Icons.warning_amber_outlined,
             onRetry: () => ref.refresh(alertsProvider.future),
           );
@@ -150,8 +153,8 @@ class _ActiveAlertsTab extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               AppSectionHeader(
-                title: 'Active Alerts',
-                aside: '${list.length} total',
+                title: l10n.activeAlertsTab,
+                aside: l10n.totalCount(list.length),
               ),
               ...list.map((a) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),

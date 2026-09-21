@@ -9,6 +9,9 @@ import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/notifications/providers/notification_provider.dart';
+import 'package:yantrago/features/notifications/widgets/alert_type_labels.dart';
+import 'package:yantrago/l10n/generated/app_localizations.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/notification_inbox.dart';
 
 /// Notification detail page — shows a single notification with mark-read
@@ -31,12 +34,13 @@ class NotificationDetailPage extends ConsumerWidget {
     final detail = ref.watch(notificationDetailProvider(notificationId));
     final markReadState = ref.watch(markReadProvider(notificationId));
     final acknowledgeState = ref.watch(acknowledgeProvider(notificationId));
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notification')),
+      appBar: AppBar(title: Text(l10n.notificationTitle)),
       body: detail.when(
         loading: () =>
-            AppStatePanel.loading(message: 'Loading notification…'),
+            AppStatePanel.loading(message: l10n.loadingNotification),
         error: (error, _) {
           // SIG 21: When the machine is no longer assigned to the user
           // (API returns 403/404), show a friendly message instead of
@@ -44,16 +48,14 @@ class NotificationDetailPage extends ConsumerWidget {
           final isMachineUnavailable = _isMachineUnavailableError(error);
           if (isMachineUnavailable) {
             return AppStatePanel.empty(
-              title: 'Machine no longer available',
-              message:
-                  'This machine is no longer available. It may have been '
-                  'reassigned to another user.',
+              title: l10n.machineUnavailableTitle,
+              message: l10n.machineUnavailableMessage,
               icon: Icons.devices_other,
               onRetry: () => context.pop(),
             );
           }
           return AppStatePanel.error(
-            message: 'Unable to load notification. Please try again.',
+            message: l10n.notificationLoadFailed,
             onRetry: () => ref.refresh(
               notificationDetailProvider(notificationId).future,
             ),
@@ -62,7 +64,7 @@ class NotificationDetailPage extends ConsumerWidget {
         data: (notification) {
           if (notification == null) {
             return AppStatePanel.empty(
-              title: 'Notification not found',
+              title: l10n.notificationNotFound,
               icon: Icons.notifications_off_outlined,
               onRetry: () => context.pop(),
             );
@@ -118,6 +120,7 @@ class _DetailContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
     final StatusTone tone = _tone(notification);
 
     return AppPageBody(
@@ -155,12 +158,13 @@ class _DetailContent extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        notification.alertTypeLabel,
+                        alertTypeLabel(l10n, notification.alertType),
                         style: text.titleLarge,
                       ),
                     ),
                     AppStatusBadge(
-                      label: notification.severity,
+                      label: notification
+                          .severity, // always-en: raw severity code
                       tone: tone,
                       dot: true,
                     ),
@@ -186,23 +190,23 @@ class _DetailContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 _DetailRow(
-                  label: 'Status',
-                  value: _statusLabel(notification),
+                  label: l10n.detailStatus,
+                  value: _statusLabel(l10n, notification),
                 ),
                 if (notification.observedValue != null)
                   _DetailRow(
-                    label: 'Observed Value',
+                    label: l10n.detailObservedValue,
                     value:
                         '${notification.observedValue}${notification.observedUnit != null ? ' ${notification.observedUnit}' : ''}',
                   ),
                 _DetailRow(
-                  label: 'Received',
-                  value: _formatDateTime(notification.createdAt),
+                  label: l10n.detailReceived,
+                  value: _formatDateTime(l10n, notification.createdAt),
                 ),
                 if (notification.readAt != null)
                   _DetailRow(
-                    label: 'Read',
-                    value: _formatDateTime(notification.readAt!),
+                    label: l10n.detailRead,
+                    value: _formatDateTime(l10n, notification.readAt!),
                   ),
               ],
             ),
@@ -218,7 +222,7 @@ class _DetailContent extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'View Machine Details',
+                      l10n.viewMachineDetails,
                       style: text.bodyLarge?.copyWith(
                         color: colors.primary,
                         fontWeight: FontWeight.w500,
@@ -241,7 +245,7 @@ class _DetailContent extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.check_circle_outline),
-              label: const Text('Acknowledge'),
+              label: Text(l10n.acknowledge),
               onPressed: acknowledgeLoading ? null : onAcknowledge,
             ),
           ],
@@ -256,7 +260,7 @@ class _DetailContent extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.check_circle_outline),
-              label: const Text('Mark as Read'),
+              label: Text(l10n.markAsRead),
               onPressed: markReadLoading ? null : onMarkRead,
             ),
           ],
@@ -318,31 +322,32 @@ class _DetailContent extends StatelessWidget {
     }
   }
 
-  String _formatDateTime(DateTime dt) {
+  String _formatDateTime(AppLocalizations l10n, DateTime dt) {
     final d = DateTime.now().difference(dt);
-    if (d.inMinutes < 1) return 'just now';
-    if (d.inHours < 1) return '${d.inMinutes} min ago';
-    if (d.inDays < 1) return '${d.inHours} h ago';
+    if (d.inMinutes < 1) return l10n.justNow;
+    if (d.inHours < 1) return l10n.minutesAgo(d.inMinutes);
+    if (d.inDays < 1) return l10n.hoursAgo(d.inHours);
+    // always-en: numeric date, Latin digits
     return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   /// Friendlier status label for command and alert states.
-  String _statusLabel(NotificationInbox n) {
+  String _statusLabel(AppLocalizations l10n, NotificationInbox n) {
     switch (n.incidentState) {
       case 'OPEN':
-        return 'Open';
+        return l10n.statusOpen;
       case 'RESOLVED':
-        return 'Resolved';
+        return l10n.statusResolved;
       case 'ESCALATED':
-        return 'Escalated';
+        return l10n.statusEscalated;
       case 'ACK':
-        return 'Acknowledged by device';
+        return l10n.statusAcknowledgedByDevice;
       case 'DONE':
-        return 'Completed';
+        return l10n.statusCompleted;
       case 'FAILED':
-        return 'Failed';
+        return l10n.statusFailed;
       default:
-        return n.incidentState;
+        return n.incidentState; // always-en: raw incident state code
     }
   }
 }

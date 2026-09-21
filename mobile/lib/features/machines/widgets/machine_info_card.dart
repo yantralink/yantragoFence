@@ -4,6 +4,8 @@ import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_metadata_row.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
+import 'package:yantrago/l10n/generated/app_localizations.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/machine.dart';
 
 /// Machine info card — identity and status summary for a machine.
@@ -29,6 +31,7 @@ class MachineInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return AppSurfaceCard(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -47,7 +50,7 @@ class MachineInfoCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               AppStatusBadge(
-                label: _statusLabel(machine),
+                label: _statusLabel(l10n, machine),
                 tone: _statusTone(machine),
                 dot: true,
               ),
@@ -55,7 +58,9 @@ class MachineInfoCard extends StatelessWidget {
               if (_effectiveIgnitionOn != null) ...<Widget>[
                 const SizedBox(width: 6),
                 AppStatusBadge(
-                  label: _effectiveIgnitionOn! ? 'Machine Running' : 'Machine Stopped',
+                  label: _effectiveIgnitionOn!
+                      ? l10n.machineRunning
+                      : l10n.machineStopped,
                   tone: _effectiveIgnitionOn! ? StatusTone.success : StatusTone.neutral,
                   dot: _effectiveIgnitionOn!,
                 ),
@@ -70,11 +75,11 @@ class MachineInfoCard extends StatelessWidget {
     );
   }
 
-  String _statusLabel(Machine m) {
-    if (m.isOnlineStatus) return 'Online';
-    if (m.isFault) return 'Fault';
-    if (m.isInStock) return 'In stock';
-    return 'Offline';
+  String _statusLabel(AppLocalizations l10n, Machine m) {
+    if (m.isOnlineStatus) return l10n.statusOnline;
+    if (m.isFault) return l10n.statusFault;
+    if (m.isInStock) return l10n.statusInStock;
+    return l10n.statusOffline;
   }
 
   StatusTone _statusTone(Machine m) {
@@ -96,12 +101,15 @@ class _CompactMetadata extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     // Build a list of available fields only.
     final fields = <_FieldData>[
       if (machine.machineId.isNotEmpty)
-        _FieldData(label: 'Machine ID', value: machine.machineId),
+        _FieldData(label: l10n.fieldMachineId, value: machine.machineId),
       if (machine.imei != null && machine.imei!.isNotEmpty)
-        _FieldData(label: 'IMEI', value: machine.imei!),
+        _FieldData(
+            label: l10n.fieldImei,
+            value: machine.imei!), // always-en: IMEI digits
     ];
 
     // Pair fields side-by-side, two per row.

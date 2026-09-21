@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/utils/date_utils.dart';
 import 'package:yantrago/core/widgets/app_status_badge.dart';
+import 'package:yantrago/l10n/generated/app_localizations.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/command.dart';
 
 /// A single command history row: status icon, command type, optional
@@ -15,6 +18,7 @@ class CommandRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme colors = Theme.of(context).colorScheme;
 
@@ -37,7 +41,7 @@ class CommandRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               Text(
-                _typeLabel(command.commandType),
+                _typeLabel(l10n, command.commandType),
                 style: text.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
@@ -50,7 +54,7 @@ class CommandRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               Text(
-                _relative(command.createdAt),
+                relativeTime(l10n, command.createdAt),
                 style: text.bodySmall?.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
@@ -59,7 +63,7 @@ class CommandRow extends StatelessWidget {
           ),
         ),
         AppStatusBadge(
-          label: _statusLabel(command),
+          label: _statusLabel(l10n, command),
           tone: _tone(command),
           dot: true,
         ),
@@ -74,26 +78,26 @@ class CommandRow extends StatelessWidget {
     return Icons.power_off;
   }
 
-  String _typeLabel(String type) {
+  String _typeLabel(AppLocalizations l10n, String type) {
     switch (type) {
       case 'ON':
       case 'FENCING_ON':
-        return 'Turn On';
+        return l10n.commandTurnOn;
       case 'OFF':
       case 'FENCING_OFF':
-        return 'Turn Off';
+        return l10n.commandTurnOff;
       default:
-        return type;
+        return type; // always-en: raw command type code
     }
   }
 
-  String _statusLabel(Command c) {
-    if (c.isPending) return 'Pending';
-    if (c.isAcked) return 'Ack';
-    if (c.isDone) return 'Done';
-    if (c.isFailed) return 'Failed';
-    if (c.isTimeout) return 'Timed Out';
-    return c.status;
+  String _statusLabel(AppLocalizations l10n, Command c) {
+    if (c.isPending) return l10n.statusPending;
+    if (c.isAcked) return l10n.statusAck;
+    if (c.isDone) return l10n.statusDone;
+    if (c.isFailed) return l10n.statusFailed;
+    if (c.isTimeout) return l10n.statusTimedOut;
+    return c.status; // always-en: raw command status code
   }
 
   StatusTone _tone(Command c) {
@@ -107,13 +111,5 @@ class CommandRow extends StatelessWidget {
   Color _toneColor(BuildContext context, Command c) {
     final semantic = Theme.of(context).extension<AppSemanticColors>();
     return semantic?.tone(_tone(c)) ?? Theme.of(context).colorScheme.primary;
-  }
-
-  String _relative(DateTime t) {
-    final Duration d = DateTime.now().difference(t);
-    if (d.inMinutes < 1) return 'just now';
-    if (d.inHours < 1) return '${d.inMinutes} min ago';
-    if (d.inDays < 1) return '${d.inHours} h ago';
-    return '${d.inDays} d ago';
   }
 }

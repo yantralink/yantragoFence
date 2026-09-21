@@ -7,6 +7,7 @@ import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/theft_protection_provider.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// Machine location map page — shows a single machine's GPS location on an
 /// in-app map using Leaflet.js + OpenStreetMap tiles with a default marker.
@@ -35,27 +36,28 @@ class _MachineLocationMapPageState
     final location = ref.watch(machineLocationProvider(widget.machineId));
     final address = ref.watch(machineAddressProvider(widget.machineId));
     final protection = ref.watch(theftProtectionNotifierProvider(widget.machineId));
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
         title: machine.maybeWhen(
           data: (m) => Text(m.name),
-          orElse: () => const Text('Machine Location'),
+          orElse: () => Text(l10n.machineLocationTitle),
         ),
       ),
       body: location.when(
         loading: () =>
-            AppStatePanel.loading(message: 'Loading location…'),
+            AppStatePanel.loading(message: l10n.loadingLocation),
         error: (_, __) => AppStatePanel.empty(
-          title: 'No location data available',
-          message: 'This machine has not reported its GPS coordinates yet.',
+          title: l10n.noLocationData,
+          message: l10n.noLocationMessage,
           icon: Icons.location_off,
         ),
         data: (loc) {
           if (loc == null) {
             return AppStatePanel.empty(
-              title: 'No location data available',
-              message: 'This machine has not reported its GPS coordinates yet.',
+              title: l10n.noLocationData,
+              message: l10n.noLocationMessage,
               icon: Icons.location_off,
             );
           }
@@ -66,13 +68,17 @@ class _MachineLocationMapPageState
           final geofenceLng = protectionStatus?.geofenceLongitude;
           final geofenceRadius = protectionStatus?.geofenceRadiusMeters;
 
-          // Build Leaflet.js HTML with marker + optional geofence circle
+          // Build Leaflet.js HTML with marker + optional geofence circle.
+          // Popup labels are localized in the widget layer and passed in —
+          // the HTML/JS template itself stays unlocalized.
           final html = _buildLeafletHtml(
             latitude: loc.latitude,
             longitude: loc.longitude,
             geofenceLatitude: geofenceLat,
             geofenceLongitude: geofenceLng,
             geofenceRadiusMeters: geofenceRadius,
+            markerPopupLabel: l10n.machineLocationTitle,
+            geofencePopupLabel: l10n.geofencePopupPrefix,
           );
 
           final controller = WebViewController()
@@ -111,12 +117,17 @@ class _MachineLocationMapPageState
 
   /// Builds the Leaflet.js HTML with OpenStreetMap tiles, a marker, and
   /// an optional geofence circle.
+  ///
+  /// [markerPopupLabel] and [geofencePopupLabel] are localized by the
+  /// widget layer; the radius digits and " m" unit stay unlocalized.
   String _buildLeafletHtml({
     required double latitude,
     required double longitude,
     double? geofenceLatitude,
     double? geofenceLongitude,
     int? geofenceRadiusMeters,
+    required String markerPopupLabel,
+    required String geofencePopupLabel,
   }) {
     final hasGeofence = geofenceLatitude != null &&
         geofenceLongitude != null &&
@@ -129,7 +140,7 @@ class _MachineLocationMapPageState
       fillColor: '#1976D2',
       fillOpacity: 0.15,
       weight: 2
-    }).addTo(map).bindPopup('Geofence ($geofenceRadiusMeters m)');
+    }).addTo(map).bindPopup('$geofencePopupLabel ($geofenceRadiusMeters m)');
 '''
         : '';
     return '''
@@ -153,7 +164,7 @@ class _MachineLocationMapPageState
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
     L.marker([$latitude, $longitude]).addTo(map)
-      .bindPopup('Machine Location');
+      .bindPopup('$markerPopupLabel');
     $geofenceJs
   </script>
 </body>
@@ -201,7 +212,7 @@ class _AddressBar extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             const SizedBox(width: 12),
-            Text('Resolving address…',
+            Text(context.l10n.resolvingAddress,
                 style: text.bodyMedium?.copyWith(color: colors.onSurfaceVariant)),
           ],
         ),
@@ -288,7 +299,7 @@ class _AddressContent extends StatelessWidget {
                 Icon(Icons.map_outlined, color: colors.primary, size: 16),
                 const SizedBox(width: 4),
                 Text(
-                  'Open in Google Maps',
+                  context.l10n.openInGoogleMaps,
                   style: text.bodySmall?.copyWith(
                     color: colors.primary,
                     fontWeight: FontWeight.w600,
@@ -333,7 +344,7 @@ class _TheftProtectionPanel extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Could not load theft protection status',
+                context.l10n.theftProtectionLoadFailed,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
@@ -341,7 +352,7 @@ class _TheftProtectionPanel extends ConsumerWidget {
               onPressed: () => ref
                   .read(theftProtectionNotifierProvider(machineId).notifier)
                   .load(),
-              child: const Text('Retry'),
+              child: Text(context.l10n.retry),
             ),
           ],
         ),
@@ -378,7 +389,7 @@ class _TheftProtectionPanel extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Theft Protection',
+                      context.l10n.theftProtection,
                       style: text.titleSmall?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),

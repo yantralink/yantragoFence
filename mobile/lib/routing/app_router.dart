@@ -20,6 +20,7 @@ import 'package:yantrago/features/profile/pages/profile_page.dart';
 import 'package:yantrago/features/profile/pages/account_details_page.dart';
 import 'package:yantrago/features/profile/pages/language_settings_page.dart';
 import 'package:yantrago/features/profile/pages/theft_protection_settings_page.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// App router — GoRouter with auth guards.
 ///
@@ -136,9 +137,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
-      appBar: AppBar(title: const Text('Page Not Found')),
+      appBar: AppBar(title: Text(context.l10n.errorPageNotFound)),
       body: AppStatePanel.error(
-        message: 'The page "${state.matchedLocation}" could not be found.',
+        message: context.l10n
+            .errorMessagePageNotFound(state.matchedLocation),
         onRetry: () => context.go('/app/machines'),
       ),
     ),
@@ -184,28 +186,29 @@ class _AppShell extends ConsumerWidget {
     ref.watch(notificationSocketProvider);
 
     final index = _currentIndex(context);
+    final l10n = context.l10n;
     return Scaffold(
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (i) => context.go(_routes[i]),
         destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.devices_outlined),
-            selectedIcon: Icon(Icons.devices),
-            label: 'Machines',
+          NavigationDestination(
+            icon: const Icon(Icons.devices_outlined),
+            selectedIcon: const Icon(Icons.devices),
+            label: l10n.navMachines,
           ),
           NavigationDestination(
             icon: NotificationBadge(
               child: const Icon(Icons.warning_amber_outlined),
             ),
             selectedIcon: const Icon(Icons.warning),
-            label: 'Alerts',
+            label: l10n.navAlerts,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outlined),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+          NavigationDestination(
+            icon: const Icon(Icons.person_outlined),
+            selectedIcon: const Icon(Icons.person),
+            label: l10n.navProfile,
           ),
         ],
       ),

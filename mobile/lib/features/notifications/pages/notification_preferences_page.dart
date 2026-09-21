@@ -6,6 +6,8 @@ import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/notifications/providers/notification_provider.dart';
+import 'package:yantrago/l10n/generated/app_localizations.dart';
+import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/notification_preference.dart';
 
 /// Notification preferences page — manage per-user channel preferences.
@@ -18,22 +20,23 @@ class NotificationPreferencesPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final prefs = ref.watch(notificationPreferencesProvider);
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notification')),
+      appBar: AppBar(title: Text(l10n.notificationTitle)),
       body: prefs.when(
         loading: () =>
-            AppStatePanel.loading(message: 'Loading preferences…'),
+            AppStatePanel.loading(message: l10n.loadingPreferences),
         error: (_, __) => AppStatePanel.error(
-          message: 'Unable to load preferences. Please try again.',
+          message: l10n.preferencesLoadFailed,
           onRetry: () =>
               ref.refresh(notificationPreferencesProvider.future),
         ),
         data: (list) {
           if (list.isEmpty) {
             return AppStatePanel.empty(
-              title: 'No preferences',
-              message: 'You have not configured any notification preferences.',
+              title: l10n.noPreferences,
+              message: l10n.preferencesEmptyMessage,
               icon: Icons.tune,
               onRetry: () =>
                   ref.refresh(notificationPreferencesProvider.future),
@@ -45,7 +48,7 @@ class NotificationPreferencesPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                const AppSectionHeader(title: 'Channels'),
+                AppSectionHeader(title: l10n.channelsSection),
                 ...list.map((p) => _PreferenceTile(preference: p)),
               ],
             ),
@@ -65,15 +68,17 @@ class _PreferenceTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final setPref = ref.watch(setPreferenceProvider);
     final isLoading = setPref is AsyncLoading;
+    final l10n = context.l10n;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: AppSurfaceCard(
         child: SwitchListTile(
-          title: Text(preference.channelLabel),
+          title: Text(channelLabel(l10n, preference.channel)),
           subtitle: Text(
             preference.appliesToAll
-                ? 'All alert types'
+                ? l10n.allAlertTypes
+                // always-en: raw alert type code
                 : preference.alertType!,
           ),
           value: preference.isEnabled,
@@ -93,5 +98,23 @@ class _PreferenceTile extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Localized channel label for a raw channel code (moved out of the model
+/// so the model keeps only backend data). Unknown codes fall back to the
+/// raw code (always-en carve-out).
+String channelLabel(AppLocalizations l10n, String channel) {
+  switch (channel) {
+    case 'PUSH':
+      return l10n.channelPush;
+    case 'EMAIL':
+      return l10n.channelEmail;
+    case 'SMS':
+      return l10n.channelSms;
+    case 'WHATSAPP':
+      return l10n.channelWhatsapp;
+    default:
+      return channel;
   }
 }

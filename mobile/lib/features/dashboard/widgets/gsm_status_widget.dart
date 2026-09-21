@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/l10n/l10n.dart';
 
 /// GSM status widget — displays GSM signal strength as a shared metric card.
 ///
@@ -17,12 +18,13 @@ class GsmStatusWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (signal == null) {
-      return const AppMetricCard(
-        label: 'Device Signal',
+      return AppMetricCard(
+        label: l10n.metricLabelDeviceSignal,
         icon: Icons.signal_cellular_alt,
         state: AppMetricState.unavailable,
-        statusText: 'No report received',
+        statusText: l10n.metricNoReport,
       );
     }
     final int level = signal!;
@@ -33,18 +35,18 @@ class GsmStatusWidget extends StatelessWidget {
             ? StatusTone.warning
             : StatusTone.danger;
     final String status = level >= 3
-        ? 'Strong signal'
+        ? l10n.signalStrong
         : level >= 2
-            ? 'Weak signal'
+            ? l10n.signalWeak
             : level >= 1
-                ? 'Poor signal'
-                : 'No signal';
+                ? l10n.signalPoor
+                : l10n.signalNone;
     return AppMetricCard(
-      label: 'Device Signal',
+      label: l10n.metricLabelDeviceSignal,
       icon: Icons.signal_cellular_alt,
       state: AppMetricState.available,
-      value: '$level',
-      unit: '/4',
+      value: '$level', // always-en: numeric value, Latin digits
+      unit: '/4', // always-en: unit
       statusText: status,
       statusTone: tone,
     );
