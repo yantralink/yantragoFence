@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:yantrago/core/auth/auth_service.dart';
 import 'package:yantrago/core/auth/auth_state.dart';
 import 'package:yantrago/core/config/theme.dart';
+import 'package:yantrago/core/network/network_error_messages.dart';
 import 'package:yantrago/features/auth/pages/login_page.dart';
 import 'package:yantrago/features/auth/pages/splash_page.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
@@ -75,7 +76,7 @@ Future<void> _pump(
 
 Future<void> _pumpSplash(
   WidgetTester tester,
-  _FakeAuthNotifier notifier, {
+  _FakeAuthNotifier Function(Ref ref) createNotifier, {
   Brightness brightness = Brightness.light,
 }) async {
   await tester.binding.setSurfaceSize(const Size(390, 1200));
@@ -88,7 +89,7 @@ Future<void> _pumpSplash(
     ],
   );
   await tester.pumpWidget(ProviderScope(
-    overrides: [authStateProvider.overrideWith((ref) => notifier)],
+    overrides: [authStateProvider.overrideWith((ref) => createNotifier(ref))],
     child: MaterialApp.router(
       theme: brightness == Brightness.light ? AppTheme.lightTheme : AppTheme.darkTheme,
       routerConfig: router,
@@ -101,7 +102,7 @@ Future<void> _pumpSplash(
 void main() {
   group('SplashPage', () {
     testWidgets('shows logo, title, subtitle, and progress', (tester) async {
-      await _pumpSplash(tester, _FakeAuthNotifier(initial: true));
+      await _pumpSplash(tester, (ref) => _FakeAuthNotifier(ref: ref, initial: true));
       expect(find.text('YantraGO'), findsOneWidget);
       expect(find.text('Machine Management Platform'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -111,7 +112,7 @@ void main() {
     testWidgets('renders in dark theme', (tester) async {
       await _pumpSplash(
         tester,
-        _FakeAuthNotifier(initial: true),
+        (ref) => _FakeAuthNotifier(ref: ref, initial: true),
         brightness: Brightness.dark,
       );
       expect(find.text('YantraGO'), findsOneWidget);
@@ -123,7 +124,7 @@ void main() {
       await _pump(
         tester,
         const LoginPage(),
-        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier())],
+        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref))],
       );
       expect(find.text('YantraGO'), findsOneWidget);
       expect(find.text('Email or Phone'), findsOneWidget);
@@ -135,7 +136,7 @@ void main() {
       await _pump(
         tester,
         const LoginPage(),
-        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier())],
+        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref))],
       );
       await tester.tap(find.text('Login'));
       await tester.pump();
@@ -148,7 +149,7 @@ void main() {
       await _pump(
         tester,
         const LoginPage(),
-        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier())],
+        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref))],
       );
       await tester.enterText(find.byType(TextFormField).at(1), 'secret123');
       expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
@@ -162,7 +163,7 @@ void main() {
         tester,
         const LoginPage(),
         brightness: Brightness.dark,
-        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier())],
+        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref))],
       );
       expect(find.text('Login'), findsOneWidget);
     });
@@ -173,7 +174,7 @@ void main() {
         const LoginPage(),
         textScale: 2.0,
         surface: const Size(390, 2000),
-        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier())],
+        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref))],
       );
       expect(tester.takeException(), isNull);
     });
@@ -185,7 +186,7 @@ void main() {
         tester,
         const ProfilePage(),
         overrides: [
-          authStateProvider.overrideWith((ref) => _FakeAuthNotifier(authenticated: true)),
+          authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref, authenticated: true)),
           profileProvider.overrideWith((ref) => _user),
         ],
       );
@@ -211,18 +212,21 @@ void main() {
     });
 
     testWidgets('logout button calls logout', (tester) async {
-      final notifier = _FakeAuthNotifier(authenticated: true);
+      _FakeAuthNotifier? notifier;
       await _pump(
         tester,
         const ProfilePage(),
         overrides: [
-          authStateProvider.overrideWith((ref) => notifier),
+          authStateProvider.overrideWith((ref) {
+            notifier = _FakeAuthNotifier(ref: ref, authenticated: true);
+            return notifier!;
+          }),
           profileProvider.overrideWith((ref) => _user),
         ],
       );
       await tester.tap(find.text('Log out'));
       await tester.pump();
-      expect(notifier.logoutCalled, isTrue);
+      expect(notifier!.logoutCalled, isTrue);
     });
 
     testWidgets('renders in dark theme', (tester) async {
@@ -231,7 +235,7 @@ void main() {
         const ProfilePage(),
         brightness: Brightness.dark,
         overrides: [
-          authStateProvider.overrideWith((ref) => _FakeAuthNotifier(authenticated: true)),
+          authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref, authenticated: true)),
           profileProvider.overrideWith((ref) => _user),
         ],
       );
@@ -245,7 +249,7 @@ void main() {
         textScale: 2.0,
         surface: const Size(390, 2400),
         overrides: [
-          authStateProvider.overrideWith((ref) => _FakeAuthNotifier(authenticated: true)),
+          authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref, authenticated: true)),
           profileProvider.overrideWith((ref) => _user),
         ],
       );
@@ -259,7 +263,7 @@ void main() {
         tester,
         const LoginPage(),
         surface: const Size(390, 600),
-        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier())],
+        overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref))],
       );
       // Focus the password field to simulate keyboard
       await tester.showKeyboard(find.byType(TextFormField).at(1));
@@ -353,8 +357,9 @@ void main() {
 }
 
 class _FakeAuthNotifier extends AuthStateNotifier {
-  _FakeAuthNotifier({bool authenticated = false, bool initial = false})
-      : super(_NoAuthService(), _NoPushService()) {
+  _FakeAuthNotifier(
+      {required Ref ref, bool authenticated = false, bool initial = false})
+      : super(_NoAuthService(), _NoPushService(), ref) {
     state = initial
         ? const AuthInitial()
         : authenticated
@@ -374,7 +379,7 @@ class _FakeAuthNotifier extends AuthStateNotifier {
   Future<void> login({required String email, required String password}) async {
     state = const AuthLoading();
     if (email == 'fail@example.invalid') {
-      state = const AuthError('Invalid credentials');
+      state = const AuthError(NetworkErrorCode.unauthorized);
       Future.delayed(const Duration(milliseconds: 100), () {
         if (state is AuthError) state = const Unauthenticated();
       });

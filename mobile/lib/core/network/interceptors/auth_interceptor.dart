@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yantrago/core/locale/locale_sync_provider.dart';
 import 'package:yantrago/core/storage/secure_storage.dart';
 
 /// Auth interceptor — injects JWT Bearer token into every request.
@@ -56,7 +57,20 @@ class AuthInterceptor extends Interceptor {
             }
           }
         } catch (_) {
-          // Refresh failed — clear tokens and let the error propagate
+          // Refresh failed — this is a CONFIRMED invalid session (the server
+          // rejected both tokens). Phase 5: clear account-scoped locale sync
+          // state BEFORE the storage wipe so no pending write survives with
+          // dangling identity, then clear tokens.
+          try {
+            final userId = await SecureStorage.getUserId();
+            final orgId = await SecureStorage.getOrgId();
+            await _ref.read(localeSyncProvider.notifier).accountCleared(
+                  userId: userId,
+                  organizationId: orgId,
+                );
+          } catch (_) {
+            // Never block the auth teardown on cleanup.
+          }
           await SecureStorage.clearAll();
         }
       }
