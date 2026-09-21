@@ -1,8 +1,10 @@
 // Unit tests for the localization foundation (Phase 1).
 //
-// These tests construct AppLocalizations('en') directly from the generated
+// These tests use lookupAppLocalizations(Locale('en')) from the generated
 // import (CI runs `flutter gen-l10n` before `flutter test`), so no delegates
 // or BuildContext are needed.
+
+import 'dart:ui' show Locale;
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +17,7 @@ import 'package:yantrago/core/utils/validators.dart';
 import 'package:yantrago/l10n/generated/app_localizations.dart';
 
 void main() {
-  final AppLocalizations l10n = AppLocalizations('en');
+  final AppLocalizations l10n = lookupAppLocalizations(const Locale('en'));
 
   group('Validators → ValidationErrorCode', () {
     test('email', () {

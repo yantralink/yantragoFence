@@ -16,7 +16,7 @@ import 'package:yantrago/features/notifications/widgets/alert_type_labels.dart';
 import 'package:yantrago/l10n/generated/app_localizations.dart';
 import 'package:yantrago/models/notification_inbox.dart';
 
-final AppLocalizations _l10n = AppLocalizations('en');
+final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
 
 NotificationInbox _notification({
   String id = 'n1',

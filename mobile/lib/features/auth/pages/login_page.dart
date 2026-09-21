@@ -72,6 +72,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     // Listen to auth state changes for error handling
     ref.listen<AuthState>(authStateProvider, (previous, next) {
       if (next is AuthError && mounted) {
@@ -81,7 +82,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     final ColorScheme colors = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
-    final l10n = context.l10n;
 
     // Map a validation code to its localized message inside the widget
     // layer — validators themselves stay context-free.

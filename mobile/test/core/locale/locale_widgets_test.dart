@@ -210,7 +210,7 @@ void main() {
         .localeChanged(locale: 'hi', userId: 'u1', organizationId: 'o1');
     await tester.pumpAndSettle();
 
-    final l10n = AppLocalizations('en');
+    final l10n = lookupAppLocalizations(const Locale('en'));
     expect(container.read(localeSyncProvider).status,
         LocaleSyncStatus.pending);
     expect(find.text(l10n.languageSyncPending), findsOneWidget);

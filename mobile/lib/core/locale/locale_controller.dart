@@ -154,8 +154,11 @@ class LocaleController extends Notifier<LocaleControllerState> {
   /// coalescing guard. Also drops the update when the notifier was disposed.
   void _updateFor(int revision, LocaleControllerState next) {
     if (revision != _writeRevision) return;
-    if (!mounted) return;
-    state = next;
+    try {
+      state = next;
+    } on StateError {
+      // Notifier element already disposed — drop the late update.
+    }
   }
 
   /// Registers intl date symbols for [code] (and always for English).

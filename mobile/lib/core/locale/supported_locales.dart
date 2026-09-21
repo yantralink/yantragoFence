@@ -15,4 +15,4 @@ const Map<String, String> kLanguageChoices = <String, String>{
 };
 
 /// The set of language codes the app accepts.
-const Set<String> kSupportedLanguageCodes = kLanguageChoices.keys;
+final Set<String> kSupportedLanguageCodes = kLanguageChoices.keys.toSet();

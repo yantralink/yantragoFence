@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:yantrago/core/auth/auth_service.dart';
 import 'package:yantrago/core/locale/locale_controller.dart';
@@ -127,7 +129,7 @@ class LocaleSyncController extends Notifier<LocaleSyncState> {
     if (kSupportedLanguageCodes.contains(resolved)) {
       state = LocaleSyncState(
           status: LocaleSyncStatus.pending, pendingLocale: resolved);
-      await localeChanged(resolved,
+      await localeChanged(locale: resolved,
           userId: userId, organizationId: organizationId);
     }
   }
