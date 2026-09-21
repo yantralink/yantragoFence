@@ -1,6 +1,7 @@
 package com.yantrago.api.dto.user;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class UpdateUserRequest {
@@ -15,7 +16,10 @@ public class UpdateUserRequest {
     private String phone;
     private Boolean isActive;
     private Boolean isLocked;
+    // Null = leave unchanged (admin path); canonical codes only — the DB
+    // CHECK constraint (V51) rejects anything else at the storage layer.
     @Size(max = 10)
+    @Pattern(regexp = "en|hi|mr", message = "preferredLocale must be one of: en, hi, mr")
     private String preferredLocale;
 
     public String getEmail() { return email; }

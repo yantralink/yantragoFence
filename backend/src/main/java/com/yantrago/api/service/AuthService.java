@@ -122,6 +122,30 @@ public class AuthService {
         return new LoginResponse(accessToken, refreshTokenStr, "Bearer", expiresIn, userInfo);
     }
 
+    /**
+     * Updates the authenticated user's preferred notification language.
+     *
+     * Per Multilingual Plan Phase 4: self-service only — the target user is
+     * always resolved from the JWT principal (never from the request body),
+     * so a user can change only their own preference. Validation of the
+     * locale code happens via Bean Validation on the request DTO; the
+     * database CHECK constraint (V51) is defense in depth. Idempotent:
+     * re-sending the current locale is a no-op.
+     */
+    @Transactional
+    public User updatePreferredLocale(UUID userId, String locale) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        String previous = user.getPreferredLocale();
+        if (locale.equals(previous)) {
+            return user; // idempotent — no write needed
+        }
+        user.setPreferredLocale(locale);
+        User saved = userRepository.save(user);
+        log.info("Preferred locale updated: userId={}, {} -> {}", userId, previous, locale);
+        return saved;
+    }
+
     @Transactional
     public TokenResponse refresh(RefreshTokenRequest request) {
         String rawToken = request.getRefreshToken();

@@ -36,8 +36,10 @@ public class User extends BaseEntity {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
-    @Column(name = "preferred_locale", nullable = false, length = 10)
-    private String preferredLocale = "en";
+    // Nullable per V51: NULL means the user has not chosen a language;
+    // notification rendering falls back to English.
+    @Column(name = "preferred_locale", length = 10)
+    private String preferredLocale;
 
     public java.util.UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(java.util.UUID organizationId) { this.organizationId = organizationId; }

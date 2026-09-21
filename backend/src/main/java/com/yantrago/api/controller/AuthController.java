@@ -10,6 +10,8 @@ import com.yantrago.api.repository.OrganizationRepository;
 import com.yantrago.api.repository.UserRepository;
 import com.yantrago.api.service.AuthService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -64,48 +66,28 @@ public class AuthController {
         UUID userId = (UUID) authentication.getPrincipal();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
-        String role = authentication.getAuthorities().stream()
-                .map(a -> a.getAuthority())
-                .filter(a -> a.startsWith("ROLE_"))
-                .map(a -> a.substring(5))
-                .findFirst()
-                .orElse("viewer");
-        String organizationName = null;
-        if (user.getOrganizationId() != null) {
-            organizationName = organizationRepository.findById(user.getOrganizationId())
-                    .map(Organization::getName)
-                    .orElse(null);
-        }
-        UserInfoResponse response = new UserInfoResponse(
-                user.getId().toString(),
-                user.getEmail(),
-                user.getFullName(),
-                user.getOrganizationId() != null ? user.getOrganizationId().toString() : null,
-                organizationName,
-                role,
-                user.getIsActive(),
-                user.getPreferredLocale(),
-                user.getPhone()
-        );
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(toUserInfoResponse(user, authentication));
     }
 
+    /**
+     * Self-service update of the authenticated user's preferred notification
+     * language. The target user comes from the JWT principal only — never
+     * from the request body. Validation errors are mapped to the standard
+     * error shape by GlobalExceptionHandler.
+     */
     @PutMapping("/me/locale")
     public ResponseEntity<UserInfoResponse> updateLocale(
-            @RequestBody UpdateLocaleRequest request,
+            @Valid @RequestBody UpdateLocaleRequest request,
             Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).build();
         }
         UUID userId = (UUID) authentication.getPrincipal();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
-        String locale = request.locale();
-        if (locale == null || (!locale.equals("en") && !locale.equals("hi") && !locale.equals("mr"))) {
-            return ResponseEntity.badRequest().build();
-        }
-        user.setPreferredLocale(locale);
-        userRepository.save(user);
+        User user = authService.updatePreferredLocale(userId, request.locale());
+        return ResponseEntity.ok(toUserInfoResponse(user, authentication));
+    }
+
+    private UserInfoResponse toUserInfoResponse(User user, Authentication authentication) {
         String role = authentication.getAuthorities().stream()
                 .map(a -> a.getAuthority())
                 .filter(a -> a.startsWith("ROLE_"))
@@ -118,7 +100,7 @@ public class AuthController {
                     .map(Organization::getName)
                     .orElse(null);
         }
-        UserInfoResponse response = new UserInfoResponse(
+        return new UserInfoResponse(
                 user.getId().toString(),
                 user.getEmail(),
                 user.getFullName(),
@@ -129,10 +111,16 @@ public class AuthController {
                 user.getPreferredLocale(),
                 user.getPhone()
         );
-        return ResponseEntity.ok(response);
     }
 
     public record UserInfoResponse(String id, String email, String fullName, String organizationId, String organizationName, String role, Boolean active, String preferredLocale, String phoneNumber) {}
 
-    public record UpdateLocaleRequest(String locale) {}
+    /**
+     * Canonical language codes only — region forms ("hi-IN"), blank and
+     * unknown values are rejected by Bean Validation (standard 400 shape).
+     */
+    public record UpdateLocaleRequest(
+            @NotBlank(message = "locale is required")
+            @Pattern(regexp = "en|hi|mr", message = "locale must be one of: en, hi, mr")
+            String locale) {}
 }
