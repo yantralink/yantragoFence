@@ -213,7 +213,7 @@ public class ConcoxV5Simulator {
         packet[idx++] = (byte) speed;
         // Course/status (course in lower 10 bits, GPS located bit, N/S, E/W)
         int courseStatus = course & 0x03FF;
-        courseStatus |= 0x1000; // North
+        courseStatus |= 0x1000; // North (bit 12 = 1 = North, BR05 convention)
         packet[idx++] = (byte) ((courseStatus >> 8) & 0xFF);
         packet[idx++] = (byte) (courseStatus & 0xFF);
         // CRC

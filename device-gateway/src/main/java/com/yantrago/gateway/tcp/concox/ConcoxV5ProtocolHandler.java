@@ -358,13 +358,22 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
             int course = courseStatus & 0x03FF; // 10 bits for course
             boolean gpsLocated = (courseStatus & 0x0400) != 0;
             boolean eastLongitude = (courseStatus & 0x0800) == 0; // 0 = East, 1 = West
-            boolean northLatitude = (courseStatus & 0x1000) != 0; // 1 = North, 0 = South (BR05 convention)
+            boolean northLatitude = (courseStatus & 0x1000) != 0; // 1 = North, 0 = South
 
             double latitude = latRaw / 1800000.0;
             double longitude = lngRaw / 1800000.0;
 
             if (!northLatitude) latitude = -latitude;
             if (!eastLongitude) longitude = -longitude;
+
+            // Sanity check: YantraGO machines are in India (northern hemisphere).
+            // Some devices intermittently report the wrong N/S bit, producing a negative
+            // latitude for a northern-hemisphere location. If the absolute latitude is
+            // within the Indian subcontinent range (8–37°) and longitude is within
+            // India's range (68–97°E), force latitude positive.
+            if (latitude < 0 && latitude > -40 && longitude > 60 && longitude < 100) {
+                latitude = -latitude;
+            }
 
             // LBS Data
             int mcc = ((packet[dataOffset + 18] & 0xFF) << 8) | (packet[dataOffset + 19] & 0xFF);
@@ -464,12 +473,21 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
             int course = courseStatus & 0x03FF;
             boolean gpsLocated = (courseStatus & 0x0400) != 0;
             boolean eastLongitude = (courseStatus & 0x0800) == 0;
-            boolean northLatitude = (courseStatus & 0x1000) != 0;
+            boolean northLatitude = (courseStatus & 0x1000) != 0; // 1 = North, 0 = South
 
             double latitude = latRaw / 1800000.0;
             double longitude = lngRaw / 1800000.0;
             if (!northLatitude) latitude = -latitude;
             if (!eastLongitude) longitude = -longitude;
+
+            // Sanity check: YantraGO machines are in India (northern hemisphere).
+            // Some devices intermittently report the wrong N/S bit, producing a negative
+            // latitude for a northern-hemisphere location. If the absolute latitude is
+            // within the Indian subcontinent range (8–37°) and longitude is within
+            // India's range (68–97°E), force latitude positive.
+            if (latitude < 0 && latitude > -40 && longitude > 60 && longitude < 100) {
+                latitude = -latitude;
+            }
 
             // LBS Data
             int mcc = ((packet[dataOffset + 19] & 0xFF) << 8) | (packet[dataOffset + 20] & 0xFF);
