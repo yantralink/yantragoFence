@@ -90,19 +90,30 @@ class ReverseGeocodingService {
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
     headers: {
-      'Accept-Language': 'en',
       'User-Agent': 'YantraGO-App/1.0',
     },
   ));
 
-  /// Cache: "lat,lon" (rounded to 4 decimal places) → ResolvedAddress
+  /// Cache: "<language>|lat,lon" (rounded to 4 decimal places) → address.
+  ///
+  /// The language code is part of the cache identity: a localized address
+  /// must never be served for a different UI language. Falls back to
+  /// English at the provider level when a language is unsupported.
   final Map<String, ResolvedAddress> _cache = {};
 
   /// Reverse geocodes lat/lon to a human-readable address.
+  ///
+  /// [languageCode] localizes street/place names via Nominatim's
+  /// Accept-Language header (Phase 3). Defaults to English.
   /// Returns null if geocoding fails.
-  Future<ResolvedAddress?> reverseGeocode(double lat, double lon) async {
+  Future<ResolvedAddress?> reverseGeocode(
+    double lat,
+    double lon, {
+    String languageCode = 'en',
+  }) async {
     // Round to ~11m precision for cache key
-    final cacheKey = '${lat.toStringAsFixed(4)},${lon.toStringAsFixed(4)}';
+    final cacheKey =
+        '$languageCode|${lat.toStringAsFixed(4)},${lon.toStringAsFixed(4)}';
     if (_cache.containsKey(cacheKey)) {
       return _cache[cacheKey];
     }
@@ -113,7 +124,9 @@ class ReverseGeocodingService {
         'lat': lat,
         'lon': lon,
         'addressdetails': 1,
-      });
+      }, options: Options(headers: {
+        'Accept-Language': languageCode,
+      }));
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data as Map<String, dynamic>;
