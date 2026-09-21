@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Telemetry model — device telemetry reading.
 ///
 /// Maps the backend `TelemetryLatestDto` response from
@@ -45,11 +47,8 @@ class Telemetry {
       gsmSignal: (json['gsmSignal'] as num?)?.toInt(),
       charging: json['charging'] as bool?,
       ignitionOn: json['ignitionOn'] as bool?,
-      timestamp: json['lastTelemetryAt'] != null
-          ? DateTime.tryParse(json['lastTelemetryAt'] as String)
-          : (json['timestamp'] != null
-              ? DateTime.tryParse(json['timestamp'] as String)
-              : null),
+      timestamp: AppDateUtils.parse(json['lastTelemetryAt'] as String?) ??
+          AppDateUtils.parse(json['timestamp'] as String?),
     );
   }
 

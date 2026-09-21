@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Command model — machine ON/OFF command lifecycle.
 ///
 /// Per AGENTS.md rule 5: never assume a command succeeded until ACK is received.
@@ -40,8 +42,8 @@ class Command {
       attemptCount: (json['attemptCount'] as num?)?.toInt() ?? 0,
       maxAttempts: (json['maxAttempts'] as num?)?.toInt() ?? 3,
       lastError: json['lastError'] as String?,
-      completedAt: json['completedAt'] != null ? DateTime.tryParse(json['completedAt'] as String) : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      completedAt: AppDateUtils.parse(json['completedAt'] as String?),
+      createdAt: AppDateUtils.parseStrict(json['createdAt'] as String),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yantrago/core/utils/date_utils.dart';
 import 'package:yantrago/models/telemetry.dart';
 
 void main() {
@@ -18,7 +19,8 @@ void main() {
       expect(telemetry.charging, true);
       expect(telemetry.gsmSignal, 3);
       expect(telemetry.voltage, isNull);
-      expect(telemetry.timestamp, DateTime.parse('2025-09-11T12:00:00'));
+      // Backend sends UTC without timezone suffix; AppDateUtils.parse converts to local
+      expect(telemetry.timestamp, AppDateUtils.parse('2025-09-11T12:00:00'));
     });
 
     test('handles all-null response (no heartbeat received)', () {

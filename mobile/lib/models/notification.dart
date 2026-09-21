@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Notification model — in-app notification.
 class AppNotification {
   final String id;
@@ -29,7 +31,7 @@ class AppNotification {
       type: json['type'] as String? ?? 'INFO',
       read: json['read'] as bool? ?? false,
       data: json['data'] as Map<String, dynamic>?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: AppDateUtils.parseStrict(json['createdAt'] as String),
     );
   }
 }

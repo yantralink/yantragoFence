@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Machine location model — current GPS location for a machine.
 ///
 /// Matches the backend LocationDto JSON response from
@@ -31,12 +33,8 @@ class MachineLocation {
       longitude: (json['longitude'] as num).toDouble(),
       speed: (json['speed'] as num?)?.toDouble(),
       course: (json['course'] as num?)?.toDouble(),
-      recordedAt: json['recordedAt'] != null
-          ? DateTime.tryParse(json['recordedAt'] as String)
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'] as String)
-          : null,
+      recordedAt: AppDateUtils.parse(json['recordedAt'] as String?),
+      updatedAt: AppDateUtils.parse(json['updatedAt'] as String?),
     );
   }
 }

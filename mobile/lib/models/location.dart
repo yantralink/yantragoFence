@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Location model — GPS location reading.
 class Location {
   final String id;
@@ -32,7 +34,7 @@ class Location {
       speed: (json['speed'] as num?)?.toDouble(),
       course: (json['course'] as num?)?.toDouble(),
       satellites: json['satellites'] as int?,
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp: AppDateUtils.parseStrict(json['timestamp'] as String),
     );
   }
 }

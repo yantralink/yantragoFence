@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Device state model — current state of a device (cached in Redis).
 class DeviceState {
   final String deviceId;
@@ -50,9 +52,7 @@ class DeviceState {
       longitude: (json['longitude'] as num?)?.toDouble(),
       speed: (json['speed'] as num?)?.toDouble(),
       satellites: json['satellites'] as int?,
-      lastUpdateAt: json['lastUpdateAt'] != null
-          ? DateTime.tryParse(json['lastUpdateAt'] as String)
-          : null,
+      lastUpdateAt: AppDateUtils.parse(json['lastUpdateAt'] as String?),
     );
   }
 }

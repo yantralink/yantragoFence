@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Notification preference — per-user channel and alert type preference.
 ///
 /// Matches the backend notification_preferences table (V10 + V24 migration).
@@ -31,8 +33,8 @@ class NotificationPreference {
       channel: json['channel'] as String,
       alertType: json['alertType'] as String?,
       isEnabled: json['isEnabled'] as bool? ?? true,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: AppDateUtils.parseStrict(json['createdAt'] as String),
+      updatedAt: AppDateUtils.parseStrict(json['updatedAt'] as String),
     );
   }
 

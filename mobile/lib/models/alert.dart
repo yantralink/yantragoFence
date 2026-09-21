@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Alert model — device alert notification.
 class Alert {
   final String id;
@@ -42,13 +44,9 @@ class Alert {
       severity: json['severity'] as String? ?? 'INFO',
       message: json['message'] as String? ?? '',
       acknowledged: json['isAcknowledged'] as bool? ?? false,
-      acknowledgedAt: json['acknowledgedAt'] != null
-          ? DateTime.tryParse(json['acknowledgedAt'] as String)
-          : null,
-      triggeredAt: json['triggeredAt'] != null
-          ? DateTime.tryParse(json['triggeredAt'] as String)
-          : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      acknowledgedAt: AppDateUtils.parse(json['acknowledgedAt'] as String?),
+      triggeredAt: AppDateUtils.parse(json['triggeredAt'] as String?),
+      createdAt: AppDateUtils.parseStrict(json['createdAt'] as String),
     );
   }
 

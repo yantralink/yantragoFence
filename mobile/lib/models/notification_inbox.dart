@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Notification inbox item — one per alert transition per recipient.
 ///
 /// Matches the backend notification_inbox table (V24 + V25 migration).
@@ -72,15 +74,13 @@ class NotificationInbox {
       locale: json['locale'] as String? ?? 'en',
       templateVersion: json['templateVersion'] as int? ?? 1,
       isRead: json['isRead'] as bool? ?? false,
-      readAt: json['readAt'] != null ? DateTime.tryParse(json['readAt'] as String) : null,
+      readAt: AppDateUtils.parse(json['readAt'] as String?),
       recipientCustomerId: json['recipientCustomerId'] as String?,
       recipientCustomerName: json['recipientCustomerName'] as String?,
       isAcknowledged: json['isAcknowledged'] as bool? ?? false,
-      acknowledgedAt: json['acknowledgedAt'] != null
-          ? DateTime.tryParse(json['acknowledgedAt'] as String)
-          : null,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      acknowledgedAt: AppDateUtils.parse(json['acknowledgedAt'] as String?),
+      createdAt: AppDateUtils.parseStrict(json['createdAt'] as String),
+      updatedAt: AppDateUtils.parseStrict(json['updatedAt'] as String),
     );
   }
 

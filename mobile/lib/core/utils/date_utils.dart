@@ -34,6 +34,7 @@ class AppDateUtils {
     final now = DateTime.now();
     final diff = now.difference(date);
 
+    if (diff.inSeconds < 0) return 'Just now';
     if (diff.inSeconds < 60) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
@@ -41,8 +42,34 @@ class AppDateUtils {
     return formatDate(date);
   }
 
+  /// Parses an ISO-8601 timestamp from the backend.
+  ///
+  /// The backend serializes LocalDateTime as ISO-8601 WITHOUT a timezone
+  /// suffix (e.g. "2026-09-21T15:18:05.123"). Dart's DateTime.tryParse
+  /// treats such strings as LOCAL time, but they are actually UTC.
+  /// This method detects missing timezone info and parses as UTC, then
+  /// converts to local time so that timeAgo/difference calculations work
+  /// correctly on the user's device.
   static DateTime? parse(String? isoString) {
     if (isoString == null || isoString.isEmpty) return null;
-    return DateTime.tryParse(isoString);
+    final trimmed = isoString.trim();
+    final hasTimezone = trimmed.endsWith('Z') ||
+        trimmed.endsWith('z') ||
+        RegExp(r'[+-]\d{2}:\d{2}$').hasMatch(trimmed);
+    if (!hasTimezone) {
+      final dt = DateTime.tryParse('${trimmed}Z');
+      return dt?.toLocal();
+    }
+    return DateTime.tryParse(trimmed)?.toLocal();
+  }
+
+  /// Strict parse — throws FormatException if the string is not a valid
+  /// ISO-8601 timestamp. Use for non-nullable timestamp fields.
+  static DateTime parseStrict(String isoString) {
+    final result = parse(isoString);
+    if (result == null) {
+      throw FormatException('Invalid ISO-8601 timestamp: $isoString');
+    }
+    return result;
   }
 }

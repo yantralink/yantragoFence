@@ -1,3 +1,5 @@
+import '../core/utils/date_utils.dart';
+
 /// Machine model — represents a fencing machine.
 class Machine {
   final String id;
@@ -67,24 +69,18 @@ class Machine {
       protocolType: json['protocolType'] as String?,
       firmwareVersion: json['firmwareVersion'] as String?,
       customerName: json['customerName'] as String?,
-      lastSeenAt: json['lastSeenAt'] != null
-          ? DateTime.tryParse(json['lastSeenAt'] as String)
-          : null,
+      lastSeenAt: AppDateUtils.parse(json['lastSeenAt'] as String?),
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
+          ? AppDateUtils.parseStrict(json['createdAt'] as String)
           : DateTime.now(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.tryParse(json['updatedAt'] as String)
-          : null,
+      updatedAt: AppDateUtils.parse(json['updatedAt'] as String?),
       // Latest telemetry from devices table (V33/V35 columns)
       batteryPct: (json['batteryPct'] as num?)?.toInt(),
       charging: json['charging'] as bool?,
       gsmSignal: (json['gsmSignal'] as num?)?.toInt(),
       voltage: (json['voltage'] as num?)?.toDouble(),
       ignitionOn: json['ignitionOn'] as bool?,
-      lastTelemetryAt: json['lastTelemetryAt'] != null
-          ? DateTime.tryParse(json['lastTelemetryAt'] as String)
-          : null,
+      lastTelemetryAt: AppDateUtils.parse(json['lastTelemetryAt'] as String?),
     );
   }
 
