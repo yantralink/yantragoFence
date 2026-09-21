@@ -1,6 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yantrago/core/auth/auth_service.dart';
 import 'package:yantrago/core/config/theme.dart';
+import 'package:yantrago/core/locale/locale_controller.dart';
+import 'package:yantrago/core/locale/locale_sync_provider.dart';
+import 'package:yantrago/features/auth/providers/auth_provider.dart';
+import 'package:yantrago/l10n/generated/app_localizations.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
 import 'package:yantrago/features/notifications/providers/notification_provider.dart';
 import 'package:yantrago/features/notifications/providers/notification_socket_provider.dart';
@@ -102,18 +110,54 @@ class _YantraGoAppState extends ConsumerState<YantraGoApp>
       // Phase 6: refresh command history on resume so a push that landed
       // while backgrounded is reflected in the UI.
       ref.invalidate(commandHistoryProvider);
+      // Phase 5: re-attempt a pending language sync after reconnecting.
+      ref.read(localeSyncProvider.notifier).resumed();
+      // Phase 5: converge with the server's last-accepted preference.
+      unawaited(_refreshLocaleFromServer());
+    }
+  }
+
+  /// Best-effort warm-resume locale convergence — never blocks or surfaces
+  /// errors; an unauthenticated or failing session simply keeps the current
+  /// device preference.
+  Future<void> _refreshLocaleFromServer() async {
+    try {
+      final user = ref.read(currentUserProvider);
+      if (user == null) return;
+      final fresh = await ref.read(authServiceProvider).getCurrentUser();
+      await ref.read(localeSyncProvider.notifier).serverLocaleRefreshed(
+            userId: fresh.id,
+            organizationId: fresh.organizationId,
+            serverPreferredLocale: fresh.preferredLocale,
+          );
+    } catch (_) {
+      // Offline or unauthenticated — keep the current locale.
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(goRouterProvider);
+    // Phase 3: effective UI locale (saved choice → device fallback → en).
+    // Watching the controller's state rebuilds MaterialApp on change; child
+    // screens rebuild via Localizations — navigation, form input, WebViews
+    // and pending commands are not reset by a locale switch.
+    final locale = ref.watch(localeControllerProvider).locale;
 
     return MaterialApp.router(
-      title: 'YantraGO',
+      // Brand name — always English.
+      title: 'YantraGO', // always-en: brand name
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
+      locale: locale,
+      localizationsDelegates: const <LocalizationsDelegate<Object>>[
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
     );
   }

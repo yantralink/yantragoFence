@@ -2,7 +2,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yantrago/app.dart';
+import 'package:yantrago/core/locale/locale_controller.dart';
 import 'package:yantrago/features/push/firebase_background_handler.dart';
 
 /// Entry point — initializes Firebase and runs the app.
@@ -23,5 +25,26 @@ Future<void> main() async {
     // Firebase configuration is optional — app runs without push.
   }
 
-  runApp(const ProviderScope(child: YantraGoApp()));
+  // Phase 3: preload device preferences BEFORE runApp so MaterialApp never
+  // renders with an unresolved locale. Bounded — a hung platform plugin must
+  // not block startup; on failure/timeout the app runs with the provider
+  // unoverridden (null), which falls back to device-locale resolution and
+  // reports language-save failures instead of crashing.
+  SharedPreferences? prefs;
+  try {
+    prefs = await SharedPreferences.getInstance()
+        .timeout(const Duration(seconds: 2));
+  } catch (_) {
+    prefs = null;
+  }
+
+  runApp(
+    ProviderScope(
+      overrides: <Override>[
+        if (prefs != null)
+          sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const YantraGoApp(),
+    ),
+  );
 }
