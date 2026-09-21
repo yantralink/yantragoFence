@@ -1,54 +1,72 @@
 /// Input validators — form field validation helpers.
+///
+/// Validators return a [ValidationErrorCode] instead of English text so
+/// the widget layer maps codes to localized messages (see
+/// validationErrorMessage in validation_error_messages.dart). A null
+/// return means the value is valid.
+enum ValidationErrorCode {
+  emailRequired,
+  emailInvalid,
+  passwordRequired,
+  passwordTooShort,
+  requiredField,
+  imeiRequired,
+  imeiInvalid,
+  imeiDigits,
+  phoneRequired,
+  phoneInvalid,
+}
+
 class Validators {
   Validators._();
 
-  static String? email(String? value) {
+  static ValidationErrorCode? email(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Email is required';
+      return ValidationErrorCode.emailRequired;
     }
     final regex = RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$');
     if (!regex.hasMatch(value)) {
-      return 'Enter a valid email address';
+      return ValidationErrorCode.emailInvalid;
     }
     return null;
   }
 
-  static String? password(String? value) {
+  static ValidationErrorCode? password(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Password is required';
+      return ValidationErrorCode.passwordRequired;
     }
     if (value.length < 6) {
-      return 'Password must be at least 6 characters';
+      return ValidationErrorCode.passwordTooShort;
     }
     return null;
   }
 
-  static String? required(String? value, {String fieldName = 'This field'}) {
+  static ValidationErrorCode? required(String? value) {
     if (value == null || value.isEmpty) {
-      return '$fieldName is required';
+      return ValidationErrorCode.requiredField;
     }
     return null;
   }
 
-  static String? imei(String? value) {
+  static ValidationErrorCode? imei(String? value) {
     if (value == null || value.isEmpty) {
-      return 'IMEI is required';
+      return ValidationErrorCode.imeiRequired;
     }
     if (value.length != 15) {
-      return 'IMEI must be 15 digits';
+      return ValidationErrorCode.imeiInvalid;
     }
     if (!RegExp(r'^\d+$').hasMatch(value)) {
-      return 'IMEI must contain only digits';
+      return ValidationErrorCode.imeiDigits;
     }
     return null;
   }
 
-  static String? phone(String? value) {
+  static ValidationErrorCode? phone(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Phone number is required';
+      return ValidationErrorCode.phoneRequired;
     }
     if (!RegExp(r'^\+?[\d\s-]{10,15}$').hasMatch(value)) {
-      return 'Enter a valid phone number';
+      return ValidationErrorCode.phoneInvalid;
     }
     return null;
   }
