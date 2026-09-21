@@ -1,0 +1,1144 @@
+{
+  "@@locale": "mr",
+  "navMachines": "मशीन्स",
+  "@navMachines": {
+    "description": "Bottom navigation tab label for the machines list."
+  },
+  "navAlerts": "अलर्ट",
+  "@navAlerts": {
+    "description": "Bottom navigation tab label for the alerts/inbox view."
+  },
+  "navProfile": "प्रोफाइल",
+  "@navProfile": {
+    "description": "Bottom navigation tab label for the profile page."
+  },
+  "errorPageNotFound": "पेज सापडले नाही",
+  "@errorPageNotFound": {
+    "description": "AppBar title shown when a route does not exist."
+  },
+  "errorMessagePageNotFound": "\"{route}\" हे पेज सापडले नाही.",
+  "@errorMessagePageNotFound": {
+    "description": "Body message on the router error page; {route} is the unmatched location.",
+    "placeholders": {
+      "route": {
+        "type": "String"
+      }
+    }
+  },
+  "errorSomethingWentWrong": "काहीतरी चूक झाली",
+  "@errorSomethingWentWrong": {
+    "description": "Generic title shown above error state messages."
+  },
+  "tryAgain": "पुन्हा प्रयत्न करा",
+  "@tryAgain": {
+    "description": "Button label to retry a failed action."
+  },
+  "refresh": "रिफ्रेश करा",
+  "@refresh": {
+    "description": "Button label to refresh data in an empty state."
+  },
+  "retry": "पुन्हा लोड करा",
+  "@retry": {
+    "description": "Button label to reload data after an error."
+  },
+  "metricUnavailable": "उपलब्ध नाही",
+  "@metricUnavailable": {
+    "description": "Value shown on a metric card when no reading exists."
+  },
+  "metricNoReport": "रिपोर्ट मिळाली नाही",
+  "@metricNoReport": {
+    "description": "Status line on a metric card when the device has not reported."
+  },
+  "metricStaleReading": "जुनी रीडिंग",
+  "@metricStaleReading": {
+    "description": "Status line on a metric card whose reading is not fresh."
+  },
+  "metricUnableToLoad": "लोड होऊ शकले नाही",
+  "@metricUnableToLoad": {
+    "description": "Status line on a metric card whose data failed to load."
+  },
+  "loadingMachines": "मशीन्स लोड होत आहेत…",
+  "@loadingMachines": {
+    "description": "Loading state message on the machine list page."
+  },
+  "machinesLoadFailed": "मशीन्स लोड होऊ शकल्या नाहीत. कृपया पुन्हा प्रयत्न करा.",
+  "@machinesLoadFailed": {
+    "description": "Error message on the machine list page."
+  },
+  "machinesEmptyTitle": "अजून कोणतीही मशीन वाटप झालेली नाही",
+  "@machinesEmptyTitle": {
+    "description": "Empty state title on the machine list page."
+  },
+  "machinesEmptyMessage": "तुमच्या संस्थेकडून मशीन्स वाटप झाल्यावर त्या येथे दिसतील.",
+  "@machinesEmptyMessage": {
+    "description": "Empty state body on the machine list page."
+  },
+  "machinesTitle": "मशीन्स",
+  "@machinesTitle": {
+    "description": "Section header title on the machine list page."
+  },
+  "machinesAssignedCount": "{n} वाटप केलेल्या",
+  "@machinesAssignedCount": {
+    "description": "Aside count of assigned machines in the section header.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "machineDetailsTitle": "मशीन तपशील",
+  "@machineDetailsTitle": {
+    "description": "AppBar title on the machine detail page while the machine loads."
+  },
+  "loadingMachine": "मशीन लोड होत आहे…",
+  "@loadingMachine": {
+    "description": "Loading state message on the machine detail page."
+  },
+  "machineLoadFailed": "ही मशीन लोड होऊ शकली नाही. कृपया पुन्हा प्रयत्न करा.",
+  "@machineLoadFailed": {
+    "description": "Error message on the machine detail page."
+  },
+  "machineStateConfirmationNote": "डिव्हाइसच्या पुष्टीनंतरच मशीनची स्थिती बदलते.",
+  "@machineStateConfirmationNote": {
+    "description": "Footnote on the machine detail page explaining ACK-gated state changes."
+  },
+  "machineLocationTitle": "मशीनचे स्थान",
+  "@machineLocationTitle": {
+    "description": "Title used on the map page and as the map marker popup label."
+  },
+  "loadingLocation": "स्थान लोड होत आहे…",
+  "@loadingLocation": {
+    "description": "Loading state message on the map page."
+  },
+  "noLocationData": "स्थानाचा डेटा उपलब्ध नाही",
+  "@noLocationData": {
+    "description": "Title/message when the machine has not reported GPS coordinates."
+  },
+  "noLocationMessage": "या मशीनने अजून तिचे GPS निर्देशांक रिपोर्ट केलेले नाहीत.",
+  "@noLocationMessage": {
+    "description": "Body message when no GPS data is available."
+  },
+  "resolvingAddress": "पत्ता शोधला जात आहे…",
+  "@resolvingAddress": {
+    "description": "Message shown while reverse geocoding is in progress."
+  },
+  "openInGoogleMaps": "Google Maps मध्ये उघडा",
+  "@openInGoogleMaps": {
+    "description": "Link label to open the coordinates in Google Maps."
+  },
+  "currentLocation": "वर्तमान स्थान",
+  "@currentLocation": {
+    "description": "Label above the reverse-geocoded address on the location card."
+  },
+  "updatedAt": "अपडेट: {time}",
+  "@updatedAt": {
+    "description": "Freshness line on the location card; {time} is a localized relative time.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "geofencePopupPrefix": "जियोफेन्स",
+  "@geofencePopupPrefix": {
+    "description": "Prefix of the map geofence circle popup; the radius in meters is appended after it."
+  },
+  "loadingDashboard": "डॅशबोर्ड लोड होत आहे…",
+  "@loadingDashboard": {
+    "description": "Loading state message on the dashboard page."
+  },
+  "dashboardLoadFailed": "डॅशबोर्ड लोड होऊ शकले नाही. कृपया पुन्हा प्रयत्न करा.",
+  "@dashboardLoadFailed": {
+    "description": "Error message on the dashboard page."
+  },
+  "farmOverview": "शेत आढावा",
+  "@farmOverview": {
+    "description": "Section header above the machine status summary card."
+  },
+  "telemetrySection": "टेलिमेट्री",
+  "@telemetrySection": {
+    "description": "Section header above the telemetry metric tiles."
+  },
+  "yourMachines": "तुमच्या मशीन्स",
+  "@yourMachines": {
+    "description": "Section header above the machine list on the dashboard."
+  },
+  "metricLabelChargingStatus": "चार्जिंग स्थिती",
+  "@metricLabelChargingStatus": {
+    "description": "Metric tile label for the internal battery charging status."
+  },
+  "metricLabelVoltage": "व्होल्टेज",
+  "@metricLabelVoltage": {
+    "description": "Metric tile label for the voltage reading."
+  },
+  "metricLabelDeviceSignal": "डिव्हाइस सिग्नल",
+  "@metricLabelDeviceSignal": {
+    "description": "Metric tile label for the GSM signal level."
+  },
+  "metricLabelFenceFault": "फेन्स फॉल्ट",
+  "@metricLabelFenceFault": {
+    "description": "Metric tile label for active fault count."
+  },
+  "metricLabelMachineStatus": "मशीनची स्थिती",
+  "@metricLabelMachineStatus": {
+    "description": "Metric tile label for engine (ACC) on/off status."
+  },
+  "metricLabelRecharge": "रिचार्ज",
+  "@metricLabelRecharge": {
+    "description": "Metric tile label for charging status."
+  },
+  "metricLabelBattery": "बॅटरी",
+  "@metricLabelBattery": {
+    "description": "Metric tile label for the external battery percentage."
+  },
+  "metricNoAccReport": "ACC रिपोर्ट नाही",
+  "@metricNoAccReport": {
+    "description": "Status line when the device has not reported ACC state."
+  },
+  "metricNoVoltageReport": "व्होल्टेज रिपोर्ट नाही",
+  "@metricNoVoltageReport": {
+    "description": "Status line when no external battery voltage report exists."
+  },
+  "statusLatestSample": "नवीनतम नमुना",
+  "@statusLatestSample": {
+    "description": "Status line indicating the shown value is the most recent sample."
+  },
+  "batteryCharging": "चार्ज होत आहे",
+  "@batteryCharging": {
+    "description": "Status line when external power is connected and the battery is charging."
+  },
+  "batteryOnBattery": "बॅटरीवर चालू",
+  "@batteryOnBattery": {
+    "description": "Status line when the device runs on its internal battery."
+  },
+  "batteryNotCharging": "चार्ज होत नाही",
+  "@batteryNotCharging": {
+    "description": "Value line on the recharge tile when charging is off."
+  },
+  "powerConnected": "वीज जोडली आहे",
+  "@powerConnected": {
+    "description": "Status line when external power is connected."
+  },
+  "signalStrong": "मजबूत सिग्नल",
+  "@signalStrong": {
+    "description": "GSM signal status for the strongest levels."
+  },
+  "signalWeak": "कमकुवत सिग्नल",
+  "@signalWeak": {
+    "description": "GSM signal status for mid levels."
+  },
+  "signalPoor": "खराब सिग्नल",
+  "@signalPoor": {
+    "description": "GSM signal status for the lowest non-zero level."
+  },
+  "signalNone": "सिग्नल नाही",
+  "@signalNone": {
+    "description": "GSM signal status when the level is zero."
+  },
+  "faultsNone": "कोणताही सक्रिय फॉल्ट नाही",
+  "@faultsNone": {
+    "description": "Fault tile status when there are zero active faults."
+  },
+  "faultsCount": "{n, plural, one{{n} सक्रिय फॉल्ट} other{{n} सक्रिय फॉल्ट}}",
+  "@faultsCount": {
+    "description": "Fault tile status with the number of active faults.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "batteryLow": "बॅटरी कमी",
+  "@batteryLow": {
+    "description": "External battery status when the charge estimate is very low."
+  },
+  "batteryFull": "बॅटरी पूर्ण",
+  "@batteryFull": {
+    "description": "External battery status when fully charged."
+  },
+  "batteryCriticalLow": "बॅटरी अत्यंत कमी",
+  "@batteryCriticalLow": {
+    "description": "External battery status in the critical zone."
+  },
+  "batteryLowLevel": "बॅटरी कमी",
+  "@batteryLowLevel": {
+    "description": "External battery status in the low zone."
+  },
+  "batteryLevel": "बॅटरी पातळी",
+  "@batteryLevel": {
+    "description": "External battery status in the normal zone."
+  },
+  "machineStatusTitle": "मशीनची स्थिती",
+  "@machineStatusTitle": {
+    "description": "Title of the dashboard machine status summary card."
+  },
+  "countTotal": "एकूण",
+  "@countTotal": {
+    "description": "Count label for all machines."
+  },
+  "countOnline": "ऑनलाइन",
+  "@countOnline": {
+    "description": "Count label for online machines."
+  },
+  "countFencing": "फेन्सिंग",
+  "@countFencing": {
+    "description": "Count label for machines with fencing on."
+  },
+  "countFault": "फॉल्ट",
+  "@countFault": {
+    "description": "Count label for machines reporting a fault."
+  },
+  "countOffline": "ऑफलाइन",
+  "@countOffline": {
+    "description": "Count label for offline machines."
+  },
+  "statusOnline": "ऑनलाइन",
+  "@statusOnline": {
+    "description": "Machine badge/label when the device is connected."
+  },
+  "statusFault": "फॉल्ट",
+  "@statusFault": {
+    "description": "Machine badge/label when the device reports a fault."
+  },
+  "statusInStock": "स्टॉकमध्ये",
+  "@statusInStock": {
+    "description": "Machine badge/label for machines not yet deployed."
+  },
+  "statusOffline": "ऑफलाइन",
+  "@statusOffline": {
+    "description": "Machine badge/label when the device is not connected."
+  },
+  "stateFaultReported": "फॉल्ट रिपोर्ट झाला",
+  "@stateFaultReported": {
+    "description": "Machine card state line when a fault is reported."
+  },
+  "stateFenceOnConfirmed": "फेन्स चालू · पुष्टी प्राप्त",
+  "@stateFenceOnConfirmed": {
+    "description": "Machine card state line when fencing is confirmed on."
+  },
+  "stateFenceOffConfirmed": "फेन्स बंद · पुष्टी प्राप्त",
+  "@stateFenceOffConfirmed": {
+    "description": "Machine card state line when fencing is confirmed off."
+  },
+  "stateUnknown": "स्थिती अज्ञात",
+  "@stateUnknown": {
+    "description": "Machine card state line when the state cannot be determined."
+  },
+  "machineRunning": "मशीन चालू आहे",
+  "@machineRunning": {
+    "description": "Chip label when the engine (ACC) is on."
+  },
+  "machineStopped": "मशीन बंद आहे",
+  "@machineStopped": {
+    "description": "Chip label when the engine (ACC) is off."
+  },
+  "fieldMachineId": "मशीन ID",
+  "@fieldMachineId": {
+    "description": "Label for the machine identifier field."
+  },
+  "fieldImei": "IMEI",
+  "@fieldImei": {
+    "description": "Label for the device IMEI field."
+  },
+  "lastSeenAt": "शेवटचे दिसले {time}",
+  "@lastSeenAt": {
+    "description": "Machine card freshness line; {time} is a localized relative time.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "justNow": "आत्ताच",
+  "@justNow": {
+    "description": "Relative time for anything under a minute old."
+  },
+  "minutesAgo": "{n, plural, other{{n} मिनिटांपूर्वी}}",
+  "@minutesAgo": {
+    "description": "Relative time in minutes.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{n, plural, other{{n} तासांपूर्वी}}",
+  "@hoursAgo": {
+    "description": "Relative time in hours.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{n, plural, other{{n} दिवसांपूर्वी}}",
+  "@daysAgo": {
+    "description": "Relative time in days.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "actionTurnOn": "चालू करा",
+  "@actionTurnOn": {
+    "description": "Button that requests a fencing-ON command."
+  },
+  "actionTurnOff": "बंद करा",
+  "@actionTurnOff": {
+    "description": "Button that requests a fencing-OFF command."
+  },
+  "commandSentAwaitingAck": "कमांड पाठवली आहे. डिव्हाइसच्या पुष्टीची वाट पाहिली जात आहे…",
+  "@commandSentAwaitingAck": {
+    "description": "Snackbar after a command is sent; never claims success."
+  },
+  "commandSendFailed": "कमांड पाठवण्यात अयशस्वी. कृपया पुन्हा प्रयत्न करा.",
+  "@commandSendFailed": {
+    "description": "Snackbar when a command could not be sent."
+  },
+  "commandTurnOn": "चालू करा",
+  "@commandTurnOn": {
+    "description": "Display label for an ON / FENCING_ON command type."
+  },
+  "commandTurnOff": "बंद करा",
+  "@commandTurnOff": {
+    "description": "Display label for an OFF / FENCING_OFF command type."
+  },
+  "statusPending": "प्रलंबित",
+  "@statusPending": {
+    "description": "Short command status badge while awaiting the device."
+  },
+  "statusAck": "पुष्टी",
+  "@statusAck": {
+    "description": "Short command status badge once acknowledged."
+  },
+  "statusDone": "पूर्ण",
+  "@statusDone": {
+    "description": "Command status badge for a completed command."
+  },
+  "statusFailed": "अयशस्वी",
+  "@statusFailed": {
+    "description": "Command status badge for a failed command."
+  },
+  "statusTimedOut": "वेळ संपली",
+  "@statusTimedOut": {
+    "description": "Command status badge for a command that timed out."
+  },
+  "statusAwaitingAck": "पुष्टी प्रतीक्षित",
+  "@statusAwaitingAck": {
+    "description": "Detailed command status while waiting for device acknowledgement."
+  },
+  "statusAcknowledged": "पुष्टी प्राप्त",
+  "@statusAcknowledged": {
+    "description": "Detailed command/alert status once acknowledged."
+  },
+  "statusUnacknowledged": "पुष्टी झालेली नाही",
+  "@statusUnacknowledged": {
+    "description": "Alert detail status when not yet acknowledged."
+  },
+  "statusResolved": "निकाली काढले",
+  "@statusResolved": {
+    "description": "Incident status badge once resolved."
+  },
+  "statusOpen": "खुले",
+  "@statusOpen": {
+    "description": "Incident status for an open incident."
+  },
+  "statusEscalated": "एस्कलेटेड",
+  "@statusEscalated": {
+    "description": "Incident status for an escalated incident."
+  },
+  "statusAcknowledgedByDevice": "डिव्हाइसने पुष्टी केली",
+  "@statusAcknowledgedByDevice": {
+    "description": "Incident status once the device acknowledged the command."
+  },
+  "statusCompleted": "पूर्ण झाले",
+  "@statusCompleted": {
+    "description": "Incident status for a completed command."
+  },
+  "statusActive": "सक्रिय",
+  "@statusActive": {
+    "description": "Generic enabled/active status label."
+  },
+  "statusInactive": "निष्क्रिय",
+  "@statusInactive": {
+    "description": "Account status label for a disabled user."
+  },
+  "notProtected": "संरक्षित नाही",
+  "@notProtected": {
+    "description": "Theft protection subtitle when protection is disabled."
+  },
+  "noRecentCommands": "अलीकडील कोणतीही कमांड नाही",
+  "@noRecentCommands": {
+    "description": "Empty state title for the command status card."
+  },
+  "commandsEmptyMessage": "या मशीनला पाठवलेल्या कमांड येथे दिसतील.",
+  "@commandsEmptyMessage": {
+    "description": "Empty state message for per-machine command lists."
+  },
+  "commandStatusSection": "कमांड स्थिती",
+  "@commandStatusSection": {
+    "description": "Header of the command status card."
+  },
+  "detailCommand": "कमांड",
+  "@detailCommand": {
+    "description": "Metadata row label for a command's type."
+  },
+  "detailStatus": "स्थिती",
+  "@detailStatus": {
+    "description": "Metadata row label for status."
+  },
+  "detailSent": "पाठवले",
+  "@detailSent": {
+    "description": "Metadata row label for when a command was sent."
+  },
+  "detailError": "त्रुटी",
+  "@detailError": {
+    "description": "Metadata row label for a command error."
+  },
+  "loadingCommands": "कमांड लोड होत आहेत…",
+  "@loadingCommands": {
+    "description": "Loading state message on the command history page."
+  },
+  "commandHistoryLoadFailed": "कमांड इतिहास लोड होऊ शकला नाही. कृपया पुन्हा प्रयत्न करा.",
+  "@commandHistoryLoadFailed": {
+    "description": "Error message on the command history page."
+  },
+  "noCommands": "अजून कोणतीही कमांड नाही",
+  "@noCommands": {
+    "description": "Empty state title on the command history page."
+  },
+  "commandsEmptyMessageAllMachines": "तुमच्या मशीन्सना पाठवलेल्या कमांड येथे दिसतील.",
+  "@commandsEmptyMessageAllMachines": {
+    "description": "Empty state message on the cross-machine command history page."
+  },
+  "loadMore": "अधिक लोड करा",
+  "@loadMore": {
+    "description": "Button to load the next page of command history."
+  },
+  "loadMoreFailed": "अधिक कमांड लोड होऊ शकल्या नाहीत",
+  "@loadMoreFailed": {
+    "description": "Snackbar when loading the next page of commands fails."
+  },
+  "activityHistoryTitle": "क्रियाकलाप इतिहास",
+  "@activityHistoryTitle": {
+    "description": "AppBar title of the activity history page."
+  },
+  "selectMachine": "एक मशीन निवडा",
+  "@selectMachine": {
+    "description": "Empty state title when no machine is selected for history."
+  },
+  "selectMachineMessage": "कमांड इतिहास पाहण्यासाठी एक मशीन निवडा.",
+  "@selectMachineMessage": {
+    "description": "Empty state message when no machine is selected for history."
+  },
+  "loadingHistory": "इतिहास लोड होत आहे…",
+  "@loadingHistory": {
+    "description": "Loading state message on the history page."
+  },
+  "historyLoadFailed": "इतिहास लोड होऊ शकला नाही. कृपया पुन्हा प्रयत्न करा.",
+  "@historyLoadFailed": {
+    "description": "Error message on the history page."
+  },
+  "noHistory": "क्रियाकलाप इतिहास नाही",
+  "@noHistory": {
+    "description": "Empty state title on the history page."
+  },
+  "historyEmptyMessage": "या मशीनला पाठवलेल्या कमांड येथे दिसतील.",
+  "@historyEmptyMessage": {
+    "description": "Empty state message on the machine history page."
+  },
+  "totalCount": "एकूण {n}",
+  "@totalCount": {
+    "description": "Aside count of items in a section header.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "alertsTitle": "अलर्ट",
+  "@alertsTitle": {
+    "description": "AppBar title of the alerts page."
+  },
+  "markAllRead": "सर्व वाचलेले म्हणून चिन्हांकित करा",
+  "@markAllRead": {
+    "description": "Tooltip for the mark-all-read action."
+  },
+  "filter": "फिल्टर",
+  "@filter": {
+    "description": "Tooltip for the inbox filter action."
+  },
+  "activeAlertsTab": "सक्रिय अलर्ट",
+  "@activeAlertsTab": {
+    "description": "Tab label and section header for active alerts."
+  },
+  "inboxTab": "इनबॉक्स",
+  "@inboxTab": {
+    "description": "Tab label for the notification inbox."
+  },
+  "loadingAlerts": "अलर्ट लोड होत आहेत…",
+  "@loadingAlerts": {
+    "description": "Loading state message for the active alerts list."
+  },
+  "alertsLoadFailed": "अलर्ट लोड होऊ शकले नाहीत. कृपया पुन्हा प्रयत्न करा.",
+  "@alertsLoadFailed": {
+    "description": "Error message for the active alerts list."
+  },
+  "noActiveAlerts": "कोणतेही सक्रिय अलर्ट नाही",
+  "@noActiveAlerts": {
+    "description": "Empty state title for the active alerts list."
+  },
+  "activeAlertsEmptyMessage": "डिव्हाइसचे सक्रिय अलर्ट येथे दिसतील.",
+  "@activeAlertsEmptyMessage": {
+    "description": "Empty state message for the active alerts list."
+  },
+  "alertDetailsTitle": "अलर्ट तपशील",
+  "@alertDetailsTitle": {
+    "description": "AppBar title of the alert detail page."
+  },
+  "loadingAlert": "अलर्ट लोड होत आहे…",
+  "@loadingAlert": {
+    "description": "Loading state message on the alert detail page."
+  },
+  "alertLoadFailed": "अलर्ट लोड होऊ शकला नाही. कृपया पुन्हा प्रयत्न करा.",
+  "@alertLoadFailed": {
+    "description": "Error message on the alert detail page."
+  },
+  "alertNotFound": "अलर्ट सापडला नाही",
+  "@alertNotFound": {
+    "description": "Empty state title when an alert does not exist."
+  },
+  "detailAlertType": "अलर्ट प्रकार",
+  "@detailAlertType": {
+    "description": "Metadata row label for the alert type."
+  },
+  "detailSeverity": "तीव्रता",
+  "@detailSeverity": {
+    "description": "Metadata row label for the alert severity."
+  },
+  "detailTriggered": "ट्रिगर झाले",
+  "@detailTriggered": {
+    "description": "Metadata row label for when the alert was triggered."
+  },
+  "detailCreated": "तयार केले",
+  "@detailCreated": {
+    "description": "Metadata row label for when the alert was created."
+  },
+  "detailAcknowledgedAt": "पुष्टीची वेळ",
+  "@detailAcknowledgedAt": {
+    "description": "Metadata row label for when the alert was acknowledged."
+  },
+  "viewMachine": "मशीन पहा",
+  "@viewMachine": {
+    "description": "Button to navigate to the machine linked to an alert."
+  },
+  "alertLowBattery": "बॅटरी कमी",
+  "@alertLowBattery": {
+    "description": "Alert type label for a low internal battery."
+  },
+  "alertVoltageDrop": "व्होल्टेज घट",
+  "@alertVoltageDrop": {
+    "description": "Alert type label for a voltage drop."
+  },
+  "alertGsmSignalLow": "GSM सिग्नल कमी",
+  "@alertGsmSignalLow": {
+    "description": "Alert type label for a weak GSM signal."
+  },
+  "alertDeviceOffline": "डिव्हाइस ऑफलाइन",
+  "@alertDeviceOffline": {
+    "description": "Alert type label when the device goes offline."
+  },
+  "alertSimExpiry": "SIM कालबाह्य",
+  "@alertSimExpiry": {
+    "description": "Alert type label for SIM validity expiry."
+  },
+  "alertExternalPowerLow": "बाह्य वीज कमी",
+  "@alertExternalPowerLow": {
+    "description": "Alert type label for low external power."
+  },
+  "alertExternalPowerCut": "बाह्य वीज तुटली",
+  "@alertExternalPowerCut": {
+    "description": "Alert type label when external power is cut."
+  },
+  "alertLowPowerShutdown": "कमी वीजेवर शटडाउन",
+  "@alertLowPowerShutdown": {
+    "description": "Alert type label for a low-power device shutdown."
+  },
+  "alertInternalBatteryLow": "अंतर्गत बॅटरी कमी",
+  "@alertInternalBatteryLow": {
+    "description": "Alert type label for a low internal battery."
+  },
+  "alertCommandAck": "कमांडची पुष्टी झाली",
+  "@alertCommandAck": {
+    "description": "Alert type label for a command acknowledgement."
+  },
+  "alertMachineOn": "मशीन चालू झाली",
+  "@alertMachineOn": {
+    "description": "Alert type label when the machine was turned on."
+  },
+  "alertMachineOff": "मशीन बंद झाली",
+  "@alertMachineOff": {
+    "description": "Alert type label when the machine was turned off."
+  },
+  "alertCommandFailed": "कमांड अयशस्वी",
+  "@alertCommandFailed": {
+    "description": "Alert type label for a failed command."
+  },
+  "alertMachineMoving": "मशीन हलत आहे",
+  "@alertMachineMoving": {
+    "description": "Alert type label for speed-based movement detection."
+  },
+  "alertGeofenceBreach": "जियोफेन्स उल्लंघन",
+  "@alertGeofenceBreach": {
+    "description": "Alert type label for a geofence breach."
+  },
+  "loadingNotifications": "सूचना लोड होत आहेत…",
+  "@loadingNotifications": {
+    "description": "Loading state message for the notification inbox."
+  },
+  "errorOffline": "तुम्ही ऑफलाइन आहात. कृपया तुमचे इंटरनेट कनेक्शन तपासा.",
+  "@errorOffline": {
+    "description": "Error message when the device has no connectivity."
+  },
+  "notificationsLoadFailed": "सूचना लोड होऊ शकल्या नाहीत. कृपया पुन्हा प्रयत्न करा.",
+  "@notificationsLoadFailed": {
+    "description": "Error message for the notification inbox."
+  },
+  "noNotifications": "कोणतीही सूचना नाही",
+  "@noNotifications": {
+    "description": "Empty state title for the notification inbox."
+  },
+  "noUnreadNotifications": "तुमच्या कोणत्याही न वाचलेल्या सूचना नाहीत.",
+  "@noUnreadNotifications": {
+    "description": "Empty state message when the unread filter is on."
+  },
+  "notificationsEmptyMessage": "डिव्हाइस अलर्ट ट्रिगर झाल्यावर येथे दिसतील.",
+  "@notificationsEmptyMessage": {
+    "description": "Empty state message for the notification inbox."
+  },
+  "headerUnread": "न वाचलेले",
+  "@headerUnread": {
+    "description": "Section header shown when the unread filter is active."
+  },
+  "filterAll": "सर्व",
+  "@filterAll": {
+    "description": "Filter chip / section header meaning all items."
+  },
+  "filterNotifications": "सूचना फिल्टर करा",
+  "@filterNotifications": {
+    "description": "Title of the inbox filter bottom sheet."
+  },
+  "unreadOnly": "फक्त न वाचलेल्या",
+  "@unreadOnly": {
+    "description": "Switch label to show only unread notifications."
+  },
+  "alertTypeFilterLabel": "अलर्ट प्रकार",
+  "@alertTypeFilterLabel": {
+    "description": "Label above the alert type filter chips."
+  },
+  "chipGsmSignal": "GSM सिग्नल",
+  "@chipGsmSignal": {
+    "description": "Filter chip for low GSM signal alerts."
+  },
+  "chipMachineOn": "मशीन चालू",
+  "@chipMachineOn": {
+    "description": "Filter chip for machine-on alerts."
+  },
+  "chipMachineOff": "मशीन बंद",
+  "@chipMachineOff": {
+    "description": "Filter chip for machine-off alerts."
+  },
+  "chipCommandAck": "कमांड पुष्टी",
+  "@chipCommandAck": {
+    "description": "Filter chip for command acknowledgement alerts."
+  },
+  "chipMovement": "हालचाल",
+  "@chipMovement": {
+    "description": "Filter chip for machine movement alerts."
+  },
+  "chipGeofence": "जियोफेन्स",
+  "@chipGeofence": {
+    "description": "Filter chip for geofence breach alerts."
+  },
+  "apply": "लागू करा",
+  "@apply": {
+    "description": "Button to apply the notification filters."
+  },
+  "previous": "मागील",
+  "@previous": {
+    "description": "Button to go to the previous inbox page."
+  },
+  "next": "पुढील",
+  "@next": {
+    "description": "Button to go to the next inbox page."
+  },
+  "pageOf": "पेज {page} / {totalPages}",
+  "@pageOf": {
+    "description": "Pagination indicator between the Previous/Next buttons.",
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "totalPages": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationTitle": "सूचना",
+  "@notificationTitle": {
+    "description": "AppBar title of the notification detail and preferences pages."
+  },
+  "loadingNotification": "सूचना लोड होत आहे…",
+  "@loadingNotification": {
+    "description": "Loading state message on the notification detail page."
+  },
+  "machineUnavailableTitle": "मशीन आता उपलब्ध नाही",
+  "@machineUnavailableTitle": {
+    "description": "Title shown when the linked machine is no longer assigned."
+  },
+  "machineUnavailableMessage": "ही मशीन आता उपलब्ध नाही. ती कदाचित दुसऱ्या वापरकर्त्याला वाटप केली गेली असेल.",
+  "@machineUnavailableMessage": {
+    "description": "Body shown when the linked machine is no longer assigned."
+  },
+  "notificationLoadFailed": "सूचना लोड होऊ शकली नाही. कृपया पुन्हा प्रयत्न करा.",
+  "@notificationLoadFailed": {
+    "description": "Error message on the notification detail page."
+  },
+  "notificationNotFound": "सूचना सापडली नाही",
+  "@notificationNotFound": {
+    "description": "Empty state title when a notification does not exist."
+  },
+  "detailObservedValue": "निरीक्षण केलेले मूल्य",
+  "@detailObservedValue": {
+    "description": "Metadata row label for the observed reading."
+  },
+  "detailReceived": "प्राप्त",
+  "@detailReceived": {
+    "description": "Metadata row label for when the notification arrived."
+  },
+  "detailRead": "वाचले",
+  "@detailRead": {
+    "description": "Metadata row label for when the notification was read."
+  },
+  "viewMachineDetails": "मशीन तपशील पहा",
+  "@viewMachineDetails": {
+    "description": "Row that navigates to the machine linked to a notification."
+  },
+  "acknowledge": "पुष्टी करा",
+  "@acknowledge": {
+    "description": "Button to acknowledge a notification."
+  },
+  "markAsRead": "वाचलेले म्हणून चिन्हांकित करा",
+  "@markAsRead": {
+    "description": "Button to mark a notification as read."
+  },
+  "loadingPreferences": "प्राधान्ये लोड होत आहेत…",
+  "@loadingPreferences": {
+    "description": "Loading state message on the notification preferences page."
+  },
+  "preferencesLoadFailed": "प्राधान्ये लोड होऊ शकली नाहीत. कृपया पुन्हा प्रयत्न करा.",
+  "@preferencesLoadFailed": {
+    "description": "Error message on the notification preferences page."
+  },
+  "noPreferences": "कोणतीही प्राधान्ये नाहीत",
+  "@noPreferences": {
+    "description": "Empty state title on the notification preferences page."
+  },
+  "preferencesEmptyMessage": "तुम्ही कोणतीही सूचना प्राधान्ये कॉन्फिगर केलेली नाहीत.",
+  "@preferencesEmptyMessage": {
+    "description": "Empty state message on the notification preferences page."
+  },
+  "channelsSection": "चॅनेल",
+  "@channelsSection": {
+    "description": "Section header above the notification channel list."
+  },
+  "allAlertTypes": "सर्व अलर्ट प्रकार",
+  "@allAlertTypes": {
+    "description": "Subtitle for a preference that applies to every alert type."
+  },
+  "channelPush": "पुश सूचना",
+  "@channelPush": {
+    "description": "Display label for the PUSH notification channel."
+  },
+  "channelEmail": "ईमेल",
+  "@channelEmail": {
+    "description": "Display label for the EMAIL notification channel."
+  },
+  "channelSms": "SMS",
+  "@channelSms": {
+    "description": "Display label for the SMS notification channel."
+  },
+  "channelWhatsapp": "WhatsApp",
+  "@channelWhatsapp": {
+    "description": "Display label for the WHATSAPP notification channel."
+  },
+  "profileTitle": "प्रोफाइल",
+  "@profileTitle": {
+    "description": "AppBar title of the profile page."
+  },
+  "notSignedIn": "साइन इन केलेले नाही",
+  "@notSignedIn": {
+    "description": "Empty state title when the profile has no signed-in user."
+  },
+  "pleaseLogIn": "तुमची प्रोफाइल पाहण्यासाठी कृपया लॉग इन करा.",
+  "@pleaseLogIn": {
+    "description": "Empty state message when the profile has no signed-in user."
+  },
+  "settingsSection": "सेटिंग्ज",
+  "@settingsSection": {
+    "description": "Section header above the profile settings menu."
+  },
+  "accountDetails": "खाते तपशील",
+  "@accountDetails": {
+    "description": "Menu entry for the account details page."
+  },
+  "languageSettings": "भाषा सेटिंग्ज",
+  "@languageSettings": {
+    "description": "Menu entry for the language settings page."
+  },
+  "theftProtectionSettings": "चोरीरोधक सुरक्षा सेटिंग्ज",
+  "@theftProtectionSettings": {
+    "description": "Menu entry for the theft protection settings page."
+  },
+  "commandHistory": "कमांड इतिहास",
+  "@commandHistory": {
+    "description": "Menu entry and AppBar title of the command history page."
+  },
+  "logOut": "लॉग आउट करा",
+  "@logOut": {
+    "description": "Destructive button to sign out."
+  },
+  "fieldName": "नाव",
+  "@fieldName": {
+    "description": "Metadata row label for the user's full name."
+  },
+  "fieldEmail": "ईमेल",
+  "@fieldEmail": {
+    "description": "Metadata row label for the user's email."
+  },
+  "fieldRole": "भूमिका",
+  "@fieldRole": {
+    "description": "Metadata row label for the user's role."
+  },
+  "fieldOrganization": "संस्था",
+  "@fieldOrganization": {
+    "description": "Metadata row label for the user's organization."
+  },
+  "fieldPhone": "फोन",
+  "@fieldPhone": {
+    "description": "Metadata row label for the user's phone number."
+  },
+  "languageNote": "सूचना तुम्ही निवडलेल्या भाषेत पाठवल्या जातील.",
+  "@languageNote": {
+    "description": "Hint under the language selection list."
+  },
+  "languageSaveFailed": "या डिव्हाइसवर भाषा जतन करता आली नाही. तुमची निवड या सेशनसाठी लागू आहे.",
+  "@languageSaveFailed": {
+    "description": "Shown when persisting the language choice to device storage fails; the user can retry."
+  },
+  "languageSyncPending": "अ‍ॅपची भाषा बदलली आहे. सूचना भाषा अजून सिंक झालेली नाही.",
+  "@languageSyncPending": {"description": "Shown when the notification-language preference is not yet confirmed by the server; user can retry."},
+
+  "cancel": "रद्द करा",
+  "@cancel": {
+    "description": "Button that discards changes and closes the page."
+  },
+  "save": "सेव्ह करा",
+  "@save": {
+    "description": "Button that persists changes."
+  },
+  "theftProtection": "चोरीरोधक सुरक्षा",
+  "@theftProtection": {
+    "description": "Title of the theft protection card and panel."
+  },
+  "loadingTheftProtection": "चोरीरोधक सुरक्षा लोड होत आहे…",
+  "@loadingTheftProtection": {
+    "description": "Loading state message of the theft protection card."
+  },
+  "theftProtectionLoadFailed": "चोरीरोधक सुरक्षेची स्थिती लोड होऊ शकली नाही",
+  "@theftProtectionLoadFailed": {
+    "description": "Error message of the theft protection card."
+  },
+  "geofenceRadius": "जियोफेन्स त्रिज्या",
+  "@geofenceRadius": {
+    "description": "Label for the geofence radius setting."
+  },
+  "speedAlert": "स्पीड अलर्ट",
+  "@speedAlert": {
+    "description": "Label for the speed threshold setting."
+  },
+  "speedAlertThreshold": "मशीन {n} km/h पेक्षा जास्त वेगाने गेल्यास अलर्ट मिळेल",
+  "@speedAlertThreshold": {
+    "description": "Helper text under the speed threshold slider; unit stays as-is.",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "theftProtectionDefaultsNote": "तुम्ही नवीन मशीनवर चोरीरोधक सुरक्षा चालू केल्यास हा मूलभूत सेटिंग लागू होतो. प्रत्येक मशीन वेगळी देखील समायोजित करू शकता.",
+  "@theftProtectionDefaultsNote": {
+    "description": "Explanation of customer-level theft protection defaults."
+  },
+  "settingsSaved": "सेटिंग्ज सेव्ह झाल्या",
+  "@settingsSaved": {
+    "description": "Snackbar after theft protection settings are saved."
+  },
+  "settingsLoadFailed": "सेटिंग्ज लोड होऊ शकल्या नाहीत",
+  "@settingsLoadFailed": {
+    "description": "Error message on the theft protection settings page."
+  },
+  "speedAlertActive": "स्पीड अलर्ट सक्रिय आहे",
+  "@speedAlertActive": {
+    "description": "Status line when speed alerting is enabled."
+  },
+  "tapToViewOnMap": "नकाशावर पाहण्यासाठी टॅप करा",
+  "@tapToViewOnMap": {
+    "description": "Hint that tapping the card opens the map."
+  },
+  "theftProtectionHint": "शेतात स्थापना केल्यानंतर हे चालू करा, म्हणजे वाहतुकीदरम्यान चुकीचे अलर्ट येणार नाहीत.",
+  "@theftProtectionHint": {
+    "description": "Hint under the theft protection toggle when disabled."
+  },
+  "settingsTitle": "सेटिंग्ज",
+  "@settingsTitle": {
+    "description": "AppBar title of the settings page."
+  },
+  "connectionSection": "कनेक्शन",
+  "@connectionSection": {
+    "description": "Section header for connection settings."
+  },
+  "apiUrlLabel": "API URL",
+  "@apiUrlLabel": {
+    "description": "Metadata row label for the API base URL."
+  },
+  "notificationsSection": "सूचना",
+  "@notificationsSection": {
+    "description": "Section header for notification settings."
+  },
+  "pushNotifications": "पुश सूचना",
+  "@pushNotifications": {
+    "description": "Toggle title for push notifications."
+  },
+  "pushNotificationsSubtitle": "अलर्ट आणि कमांड अपडेट मिळवा",
+  "@pushNotificationsSubtitle": {
+    "description": "Toggle subtitle for push notifications."
+  },
+  "aboutSection": "ॲपबद्दल",
+  "@aboutSection": {
+    "description": "Section header for app information."
+  },
+  "aboutAppLabel": "ॲप",
+  "@aboutAppLabel": {
+    "description": "Metadata row label for the app name."
+  },
+  "versionLabel": "आवृत्ती",
+  "@versionLabel": {
+    "description": "Metadata row label for the app version."
+  },
+  "splashTagline": "मशीन व्यवस्थापन व्यासपीठ",
+  "@splashTagline": {
+    "description": "Tagline under the app name on login and splash pages."
+  },
+  "loginIdentifierLabel": "ईमेल किंवा फोन",
+  "@loginIdentifierLabel": {
+    "description": "Label of the login identifier field."
+  },
+  "loginIdentifierHint": "admin@yantrago.com किंवा +91 98765 43210",
+  "@loginIdentifierHint": {
+    "description": "Hint showing example identifier formats."
+  },
+  "loginPasswordLabel": "पासवर्ड",
+  "@loginPasswordLabel": {
+    "description": "Label of the password field."
+  },
+  "loginButton": "लॉगिन करा",
+  "@loginButton": {
+    "description": "Button that submits the login form."
+  },
+  "loginHint": "ग्राहक: फोन नंबरने लॉग इन करा.\nॲडमिन: ईमेलने लॉग इन करा.",
+  "@loginHint": {
+    "description": "Multi-line help under the login button."
+  },
+  "validationEmailRequired": "ईमेल आवश्यक आहे",
+  "@validationEmailRequired": {
+    "description": "Validation message when the email field is empty."
+  },
+  "validationEmailInvalid": "वैध ईमेल पत्ता टाका",
+  "@validationEmailInvalid": {
+    "description": "Validation message for a malformed email."
+  },
+  "validationPasswordRequired": "पासवर्ड आवश्यक आहे",
+  "@validationPasswordRequired": {
+    "description": "Validation message when the password field is empty."
+  },
+  "validationPasswordTooShort": "पासवर्ड किमान 6 अक्षरांचा असावा",
+  "@validationPasswordTooShort": {
+    "description": "Validation message for a too-short password."
+  },
+  "validationRequiredField": "हे फील्ड आवश्यक आहे",
+  "@validationRequiredField": {
+    "description": "Generic validation message for an empty required field."
+  },
+  "validationImeiRequired": "IMEI आवश्यक आहे",
+  "@validationImeiRequired": {
+    "description": "Validation message when the IMEI field is empty."
+  },
+  "validationImeiInvalid": "IMEI 15 अंकांचा असावा",
+  "@validationImeiInvalid": {
+    "description": "Validation message when the IMEI length is wrong."
+  },
+  "validationImeiDigits": "IMEI मध्ये फक्त अंक असावेत",
+  "@validationImeiDigits": {
+    "description": "Validation message when the IMEI contains non-digits."
+  },
+  "validationPhoneRequired": "फोन नंबर आवश्यक आहे",
+  "@validationPhoneRequired": {
+    "description": "Validation message when the phone field is empty."
+  },
+  "validationPhoneInvalid": "वैध फोन नंबर टाका",
+  "@validationPhoneInvalid": {
+    "description": "Validation message for a malformed phone number."
+  },
+  "errorConnectionTimeout": "कनेक्शनची वेळ संपली. कृपया तुमचे नेटवर्क तपासा.",
+  "@errorConnectionTimeout": {
+    "description": "Network error message for timeouts."
+  },
+  "errorConnectionError": "सर्व्हरशी कनेक्ट होऊ शकत नाही. कृपया तुमचे इंटरनेट तपासा.",
+  "@errorConnectionError": {
+    "description": "Network error message when the server is unreachable."
+  },
+  "errorUnauthorized": "अनधिकृत. कृपया पुन्हा लॉग इन करा.",
+  "@errorUnauthorized": {
+    "description": "Network error message for HTTP 401."
+  },
+  "errorForbidden": "तुम्हाला ही क्रिया करण्याची परवानगी नाही.",
+  "@errorForbidden": {
+    "description": "Network error message for HTTP 403."
+  },
+  "errorNotFound": "संसाधन सापडले नाही.",
+  "@errorNotFound": {
+    "description": "Network error message for HTTP 404."
+  },
+  "errorServerError": "सर्व्हर त्रुटी. कृपया नंतर पुन्हा प्रयत्न करा.",
+  "@errorServerError": {
+    "description": "Network error message for HTTP 5xx."
+  },
+  "errorRequestFailed": "विनंती अयशस्वी झाली.",
+  "@errorRequestFailed": {
+    "description": "Generic network error for other HTTP failures."
+  },
+  "errorCancelled": "विनंती रद्द करण्यात आली.",
+  "@errorCancelled": {
+    "description": "Network error message when a request is cancelled."
+  },
+  "errorBadCertificate": "SSL प्रमाणपत्र त्रुटी.",
+  "@errorBadCertificate": {
+    "description": "Network error message for TLS certificate failures."
+  },
+  "errorUnexpected": "एक अनपेक्षित त्रुटी आली.",
+  "@errorUnexpected": {
+    "description": "Fallback network error message for unknown failures."
+  }
+}
