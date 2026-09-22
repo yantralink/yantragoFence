@@ -75,6 +75,7 @@ class NotificationSocketController
     _client = StompClient(
       config: StompConfig(
         url: wsUrl,
+        useSockJS: true,
         // Keep Authorization header as fallback for non-SockJS clients
         stompConnectHeaders: {'Authorization': 'Bearer $token'},
         webSocketConnectHeaders: {'Authorization': 'Bearer $token'},

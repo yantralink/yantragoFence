@@ -144,7 +144,7 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              last.commandType == 'FENCING_ON'
+              (last.commandType == 'FENCING_ON' || last.commandType == 'ON')
                   ? context.l10n.fencingTurnedOn
                   : context.l10n.fencingTurnedOff,
             ),
@@ -180,7 +180,9 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
     final bool isBusy = _sending || (cmdState.pending && cmdForThisMachine != null);
     final bool? turningOn;
     if (isBusy && cmdForThisMachine != null) {
-      turningOn = cmdForThisMachine.commandType == 'FENCING_ON';
+      // Backend normalizes FENCING_ON -> ON, FENCING_OFF -> OFF
+      turningOn = cmdForThisMachine.commandType == 'FENCING_ON' ||
+          cmdForThisMachine.commandType == 'ON';
     } else {
       turningOn = null;
     }
