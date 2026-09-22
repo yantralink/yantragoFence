@@ -153,6 +153,7 @@ void main() {
       expect(alertTypeLabel(_l10n, 'GSM_SIGNAL_LOW'), 'Low GSM Signal');
       expect(alertTypeLabel(_l10n, 'DEVICE_OFFLINE'), 'Device Offline');
       expect(alertTypeLabel(_l10n, 'SIM_EXPIRY'), 'SIM Expiry');
+      expect(alertTypeLabel(_l10n, 'ACC_ON'), 'Ignition On / Off');
       expect(alertTypeLabel(_l10n, 'CUSTOM_TYPE'), 'CUSTOM TYPE');
     });
 

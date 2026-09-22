@@ -45,13 +45,16 @@ public class NotificationFeatureSwitches {
     // for relay ON/OFF command lifecycle events.
     // Phase 9: added MACHINE_MOVING for speed-based theft detection.
     // Phase 10: added GEOFENCE_BREACH for geo-fence breach detection.
+    // ACC_ON: ignition on/off state pair from BR05 alarm codes 0xFE (on) / 0xFF (off).
+    // A single ACC_ON alert type is used — OPEN = ignition on, RESOLVED = ignition off.
     private static final Set<String> ALL_FAMILIES = Set.of(
             "LOW_BATTERY", "VOLTAGE_DROP", "GSM_SIGNAL_LOW",
             "DEVICE_OFFLINE", "SIM_EXPIRY",
             "EXTERNAL_POWER_LOW", "EXTERNAL_POWER_CUT",
             "LOW_POWER_SHUTDOWN", "INTERNAL_BATTERY_LOW",
             "MACHINE_ON", "MACHINE_OFF", "COMMAND_ACK", "COMMAND_FAILED",
-            "MACHINE_MOVING", "GEOFENCE_BREACH"
+            "MACHINE_MOVING", "GEOFENCE_BREACH",
+            "ACC_ON"
     );
 
     public NotificationFeatureSwitches(

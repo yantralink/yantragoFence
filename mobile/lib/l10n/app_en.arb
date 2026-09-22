@@ -346,6 +346,8 @@
   "@alertMachineMoving": {"description": "Alert type label for speed-based movement detection."},
   "alertGeofenceBreach": "Geo-Fence Breach",
   "@alertGeofenceBreach": {"description": "Alert type label for a geofence breach."},
+  "alertAccOn": "Ignition On / Off",
+  "@alertAccOn": {"description": "Alert type label for ignition on/off events (engine start/stop)."},
 
   "loadingNotifications": "Loading notifications…",
   "@loadingNotifications": {"description": "Loading state message for the notification inbox."},

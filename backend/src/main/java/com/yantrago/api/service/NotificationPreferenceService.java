@@ -211,6 +211,11 @@ public class NotificationPreferenceService {
                 // Phase 10: geo-fence breach alert for theft detection
                 new EventCatalogDto("GEOFENCE_BREACH", "Geo-Fence Breach",
                         "Triggered when the machine moves outside its defined geo-fence boundary — possible theft.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                // ACC_ON: ignition on/off state pair from BR05 alarm codes 0xFE / 0xFF.
+                // A single alert type — OPEN = ignition on, RESOLVED = ignition off.
+                new EventCatalogDto("ACC_ON", "Ignition On / Off",
+                        "Triggered when the machine ignition turns on (OPEN) or off (RESOLVED) — engine start/stop events from BR05 alarm codes 0xFE / 0xFF.",
                         List.of("PUSH", "EMAIL", "SMS", "IN_APP"))
         );
     }

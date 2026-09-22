@@ -693,6 +693,10 @@
   "@alertGeofenceBreach": {
     "description": "Alert type label for a geofence breach."
   },
+  "alertAccOn": "इग्निशन ऑन / ऑफ",
+  "@alertAccOn": {
+    "description": "Alert type label for ignition on/off events (engine start/stop)."
+  },
   "loadingNotifications": "सूचना लोड होत आहेत…",
   "@loadingNotifications": {
     "description": "Loading state message for the notification inbox."

@@ -38,6 +38,8 @@ String alertTypeLabel(AppLocalizations l10n, String alertType) {
       return l10n.alertMachineMoving;
     case 'GEOFENCE_BREACH':
       return l10n.alertGeofenceBreach;
+    case 'ACC_ON':
+      return l10n.alertAccOn;
     default:
       return alertType.replaceAll('_', ' ');
   }

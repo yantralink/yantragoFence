@@ -190,6 +190,8 @@ class NotificationCard extends StatelessWidget {
         return Icons.directions_run;
       case 'GEOFENCE_BREACH':
         return Icons.location_off_outlined;
+      case 'ACC_ON':
+        return Icons.key;
       default:
         return Icons.notifications_outlined;
     }

@@ -79,10 +79,11 @@ class NotificationFeatureSwitchesTest {
     void getEnabledFamilies_wildcard() {
         NotificationFeatureSwitches switches = new NotificationFeatureSwitches(true, "*");
 
-        assertEquals(9, switches.getEnabledFamilies().size());
+        assertEquals(16, switches.getEnabledFamilies().size());
         assertTrue(switches.getEnabledFamilies().contains("LOW_BATTERY"));
         assertTrue(switches.getEnabledFamilies().contains("EXTERNAL_POWER_LOW"));
         assertTrue(switches.getEnabledFamilies().contains("INTERNAL_BATTERY_LOW"));
+        assertTrue(switches.getEnabledFamilies().contains("ACC_ON"));
     }
 
     @Test
@@ -116,5 +117,32 @@ class NotificationFeatureSwitchesTest {
         assertEquals(2, switches.getEnabledFamilies().size());
         assertTrue(switches.getEnabledFamilies().contains("LOW_BATTERY"));
         assertTrue(switches.getEnabledFamilies().contains("DEVICE_OFFLINE"));
+    }
+
+    @Test
+    @DisplayName("ACC_ON ignition alert type is enabled by default")
+    void accOn_enabledByDefault() {
+        NotificationFeatureSwitches switches = new NotificationFeatureSwitches(true, "");
+
+        assertTrue(switches.isEventFamilyEnabled("ACC_ON"));
+        assertTrue(switches.getEnabledFamilies().contains("ACC_ON"));
+    }
+
+    @Test
+    @DisplayName("ACC_ON ignition alert type can be filtered")
+    void accOn_canBeFiltered() {
+        NotificationFeatureSwitches switches = new NotificationFeatureSwitches(true, "ACC_ON");
+
+        assertTrue(switches.isEventFamilyEnabled("ACC_ON"));
+        assertFalse(switches.isEventFamilyEnabled("LOW_BATTERY"));
+        assertFalse(switches.isEventFamilyEnabled("DEVICE_OFFLINE"));
+    }
+
+    @Test
+    @DisplayName("ACC_ON is excluded when not in the enabled list")
+    void accOn_excludedWhenNotListed() {
+        NotificationFeatureSwitches switches = new NotificationFeatureSwitches(true, "LOW_BATTERY,DEVICE_OFFLINE");
+
+        assertFalse(switches.isEventFamilyEnabled("ACC_ON"));
     }
 }
