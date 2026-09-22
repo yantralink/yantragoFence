@@ -57,6 +57,14 @@ class CommandNotifier extends StateNotifier<CommandState> {
   void seedLastCommand(Command c) {
     state = CommandState(lastCommand: c, pending: !c.isTerminal);
   }
+
+  /// Clears the pending flag so the UI stops showing a busy state.
+  /// Used as a safety timeout when no ACK arrives via the WebSocket.
+  void clearPending() {
+    final last = state.lastCommand;
+    if (last == null) return;
+    state = CommandState(lastCommand: last, pending: false);
+  }
 }
 
 class CommandState {

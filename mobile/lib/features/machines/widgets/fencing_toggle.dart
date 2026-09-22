@@ -69,8 +69,11 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
   void _startTimeout() {
     _timeoutTimer?.cancel();
     _timeoutTimer = Timer(_commandTimeout, () {
-      if (mounted && _sending) {
+      if (mounted) {
+        // Clear both the local sending flag and the command provider's
+        // pending state so the spinner stops and the user can retry.
         setState(() => _sending = false);
+        ref.read(commandProvider.notifier).clearPending();
         final ColorScheme colors = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -105,6 +108,7 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
       _cancelTimeout();
       if (mounted) {
         setState(() => _sending = false);
+        ref.read(commandProvider.notifier).clearPending();
         final ColorScheme colors = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -113,9 +117,10 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _sending = false);
     }
+    // NOTE: no finally block — _sending stays true until ACK, failure, or
+    // the 30s timeout clears it. This is intentional: the spinner must keep
+    // spinning while we wait for the device to acknowledge the command.
   }
 
   /// Detects command lifecycle transitions to show success/failure snackbars
@@ -131,6 +136,7 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
     // Transition: pending → terminal (DONE / FAILED / TIMEOUT)
     if (wasPending && !isPending && mounted) {
       _cancelTimeout();
+      setState(() => _sending = false);
       if (last.isDone) {
         // Success — refresh machine detail so the toggle settles to the
         // confirmed state from the REST snapshot.
