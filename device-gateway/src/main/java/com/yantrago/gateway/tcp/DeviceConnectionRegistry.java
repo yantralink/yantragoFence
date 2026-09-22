@@ -16,23 +16,40 @@ public class DeviceConnectionRegistry {
 
     private final Map<String, OutputStream> imeiConnections = new ConcurrentHashMap<>();
     private final Map<String, String> clientIdToImei = new ConcurrentHashMap<>();
+    private final Map<String, String> imeiToProtocol = new ConcurrentHashMap<>();
 
     public void registerConnection(String clientId, String imei, OutputStream out) {
+        registerConnection(clientId, imei, out, null);
+    }
+
+    public void registerConnection(String clientId, String imei, OutputStream out, String protocol) {
         imeiConnections.put(imei, out);
         clientIdToImei.put(clientId, imei);
-        log.info("[Registry] Registered connection: clientId={}, imei={}", clientId, imei);
+        if (protocol != null) {
+            imeiToProtocol.put(imei, protocol);
+        }
+        log.info("[Registry] Registered connection: clientId={}, imei={}, protocol={}", clientId, imei, protocol);
     }
 
     public void unregisterConnection(String clientId) {
         String imei = clientIdToImei.remove(clientId);
         if (imei != null) {
             imeiConnections.remove(imei);
+            imeiToProtocol.remove(imei);
             log.info("[Registry] Unregistered connection: clientId={}, imei={}", clientId, imei);
         }
     }
 
     public boolean isDeviceOnline(String imei) {
         return imeiConnections.containsKey(imei);
+    }
+
+    /**
+     * Returns the protocol name for a device (e.g. "YANTRAGO_FENCING", "CONCOX_V5").
+     * Returns null if unknown.
+     */
+    public String getProtocolForImei(String imei) {
+        return imeiToProtocol.get(imei);
     }
 
     public boolean sendCommand(String imei, byte[] commandPacket) {

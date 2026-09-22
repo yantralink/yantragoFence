@@ -30,6 +30,7 @@ class CommandDispatchServiceTest {
     private DeviceConnectionRegistry connectionRegistry;
     private CommandResultProducer commandResultProducer;
     private ConcoxV5ProtocolHandler concoxV5ProtocolHandler;
+    private com.yantrago.gateway.tcp.fencing.FencingEncoder fencingEncoder;
     private PendingCommandRegistry pendingCommandRegistry;
     private CommandDispatchService commandDispatchService;
 
@@ -42,8 +43,9 @@ class CommandDispatchServiceTest {
         connectionRegistry = mock(DeviceConnectionRegistry.class);
         commandResultProducer = mock(CommandResultProducer.class);
         concoxV5ProtocolHandler = mock(ConcoxV5ProtocolHandler.class);
+        fencingEncoder = mock(com.yantrago.gateway.tcp.fencing.FencingEncoder.class);
         pendingCommandRegistry = mock(PendingCommandRegistry.class);
-        commandDispatchService = new CommandDispatchService(connectionRegistry, commandResultProducer, concoxV5ProtocolHandler, pendingCommandRegistry);
+        commandDispatchService = new CommandDispatchService(connectionRegistry, commandResultProducer, concoxV5ProtocolHandler, fencingEncoder, pendingCommandRegistry);
     }
 
     @Test

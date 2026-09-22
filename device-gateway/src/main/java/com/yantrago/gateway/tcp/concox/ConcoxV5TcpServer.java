@@ -152,7 +152,7 @@ public class ConcoxV5TcpServer {
                     if (handler != null) {
                         String imei = handler.getImeiForClient(clientId);
                         if (imei != null) {
-                            connectionRegistry.registerConnection(clientId, imei, out);
+                            connectionRegistry.registerConnection(clientId, imei, out, handler.getProtocolName());
                             registered = true;
                         }
                     }

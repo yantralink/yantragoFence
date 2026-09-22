@@ -42,15 +42,18 @@ public class CommandDispatchService {
     private final DeviceConnectionRegistry connectionRegistry;
     private final CommandResultProducer commandResultProducer;
     private final ConcoxV5ProtocolHandler concoxV5ProtocolHandler;
+    private final com.yantrago.gateway.tcp.fencing.FencingEncoder fencingEncoder;
     private final PendingCommandRegistry pendingCommandRegistry;
 
     public CommandDispatchService(DeviceConnectionRegistry connectionRegistry,
                                     CommandResultProducer commandResultProducer,
                                     ConcoxV5ProtocolHandler concoxV5ProtocolHandler,
+                                    com.yantrago.gateway.tcp.fencing.FencingEncoder fencingEncoder,
                                     PendingCommandRegistry pendingCommandRegistry) {
         this.connectionRegistry = connectionRegistry;
         this.commandResultProducer = commandResultProducer;
         this.concoxV5ProtocolHandler = concoxV5ProtocolHandler;
+        this.fencingEncoder = fencingEncoder;
         this.pendingCommandRegistry = pendingCommandRegistry;
     }
 
@@ -76,8 +79,8 @@ public class CommandDispatchService {
             return;
         }
 
-        // Build command packet based on command type
-        byte[] commandPacket = buildCommandPacket(commandType);
+        // Build command packet based on command type and device protocol
+        byte[] commandPacket = buildCommandPacket(imei, commandType);
         if (commandPacket == null) {
             commandResultProducer.publishCommandResult(new CommandResultMessage(
                     commandId, CommandResultMessage.STATUS_FAILED, 0,
@@ -107,16 +110,30 @@ public class CommandDispatchService {
     }
 
     /**
-     * Builds a 0x80 Online Instruction command packet for the BR05/Concox V5 protocol.
+     * Builds the command packet for the correct protocol.
      *
-     * ON  → RELAY,1# → device cuts off fuel supply → FuelCut: YES → LED ON
-     * OFF → RELAY,0# → device restores fuel supply → FuelCut: NO  → LED OFF
-     *
-     * The packet is built by ConcoxV5ProtocolHandler.buildCommandPacket() which
-     * constructs the full 0x80 packet with server flags, ASCII command content,
-     * language, serial number, and CRC.
+     * Fencing devices (YANTRAGO_FENCING) use FencingEncoder with
+     * OP_CMD_ON (0x82) / OP_CMD_OFF (0x83) opcodes.
+     * Concox devices use ConcoxV5ProtocolHandler with RELAY,1#/RELAY,0#.
      */
-    private byte[] buildCommandPacket(String commandType) {
+    private byte[] buildCommandPacket(String imei, String commandType) {
+        String protocol = connectionRegistry.getProtocolForImei(imei);
+
+        if ("YANTRAGO_FENCING".equals(protocol)) {
+            // Fencing protocol commands
+            if ("ON".equals(commandType) || "FENCING_ON".equals(commandType)) {
+                log.debug("Building fencing ON command for imei={}", imei);
+                return fencingEncoder.buildOnCommand();
+            } else if ("OFF".equals(commandType) || "FENCING_OFF".equals(commandType)) {
+                log.debug("Building fencing OFF command for imei={}", imei);
+                return fencingEncoder.buildOffCommand();
+            } else {
+                log.warn("Unknown fencing command type: {}", commandType);
+                return null;
+            }
+        }
+
+        // Default: Concox V5 protocol commands
         String smsCommand;
         if ("ON".equals(commandType) || "FENCING_ON".equals(commandType)) {
             smsCommand = RELAY_ON_COMMAND;
@@ -127,7 +144,7 @@ public class CommandDispatchService {
             return null;
         }
 
-        log.debug("Building 0x80 command packet: type={} smsCommand={}", commandType, smsCommand);
+        log.debug("Building Concox 0x80 command packet: type={} smsCommand={}", commandType, smsCommand);
         return concoxV5ProtocolHandler.buildCommandPacket(smsCommand);
     }
 }
