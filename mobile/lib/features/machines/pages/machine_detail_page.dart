@@ -12,7 +12,7 @@ import 'package:yantrago/features/machines/providers/telemetry_socket_provider.d
 import 'package:yantrago/features/machines/widgets/location_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_info_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_telemetry_grid.dart';
-import 'package:yantrago/features/machines/widgets/on_off_button.dart';
+import 'package:yantrago/features/machines/widgets/fencing_toggle.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
 /// Machine detail page — shows machine info, location, telemetry, and
@@ -22,7 +22,7 @@ import 'package:yantrago/l10n/l10n.dart';
 /// received. The ON/OFF buttons request actions; confirmation comes from
 /// the device.
 ///
-/// Layout priority: the Turn ON / Turn OFF controls must be visible in
+/// Layout priority: the fencing toggle must be visible in
 /// the initial viewport without scrolling. Telemetry uses a 2-column grid,
 /// the info card uses a compact 2-column metadata layout, and inter-section
 /// spacing is minimized.
@@ -83,7 +83,11 @@ class MachineDetailPage extends ConsumerWidget {
                 ),
                 MachineTelemetryGrid(machine: m),
                 const SizedBox(height: 16),
-                OnOffButton(machineId: m.id, imei: m.imei ?? ''),
+                FencingToggle(
+                  machineId: m.id,
+                  imei: m.imei ?? '',
+                  isFencingOn: m.isFencingOn,
+                ),
                 const SizedBox(height: 8),
                 LocationCard(machineId: m.id),
                 const SizedBox(height: 12),
