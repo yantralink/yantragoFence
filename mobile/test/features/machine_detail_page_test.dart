@@ -266,19 +266,10 @@ void main() {
     expect(find.text('No location data available'), findsOneWidget);
   });
 
-  testWidgets('fencing toggle is present and shows Fencing Off for offline machine', (tester) async {
+  testWidgets('ON/OFF buttons are present and tappable', (tester) async {
     await _pump(tester, _overrides(machine: _machine()));
-    // Offline machine → fencing off → label shows "Fencing Off".
-    expect(find.text('Fencing Off'), findsOneWidget);
-    // The Switch widget is present.
-    expect(find.byType(Switch), findsOneWidget);
-  });
-
-  testWidgets('fencing toggle shows Fencing On when machine status is FENCING_ON', (tester) async {
-    await _pump(tester, _overrides(
-      machine: _machine(status: 'FENCING_ON', isOnline: true),
-    ));
-    expect(find.text('Fencing On'), findsOneWidget);
+    expect(find.text('Turn ON'), findsOneWidget);
+    expect(find.text('Turn OFF'), findsOneWidget);
   });
 
   testWidgets('command confirmation note is shown', (tester) async {

@@ -396,42 +396,6 @@
   "@commandSendFailed": {
     "description": "Snackbar when a command could not be sent."
   },
-  "fencingControl": "फेंसिंग नियंत्रण",
-  "@fencingControl": {
-    "description": "Section header for the fencing toggle on the machine detail page."
-  },
-  "fencingOn": "फेंसिंग ऑन",
-  "@fencingOn": {
-    "description": "Toggle label when fencing is confirmed on."
-  },
-  "fencingOff": "फेंसिंग ऑफ",
-  "@fencingOff": {
-    "description": "Toggle label when fencing is confirmed off."
-  },
-  "turningOn": "चालू हो रहा है…",
-  "@turningOn": {
-    "description": "Toggle label while a FENCING_ON command is pending."
-  },
-  "turningOff": "बंद हो रहा है…",
-  "@turningOff": {
-    "description": "Toggle label while a FENCING_OFF command is pending."
-  },
-  "fencingTurnedOn": "फेंसिंग चालू हो गई",
-  "@fencingTurnedOn": {
-    "description": "Snackbar when a fencing-on command is confirmed done."
-  },
-  "fencingTurnedOff": "फेंसिंग बंद हो गई",
-  "@fencingTurnedOff": {
-    "description": "Snackbar when a fencing-off command is confirmed done."
-  },
-  "commandFailedRetry": "कमांड विफल। कृपया पुनः प्रयास करें।",
-  "@commandFailedRetry": {
-    "description": "Snackbar when a command fails or times out."
-  },
-  "fencingUnavailable": "अनुपलब्ध",
-  "@fencingUnavailable": {
-    "description": "Toggle label when the machine status does not support fencing toggle."
-  },
   "commandTurnOn": "चालू करें",
   "@commandTurnOn": {
     "description": "Display label for an ON / FENCING_ON command type."
