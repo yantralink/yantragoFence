@@ -61,6 +61,16 @@ public class CommandResultService implements VehicleCommandService {
         // Publish the ACK/FAILED result to the backend via RabbitMQ
         publishResult(commandId, status, error);
         log.info("Command reply processed: imei={} commandId={} status={} error={}", imei, commandId, status, error);
+
+        // When the device acknowledges success, also publish DONE.
+        // The device's reply IS the completion — there is no separate "done"
+        // event from the device. Without DONE, the command stays in ACK
+        // forever (the state machine requires ACK → DONE), and the mobile
+        // timeout fires showing "Command failed."
+        if (success) {
+            publishResult(commandId, CommandResultMessage.STATUS_DONE, null);
+            log.info("Command completed: imei={} commandId={} status=DONE", imei, commandId);
+        }
     }
 
     /**
