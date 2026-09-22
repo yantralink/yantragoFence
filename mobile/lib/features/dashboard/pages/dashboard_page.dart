@@ -64,7 +64,10 @@ class DashboardPage extends ConsumerWidget {
                   offline: data.offlineMachines,
                 ),
                 const SizedBox(height: 16),
-                AppSectionHeader(title: l10n.telemetrySection),
+                AppSectionHeader(
+                  title: l10n.telemetrySection,
+                  icon: Icons.monitor_heart,
+                ),
                 _MetricGrid(
                   children: <Widget>[
                     BatteryWidget(

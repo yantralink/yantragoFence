@@ -22,7 +22,7 @@ class BatteryWidget extends StatelessWidget {
     if (battery == null) {
       return AppMetricCard(
         label: l10n.metricLabelChargingStatus,
-        icon: Icons.battery_std,
+        icon: Icons.battery_5_bar,
         state: AppMetricState.unavailable,
         statusText: l10n.metricNoReport,
       );
@@ -43,7 +43,7 @@ class BatteryWidget extends StatelessWidget {
     final StatusTone statusTone = isCharging ? StatusTone.success : levelTone;
     final IconData icon = isCharging
         ? Icons.battery_charging_full
-        : Icons.battery_std;
+        : Icons.battery_5_bar;
 
     return AppMetricCard(
       label: l10n.metricLabelChargingStatus,

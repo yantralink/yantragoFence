@@ -34,7 +34,7 @@ class ExternalBatteryWidget extends StatelessWidget {
     if (pct == null) {
       return AppMetricCard(
         label: l10n.metricLabelBattery,
-        icon: Icons.battery_std,
+        icon: Icons.battery_5_bar,
         state: AppMetricState.unavailable,
         statusText: l10n.metricNoVoltageReport,
       );
@@ -70,15 +70,15 @@ class ExternalBatteryWidget extends StatelessWidget {
         case BatteryZone.low:
           statusText = l10n.batteryLowLevel;
           statusTone = StatusTone.warning;
-          icon = Icons.battery_std;
+          icon = Icons.battery_5_bar;
         case BatteryZone.normal:
           statusText = l10n.batteryLevel;
           statusTone = StatusTone.neutral;
-          icon = Icons.battery_std;
+          icon = Icons.battery_5_bar;
         case BatteryZone.full:
           statusText = l10n.batteryFull;
           statusTone = StatusTone.success;
-          icon = Icons.battery_std;
+          icon = Icons.battery_5_bar;
       }
     }
 

@@ -21,14 +21,14 @@ class IgnitionWidget extends StatelessWidget {
     if (ignitionOn == null) {
       return AppMetricCard(
         label: l10n.metricLabelMachineStatus,
-        icon: Icons.key,
+        icon: Icons.power_settings_new,
         state: AppMetricState.unavailable,
         statusText: l10n.metricNoAccReport,
       );
     }
     return AppMetricCard(
       label: l10n.metricLabelMachineStatus,
-      icon: Icons.key,
+      icon: Icons.power_settings_new,
       state: AppMetricState.available,
       statusTone: ignitionOn! ? StatusTone.success : StatusTone.neutral,
       value: ignitionOn! ? 'ON' : 'OFF', // always-en: raw state code

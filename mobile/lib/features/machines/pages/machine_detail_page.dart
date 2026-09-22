@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/widgets/app_page_body.dart';
+import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
@@ -73,6 +74,13 @@ class MachineDetailPage extends ConsumerWidget {
                   liveIgnitionOn: ref.watch(telemetrySocketProvider(m.id))?.ignitionOn,
                 ),
                 const SizedBox(height: 8),
+                // Compact telemetry section marker with a leading icon —
+                // keeps the page short while giving the grid an identity.
+                AppSectionHeader(
+                  title: l10n.telemetrySection,
+                  icon: Icons.monitor_heart,
+                  compact: true,
+                ),
                 MachineTelemetryGrid(machine: m),
                 const SizedBox(height: 16),
                 OnOffButton(machineId: m.id, imei: m.imei ?? ''),

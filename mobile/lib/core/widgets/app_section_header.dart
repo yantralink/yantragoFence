@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_spacing.dart';
 
-/// Shared section header — uppercase title with an optional trailing action.
+/// Shared section header — uppercase title with an optional leading icon
+/// and an optional trailing action.
 ///
 /// Presentation-only. Matches the SVG's uppercase section labels with letter
 /// spacing. Long titles wrap; the optional [action] is kept on the trailing
 /// side and remains reachable.
 class AppSectionHeader extends StatelessWidget {
   final String title;
+
+  /// Optional small leading icon (e.g. telemetry section marker).
+  final IconData? icon;
   final String? aside;
   final Widget? action;
   final bool compact;
@@ -16,6 +20,7 @@ class AppSectionHeader extends StatelessWidget {
   const AppSectionHeader({
     super.key,
     required this.title,
+    this.icon,
     this.aside,
     this.action,
     this.compact = false,
@@ -34,6 +39,10 @@ class AppSectionHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
+          if (icon != null) ...<Widget>[
+            Icon(icon, size: 16, color: colors.onSurfaceVariant),
+            const SizedBox(width: AppSpacing.xs),
+          ],
           Expanded(
             child: Text(
               title.toUpperCase(),

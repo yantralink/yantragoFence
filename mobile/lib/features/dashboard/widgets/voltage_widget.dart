@@ -18,14 +18,14 @@ class VoltageWidget extends StatelessWidget {
     if (voltage == null) {
       return AppMetricCard(
         label: l10n.metricLabelVoltage,
-        icon: Icons.bolt,
+        icon: Icons.electric_bolt,
         state: AppMetricState.unavailable,
         statusText: l10n.metricNoReport,
       );
     }
     return AppMetricCard(
       label: l10n.metricLabelVoltage,
-      icon: Icons.bolt,
+      icon: Icons.electric_bolt,
       state: AppMetricState.available,
       value: voltage!.toStringAsFixed(2),
       unit: 'V', // always-en: unit
