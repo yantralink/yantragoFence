@@ -59,8 +59,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         String[] origins = allowedOrigins.split("\\s*,\\s*");
         registry.addEndpoint("/ws")
                 .addInterceptors(webSocketAuthInterceptor)
-                .setAllowedOriginPatterns(origins)
-                .withSockJS();
+                .setAllowedOriginPatterns(origins);
     }
 
     @Override

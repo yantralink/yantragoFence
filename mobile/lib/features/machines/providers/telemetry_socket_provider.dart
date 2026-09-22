@@ -77,7 +77,6 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
     _client = StompClient(
       config: StompConfig(
         url: wsUrl,
-        useSockJS: true,
         stompConnectHeaders: {'Authorization': 'Bearer $token'},
         webSocketConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: (frame) {
