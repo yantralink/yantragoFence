@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,6 +7,7 @@ import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/theme/app_spacing.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
+import 'package:yantrago/features/commands/providers/command_socket_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
@@ -40,6 +43,12 @@ class FencingToggle extends ConsumerStatefulWidget {
 class _FencingToggleState extends ConsumerState<FencingToggle> {
   bool _sending = false;
   bool _lastPending = false;
+  Timer? _timeoutTimer;
+
+  /// Safety timeout — if no ACK arrives within 30s, stop the spinner so
+  /// the user can try again. The command may still complete later via
+  /// the WebSocket; this only clears the busy UI state.
+  static const Duration _commandTimeout = Duration(seconds: 30);
 
   @override
   void initState() {
@@ -51,8 +60,36 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
     });
   }
 
+  @override
+  void dispose() {
+    _timeoutTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimeout() {
+    _timeoutTimer?.cancel();
+    _timeoutTimer = Timer(_commandTimeout, () {
+      if (mounted && _sending) {
+        setState(() => _sending = false);
+        final ColorScheme colors = Theme.of(context).colorScheme;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.commandFailedRetry),
+            backgroundColor: colors.error,
+          ),
+        );
+      }
+    });
+  }
+
+  void _cancelTimeout() {
+    _timeoutTimer?.cancel();
+    _timeoutTimer = null;
+  }
+
   Future<void> _sendCommand(String commandType) async {
     setState(() => _sending = true);
+    _startTimeout();
     try {
       await ref.read(commandProvider.notifier).sendCommand(
             machineId: widget.machineId,
@@ -65,7 +102,9 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
         );
       }
     } catch (_) {
+      _cancelTimeout();
       if (mounted) {
+        setState(() => _sending = false);
         final ColorScheme colors = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -91,6 +130,7 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
 
     // Transition: pending → terminal (DONE / FAILED / TIMEOUT)
     if (wasPending && !isPending && mounted) {
+      _cancelTimeout();
       if (last.isDone) {
         // Success — refresh machine detail so the toggle settles to the
         // confirmed state from the REST snapshot.
@@ -120,6 +160,10 @@ class _FencingToggleState extends ConsumerState<FencingToggle> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    // Watch the command socket so it connects and delivers real-time ACK
+    // updates. Without this, the WebSocket never connects and the spinner
+    // would spin forever.
+    ref.watch(commandSocketProvider(widget.machineId));
     final cmdState = ref.watch(commandProvider);
 
     final last = cmdState.lastCommand;
