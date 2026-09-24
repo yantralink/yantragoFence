@@ -40,6 +40,10 @@ String alertTypeLabel(AppLocalizations l10n, String alertType) {
       return l10n.alertGeofenceBreach;
     case 'ACC_ON':
       return l10n.alertAccOn;
+    case 'MACHINE_CHARGING':
+      return l10n.alertMachineCharging;
+    case 'FENCE_FAULT':
+      return l10n.alertFenceFault;
     default:
       return alertType.replaceAll('_', ' ');
   }

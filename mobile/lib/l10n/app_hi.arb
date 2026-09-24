@@ -697,6 +697,14 @@
   "@alertAccOn": {
     "description": "Alert type label for ignition on/off events (engine start/stop)."
   },
+  "alertMachineCharging": "मशीन चार्जिंग",
+  "@alertMachineCharging": {
+    "description": "Alert type label for the battery charging state (internal battery 10%)."
+  },
+  "alertFenceFault": "फेंस फॉल्ट",
+  "@alertFenceFault": {
+    "description": "Alert type label for the fence fault state (internal battery 100%)."
+  },
   "loadingNotifications": "सूचनाएँ लोड हो रही हैं…",
   "@loadingNotifications": {
     "description": "Loading state message for the notification inbox."

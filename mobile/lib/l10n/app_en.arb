@@ -348,6 +348,10 @@
   "@alertGeofenceBreach": {"description": "Alert type label for a geofence breach."},
   "alertAccOn": "Ignition On / Off",
   "@alertAccOn": {"description": "Alert type label for ignition on/off events (engine start/stop)."},
+  "alertMachineCharging": "Machine Charging",
+  "@alertMachineCharging": {"description": "Alert type label for the battery charging state (internal battery 10%)."},
+  "alertFenceFault": "Fence Fault",
+  "@alertFenceFault": {"description": "Alert type label for the fence fault state (internal battery 100%)."},
 
   "loadingNotifications": "Loading notifications…",
   "@loadingNotifications": {"description": "Loading state message for the notification inbox."},
