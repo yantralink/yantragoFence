@@ -101,7 +101,7 @@ class TelemetryConsumerTest {
 
         verify(telemetryBroadcastService).broadcastTelemetry(
                 eq(machineId), eq(deviceId),
-                eq(null), eq(60.0), eq(3), eq(true), eq(null)
+                eq(null), eq(60.0), eq(3), eq(true), eq(null), any()
         );
     }
 
@@ -122,7 +122,7 @@ class TelemetryConsumerTest {
         // Verify broadcast carries ignitionOn = true
         verify(telemetryBroadcastService).broadcastTelemetry(
                 eq(machineId), eq(deviceId),
-                eq(null), eq(60.0), eq(3), eq(true), eq(true)
+                eq(null), eq(60.0), eq(3), eq(true), eq(true), any()
         );
     }
 

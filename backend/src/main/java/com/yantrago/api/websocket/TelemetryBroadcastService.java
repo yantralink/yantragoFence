@@ -39,10 +39,14 @@ public class TelemetryBroadcastService {
      * @param gsmSignal GSM signal strength (optional)
      * @param charging true if external power connected (optional)
      * @param ignitionOn true if ACC high / engine on (optional, null = unknown)
+     * @param recordedAt device-side measurement time of the reading — carried
+     *        in the payload so clients can compare live frames against the
+     *        REST snapshot's lastTelemetryAt (same clock domain)
      */
     public void broadcastTelemetry(UUID machineId, UUID deviceId,
                                     Double voltage, Double battery, Integer gsmSignal,
-                                    Boolean charging, Boolean ignitionOn) {
+                                    Boolean charging, Boolean ignitionOn,
+                                    LocalDateTime recordedAt) {
         if (machineId == null) {
             log.debug("Skipping telemetry broadcast: machineId is null (device={})", deviceId);
             return;
@@ -59,7 +63,7 @@ public class TelemetryBroadcastService {
         payload.put("gsmSignal", gsmSignal);
         payload.put("charging", charging);
         payload.put("ignitionOn", ignitionOn);
-        payload.put("timestamp", LocalDateTime.now().toString());
+        payload.put("timestamp", recordedAt.toString());
 
         messagingTemplate.convertAndSend(destination, payload);
         log.debug("Broadcasted telemetry to {} voltage={} battery={} charging={} ignition={}",

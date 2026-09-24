@@ -3,9 +3,11 @@ package com.yantrago.api.config;
 import com.yantrago.api.websocket.StompChannelInterceptor;
 import com.yantrago.api.websocket.WebSocketAuthInterceptor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -46,11 +48,24 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // Simple in-memory broker for /topic and /user/queue destinations
         // /user/queue/* supports user-specific channels (e.g. notification invalidation)
-        config.enableSimpleBroker("/topic", "/queue");
+        // Heartbeats are negotiated with clients so silently-dead mobile TCP
+        // connections are detected (default 0,0 disables them entirely).
+        config.enableSimpleBroker("/topic", "/queue")
+                .setHeartbeatValue(new long[]{10000, 10000})
+                .setTaskScheduler(messageBrokerTaskScheduler());
         // Application-level prefix for messages bound for @MessageMapping methods
         config.setApplicationDestinationPrefixes("/app");
         // User-specific destination prefix (for convertAndSendToUser)
         config.setUserDestinationPrefix("/user");
+    }
+
+    @Bean
+    public ThreadPoolTaskScheduler messageBrokerTaskScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("ws-heartbeat-");
+        scheduler.initialize();
+        return scheduler;
     }
 
     @Override

@@ -21,6 +21,7 @@ import 'package:yantrago/features/machines/providers/machine_address_provider.da
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
+import 'package:yantrago/features/machines/providers/telemetry_socket_provider.dart';
 import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/machine_location.dart';
 import 'package:yantrago/models/telemetry.dart';
@@ -134,11 +135,16 @@ List<Override> _overrides({
   MachineLocation? location,
   Object? addressError,
   bool pending = false,
+  Telemetry restTelemetry = Telemetry.empty,
+  Telemetry? liveTelemetry,
 }) {
   return <Override>[
     machineDetailProvider('m1').overrideWith((ref) async => machine),
     machineLocationProvider('m1').overrideWith((ref) async => location),
-    machineTelemetryProvider('m1').overrideWith((ref) async => Telemetry.empty),
+    machineTelemetryProvider('m1').overrideWith((ref) async => restTelemetry),
+    // Stub the telemetry socket so tests never open a real WebSocket.
+    telemetrySocketProvider('m1').overrideWith(
+        (ref) => _StubTelemetrySocketController(ref, 'm1', liveTelemetry)),
     if (addressError != null)
       machineAddressProvider('m1').overrideWith((ref) async => throw addressError)
     else
@@ -167,6 +173,17 @@ class _FakeCommandNotifier extends CommandNotifier {
 class _StubCommandSocketController extends CommandSocketController {
   _StubCommandSocketController(super.ref, super.machineId)
       : super(autoConnect: false);
+  @override
+  Future<void> connect() async {}
+}
+
+/// Stub telemetry socket controller — holds a fixed live-frame state so
+/// tests can exercise the grid's live-vs-REST merge without a WebSocket.
+class _StubTelemetrySocketController extends TelemetrySocketController {
+  _StubTelemetrySocketController(super.ref, super.machineId, Telemetry? initial)
+      : super(autoConnect: false) {
+    state = initial;
+  }
   @override
   Future<void> connect() async {}
 }
@@ -336,5 +353,69 @@ void main() {
       surface: const Size(320, 1600),
     );
     expect(tester.takeException(), isNull);
+  });
+
+  // Live-vs-REST merge: a stale socket frame must never outrank a newer
+  // REST snapshot, and a genuinely newer live frame must override it.
+  // Bulb assertions use the 48px body icon rendered by AppMetricCard.
+
+  bool isBulb(Widget w, Color color) =>
+      w is Icon && w.icon == Icons.lightbulb && w.size == 48 && w.color == color;
+
+  testWidgets('stale live frame (older timestamp) is rejected in favor of REST',
+      (tester) async {
+    final now = DateTime.now();
+    await _pump(
+      tester,
+      _overrides(
+        machine: _machine(),
+        restTelemetry: Telemetry(battery: 100, timestamp: now),
+        liveTelemetry: Telemetry(
+          battery: 10,
+          timestamp: now.subtract(const Duration(minutes: 3)),
+          receivedAt: now,
+        ),
+      ),
+    );
+    // REST battery=100 wins → Fence Fault bulb red, Charging bulb off.
+    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.red)), findsWidgets);
+    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.green)), findsNothing);
+  });
+
+  testWidgets('newer live frame overrides REST snapshot', (tester) async {
+    final now = DateTime.now();
+    await _pump(
+      tester,
+      _overrides(
+        machine: _machine(),
+        restTelemetry:
+            Telemetry(battery: 100, timestamp: now.subtract(const Duration(minutes: 10))),
+        liveTelemetry: Telemetry(battery: 10, timestamp: now, receivedAt: now),
+      ),
+    );
+    // Live battery=10 wins → Charging bulb green, Fence Fault off.
+    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.green)), findsWidgets);
+    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.red)), findsNothing);
+  });
+
+  testWidgets('live frame older than 5 min by receivedAt falls back to REST',
+      (tester) async {
+    final now = DateTime.now();
+    await _pump(
+      tester,
+      _overrides(
+        machine: _machine(),
+        restTelemetry:
+            Telemetry(battery: 100, timestamp: now.subtract(const Duration(minutes: 10))),
+        liveTelemetry: Telemetry(
+          battery: 10,
+          timestamp: now,
+          receivedAt: now.subtract(const Duration(minutes: 6)),
+        ),
+      ),
+    );
+    // Socket frame is stale → REST battery=100 wins → red fault bulb.
+    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.red)), findsWidgets);
+    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.green)), findsNothing);
   });
 }

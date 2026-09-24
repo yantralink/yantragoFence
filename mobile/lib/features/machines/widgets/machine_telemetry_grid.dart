@@ -64,10 +64,14 @@ class MachineTelemetryGrid extends ConsumerWidget {
     // only come from heartbeat/alarm packets), so keep the REST value
     // for any field the socket frame leaves null.
     //
-    // Freshness guard: if the last live frame is older than 5 minutes
-    // (dead socket that never delivered a close event, or frames simply
-    // stopped arriving), drop it entirely and show the REST snapshot.
-    final Telemetry? freshLive = _isFresh(liveTelemetry) ? liveTelemetry : null;
+    // Freshness guards — a live frame is used only when BOTH hold:
+    //  1. receivedAt within 5 min (dead socket that never delivered a
+    //     close event, or frames simply stopped arriving), and
+    //  2. its measurement timestamp is not older than the REST snapshot's —
+    //     a stale live frame can never outrank a newer REST fetch.
+    final Telemetry? freshLive = _isUsable(liveTelemetry, restTelemetry)
+        ? liveTelemetry
+        : null;
     final Telemetry telemetry = freshLive != null
         ? Telemetry(
             id: freshLive.id ?? restTelemetry.id,
@@ -100,6 +104,12 @@ class MachineTelemetryGrid extends ConsumerWidget {
     );
   }
 
+  /// Live data is usable when it is both recently received AND at least
+  /// as new as the REST snapshot by measurement timestamp.
+  static bool _isUsable(Telemetry? live, Telemetry rest) {
+    return _isFresh(live) && !_isOlderThanRest(live, rest);
+  }
+
   /// A live frame is fresh if it was received within the last 5 minutes.
   /// [Telemetry.receivedAt] is set client-side on each socket frame —
   /// REST snapshots have it null and are never considered "live".
@@ -107,6 +117,17 @@ class MachineTelemetryGrid extends ConsumerWidget {
     final receivedAt = live?.receivedAt;
     if (live == null || receivedAt == null) return false;
     return DateTime.now().difference(receivedAt).inMinutes < 5;
+  }
+
+  /// Rejects live frames whose measurement timestamp predates the REST
+  /// snapshot's — a stale socket frame can never overwrite newer data.
+  /// Both timestamps are device-side measurement times (recordedAt),
+  /// so the ordering is unambiguous.
+  static bool _isOlderThanRest(Telemetry? live, Telemetry rest) {
+    final liveTs = live?.timestamp;
+    final restTs = rest.timestamp;
+    if (live == null || liveTs == null || restTs == null) return false;
+    return liveTs.isBefore(restTs);
   }
 
   List<Widget> _buildTiles(Telemetry telemetry) {

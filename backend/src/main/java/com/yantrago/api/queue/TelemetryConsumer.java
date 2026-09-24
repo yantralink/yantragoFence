@@ -117,7 +117,7 @@ public class TelemetryConsumer {
             telemetryBroadcastService.broadcastTelemetry(
                     machineId, message.getDeviceId(),
                     message.getVoltage(), message.getBattery(), message.getGsmSignal(),
-                    message.getCharging(), message.getIgnitionOn()
+                    message.getCharging(), message.getIgnitionOn(), recordedAt
             );
 
             // Evaluate alert rules after successful ingestion.
