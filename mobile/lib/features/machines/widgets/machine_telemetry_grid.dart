@@ -40,24 +40,42 @@ class MachineTelemetryGrid extends ConsumerWidget {
     // details screen is mounted.
     final liveTelemetry = ref.watch(telemetrySocketProvider(machine.id));
 
-    final Telemetry telemetry = liveTelemetry ??
-        telemetryAsync.when(
-          data: (t) => t,
-          loading: () => Telemetry(
-            battery: machine.batteryPct,
-            charging: machine.charging,
-            gsmSignal: machine.gsmSignal,
-            voltage: machine.voltage,
-            ignitionOn: machine.ignitionOn,
-          ),
-          error: (_, __) => Telemetry(
-            battery: machine.batteryPct,
-            charging: machine.charging,
-            gsmSignal: machine.gsmSignal,
-            voltage: machine.voltage,
-            ignitionOn: machine.ignitionOn,
-          ),
-        );
+    // REST snapshot — the base data loaded once per screen visit.
+    final Telemetry restTelemetry = telemetryAsync.when(
+      data: (t) => t,
+      loading: () => Telemetry(
+        battery: machine.batteryPct,
+        charging: machine.charging,
+        gsmSignal: machine.gsmSignal,
+        voltage: machine.voltage,
+        ignitionOn: machine.ignitionOn,
+      ),
+      error: (_, __) => Telemetry(
+        battery: machine.batteryPct,
+        charging: machine.charging,
+        gsmSignal: machine.gsmSignal,
+        voltage: machine.voltage,
+        ignitionOn: machine.ignitionOn,
+      ),
+    );
+
+    // Merge live socket data with the REST snapshot. GPS packets arrive
+    // with null for battery/voltage/gsm/charging/ignition (those fields
+    // only come from heartbeat/alarm packets), so keep the REST value
+    // for any field the socket frame leaves null.
+    final Telemetry telemetry = liveTelemetry != null
+        ? Telemetry(
+            id: liveTelemetry.id ?? restTelemetry.id,
+            deviceId: liveTelemetry.deviceId ?? restTelemetry.deviceId,
+            imei: liveTelemetry.imei ?? restTelemetry.imei,
+            voltage: liveTelemetry.voltage ?? restTelemetry.voltage,
+            battery: liveTelemetry.battery ?? restTelemetry.battery,
+            gsmSignal: liveTelemetry.gsmSignal ?? restTelemetry.gsmSignal,
+            charging: liveTelemetry.charging ?? restTelemetry.charging,
+            ignitionOn: liveTelemetry.ignitionOn ?? restTelemetry.ignitionOn,
+            timestamp: liveTelemetry.timestamp ?? restTelemetry.timestamp,
+          )
+        : restTelemetry;
 
     return LayoutBuilder(
       builder: (context, constraints) {
