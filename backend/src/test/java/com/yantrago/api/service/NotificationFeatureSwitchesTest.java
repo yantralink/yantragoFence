@@ -79,11 +79,13 @@ class NotificationFeatureSwitchesTest {
     void getEnabledFamilies_wildcard() {
         NotificationFeatureSwitches switches = new NotificationFeatureSwitches(true, "*");
 
-        assertEquals(16, switches.getEnabledFamilies().size());
+        assertEquals(18, switches.getEnabledFamilies().size());
         assertTrue(switches.getEnabledFamilies().contains("LOW_BATTERY"));
         assertTrue(switches.getEnabledFamilies().contains("EXTERNAL_POWER_LOW"));
         assertTrue(switches.getEnabledFamilies().contains("INTERNAL_BATTERY_LOW"));
         assertTrue(switches.getEnabledFamilies().contains("ACC_ON"));
+        assertTrue(switches.getEnabledFamilies().contains("MACHINE_CHARGING"));
+        assertTrue(switches.getEnabledFamilies().contains("FENCE_FAULT"));
     }
 
     @Test
@@ -126,6 +128,15 @@ class NotificationFeatureSwitchesTest {
 
         assertTrue(switches.isEventFamilyEnabled("ACC_ON"));
         assertTrue(switches.getEnabledFamilies().contains("ACC_ON"));
+    }
+
+    @Test
+    @DisplayName("Battery-state alert types are enabled by default")
+    void batteryStateTypes_enabledByDefault() {
+        NotificationFeatureSwitches switches = new NotificationFeatureSwitches(true, "");
+
+        assertTrue(switches.isEventFamilyEnabled("MACHINE_CHARGING"));
+        assertTrue(switches.isEventFamilyEnabled("FENCE_FAULT"));
     }
 
     @Test

@@ -216,6 +216,14 @@ public class NotificationPreferenceService {
                 // A single alert type — OPEN = ignition on, RESOLVED = ignition off.
                 new EventCatalogDto("ACC_ON", "Ignition On / Off",
                         "Triggered when the machine ignition turns on (OPEN) or off (RESOLVED) — engine start/stop events from BR05 alarm codes 0xFE / 0xFF.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                // Battery-state types: internal battery 10% = charging (green bulb),
+                // 100% = fence fault (red bulb). Entry transitions only — no resolved pushes.
+                new EventCatalogDto("MACHINE_CHARGING", "Machine Charging",
+                        "Triggered when the machine's internal battery reports the charging state (10%) — green bulb.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                new EventCatalogDto("FENCE_FAULT", "Fence Fault",
+                        "Triggered when the machine's internal battery reports the fence fault state (100%) — red bulb.",
                         List.of("PUSH", "EMAIL", "SMS", "IN_APP"))
         );
     }

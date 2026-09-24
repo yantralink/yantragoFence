@@ -207,6 +207,22 @@ public class CanonicalAlertService {
      */
     @Transactional
     public Alert resolveIncident(UUID orgId, UUID machineId, String alertType, String resolutionMessage) {
+        return resolveIncidentInternal(orgId, machineId, alertType, resolutionMessage, true);
+    }
+
+    /**
+     * Resolves an open incident without writing an outbox event — no inbox item
+     * or push notification is produced. Used by detectors that need correct
+     * incident lifecycles (for re-notification dedup) but must keep resolution
+     * transitions silent.
+     */
+    @Transactional
+    public Alert resolveIncidentSilently(UUID orgId, UUID machineId, String alertType, String resolutionMessage) {
+        return resolveIncidentInternal(orgId, machineId, alertType, resolutionMessage, false);
+    }
+
+    private Alert resolveIncidentInternal(UUID orgId, UUID machineId, String alertType,
+                                           String resolutionMessage, boolean publishEvent) {
         Alert existing = alertRepository.findOpenIncident(orgId, machineId, alertType).orElse(null);
         if (existing == null) {
             log.debug("No open incident to resolve for org={} machine={} type={}", orgId, machineId, alertType);
@@ -222,11 +238,13 @@ public class CanonicalAlertService {
         }
         Alert resolved = alertRepository.save(existing);
 
-        // Write outbox event for the resolution transition
-        writeOutboxEvent(resolved, "RESOLVED", now.toInstant(ZoneOffset.UTC), null);
+        if (publishEvent) {
+            // Write outbox event for the resolution transition
+            writeOutboxEvent(resolved, "RESOLVED", now.toInstant(ZoneOffset.UTC), null);
+        }
 
-        log.info("Resolved incident alertId={} type={} machineId={}",
-                resolved.getId(), alertType, machineId);
+        log.info("Resolved incident alertId={} type={} machineId={} silent={}",
+                resolved.getId(), alertType, machineId, !publishEvent);
         return resolved;
     }
 

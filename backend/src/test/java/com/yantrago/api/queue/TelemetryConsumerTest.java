@@ -2,6 +2,7 @@ package com.yantrago.api.queue;
 
 import com.yantrago.api.model.Alert;
 import com.yantrago.api.service.AlertGenerationService;
+import com.yantrago.api.service.BatteryStateAlertService;
 import com.yantrago.api.service.DeviceResolverService;
 import com.yantrago.api.service.TelemetryService;
 import com.yantrago.api.websocket.TelemetryBroadcastService;
@@ -13,10 +14,12 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -37,6 +40,7 @@ class TelemetryConsumerTest {
     private TelemetryBroadcastService telemetryBroadcastService;
     private DeviceResolverService deviceResolverService;
     private AlertGenerationService alertGenerationService;
+    private BatteryStateAlertService batteryStateAlertService;
     private JdbcTemplate jdbcTemplate;
     private TelemetryConsumer consumer;
 
@@ -51,11 +55,13 @@ class TelemetryConsumerTest {
         telemetryBroadcastService = mock(TelemetryBroadcastService.class);
         deviceResolverService = mock(DeviceResolverService.class);
         alertGenerationService = mock(AlertGenerationService.class);
+        batteryStateAlertService = mock(BatteryStateAlertService.class);
         jdbcTemplate = mock(JdbcTemplate.class);
 
         consumer = new TelemetryConsumer(
                 telemetryService, telemetryBroadcastService,
-                deviceResolverService, alertGenerationService, jdbcTemplate
+                deviceResolverService, alertGenerationService,
+                batteryStateAlertService, jdbcTemplate
         );
 
         // Default: device resolves successfully
@@ -188,6 +194,75 @@ class TelemetryConsumerTest {
         // Telemetry should still be persisted despite alert evaluation failure
         verify(telemetryService).storeBatteryReadings(any());
         verify(jdbcTemplate).update(anyString(), eq(60.0), eq(true), eq(3), eq(null), eq(null), any(), eq(deviceId));
+    }
+
+    @Test
+    @DisplayName("handleTelemetry should evaluate battery state transitions with previous stored value")
+    void handleTelemetry_shouldEvaluateBatteryTransition() {
+        when(jdbcTemplate.queryForList(
+                eq("SELECT battery_pct FROM devices WHERE id = ?"), eq(Double.class), eq(deviceId)))
+                .thenReturn(List.of(10.0));
+        TelemetryMessage msg = new TelemetryMessage(
+                deviceId, imei, null, 100.0, 3, true, Instant.now()
+        );
+
+        consumer.handleTelemetry(msg);
+
+        verify(batteryStateAlertService).evaluate(
+                eq(orgId), eq(machineId), eq(10.0), eq(100.0), any());
+    }
+
+    @Test
+    @DisplayName("handleTelemetry should skip battery evaluation for GPS frames (battery null)")
+    void handleTelemetry_shouldSkipBatteryEvaluationWhenBatteryNull() {
+        TelemetryMessage msg = new TelemetryMessage(
+                deviceId, imei, null, null, null, false, Instant.now()
+        );
+
+        consumer.handleTelemetry(msg);
+
+        verify(batteryStateAlertService, never()).evaluate(any(), any(), any(), anyDouble(), any());
+        verify(jdbcTemplate, never()).queryForList(
+                eq("SELECT battery_pct FROM devices WHERE id = ?"), eq(Double.class), any());
+    }
+
+    @Test
+    @DisplayName("handleTelemetry should skip battery evaluation when device state update fails")
+    void handleTelemetry_shouldSkipBatteryEvaluationWhenStateUpdateFails() {
+        when(jdbcTemplate.queryForList(
+                eq("SELECT battery_pct FROM devices WHERE id = ?"), eq(Double.class), eq(deviceId)))
+                .thenReturn(List.of(10.0));
+        doThrow(new RuntimeException("db down"))
+                .when(jdbcTemplate).update(contains("UPDATE devices SET"),
+                        eq(100.0), eq(true), eq(3), eq(null), eq(null), any(), eq(deviceId));
+        TelemetryMessage msg = new TelemetryMessage(
+                deviceId, imei, null, 100.0, 3, true, Instant.now()
+        );
+
+        consumer.handleTelemetry(msg);
+
+        // devices.battery_pct still holds the stale value — evaluating against
+        // it would emit a phantom transition on every heartbeat.
+        verify(batteryStateAlertService, never()).evaluate(any(), any(), any(), anyDouble(), any());
+    }
+
+    @Test
+    @DisplayName("handleTelemetry should continue if battery evaluation fails (telemetry still persisted)")
+    void handleTelemetry_shouldContinueIfBatteryEvaluationFails() {
+        when(jdbcTemplate.queryForList(
+                eq("SELECT battery_pct FROM devices WHERE id = ?"), eq(Double.class), eq(deviceId)))
+                .thenReturn(List.of(10.0));
+        TelemetryMessage msg = new TelemetryMessage(
+                deviceId, imei, null, 100.0, 3, true, Instant.now()
+        );
+        doThrow(new RuntimeException("battery eval failed"))
+                .when(batteryStateAlertService).evaluate(any(), any(), any(), anyDouble(), any());
+
+        consumer.handleTelemetry(msg);
+
+        // Telemetry should still be persisted despite battery evaluation failure
+        verify(telemetryService).storeBatteryReadings(any());
+        verify(jdbcTemplate).update(anyString(), eq(100.0), eq(true), eq(3), eq(null), eq(null), any(), eq(deviceId));
     }
 
     @Test

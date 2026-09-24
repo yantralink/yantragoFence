@@ -1,6 +1,7 @@
 package com.yantrago.api.queue;
 
 import com.yantrago.api.service.AlertGenerationService;
+import com.yantrago.api.service.BatteryStateAlertService;
 import com.yantrago.api.service.DeviceResolverService;
 import com.yantrago.api.service.TelemetryService;
 import com.yantrago.api.websocket.TelemetryBroadcastService;
@@ -12,6 +13,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -37,17 +39,20 @@ public class TelemetryConsumer {
     private final TelemetryBroadcastService telemetryBroadcastService;
     private final DeviceResolverService deviceResolverService;
     private final AlertGenerationService alertGenerationService;
+    private final BatteryStateAlertService batteryStateAlertService;
     private final JdbcTemplate jdbcTemplate;
 
     public TelemetryConsumer(TelemetryService telemetryService,
                              TelemetryBroadcastService telemetryBroadcastService,
                              DeviceResolverService deviceResolverService,
                              AlertGenerationService alertGenerationService,
+                             BatteryStateAlertService batteryStateAlertService,
                              JdbcTemplate jdbcTemplate) {
         this.telemetryService = telemetryService;
         this.telemetryBroadcastService = telemetryBroadcastService;
         this.deviceResolverService = deviceResolverService;
         this.alertGenerationService = alertGenerationService;
+        this.batteryStateAlertService = batteryStateAlertService;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -107,9 +112,16 @@ public class TelemetryConsumer {
 
             log.debug("Persisted telemetry for device={}", message.getDeviceId());
 
+            // Read the previous stored battery level before updating device
+            // state — it is the previous-state input for transition detection.
+            // Skipped entirely for GPS frames (battery == null).
+            Double previousBattery = message.getBattery() != null
+                    ? readBatteryPct(message.getDeviceId())
+                    : null;
+
             // Update latest device state on the devices table for fast API lookup.
             // Only update fields that are present in the message (null = no data).
-            updateDeviceState(message.getDeviceId(), message.getBattery(),
+            boolean deviceStateUpdated = updateDeviceState(message.getDeviceId(), message.getBattery(),
                     message.getCharging(), message.getGsmSignal(),
                     message.getVoltage(), message.getIgnitionOn(), recordedAt);
 
@@ -119,6 +131,24 @@ public class TelemetryConsumer {
                     message.getVoltage(), message.getBattery(), message.getGsmSignal(),
                     message.getCharging(), message.getIgnitionOn(), recordedAt
             );
+
+            // Battery-state transition detection (10% charging / 100% fault).
+            // Notifies only on state transitions — never on repeated values.
+            // Skipped when the state update failed: devices.battery_pct would
+            // still hold the stale value, so evaluating against it could emit
+            // a phantom transition + duplicate push on every heartbeat.
+            if (deviceStateUpdated && message.getBattery() != null) {
+                try {
+                    Instant observedAt = message.getTimestamp() != null
+                            ? message.getTimestamp()
+                            : recordedAt.toInstant(ZoneOffset.UTC);
+                    batteryStateAlertService.evaluate(
+                            orgId, machineId, previousBattery, message.getBattery(), observedAt);
+                } catch (Exception be) {
+                    log.warn("Battery state evaluation failed for machine={} (telemetry still persisted): {}",
+                            machineId, be.getMessage());
+                }
+            }
 
             // Evaluate alert rules after successful ingestion.
             // Per notification plan Phase 2: connect telemetry evaluation after
@@ -136,6 +166,16 @@ public class TelemetryConsumer {
     }
 
     /**
+     * Reads the currently stored battery_pct for a device. Returns null when
+     * the device has no stored reading yet (first-ever battery observation).
+     */
+    private Double readBatteryPct(UUID deviceId) {
+        List<Double> rows = jdbcTemplate.queryForList(
+                "SELECT battery_pct FROM devices WHERE id = ?", Double.class, deviceId);
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    /**
      * Updates the latest device state (battery_pct, charging, gsm_signal,
      * voltage, ignition_on, last_telemetry_at) on the devices table. Uses
      * COALESCE so that null fields in the message do not overwrite existing
@@ -145,9 +185,9 @@ public class TelemetryConsumer {
      * the deviceId is trusted because it was resolved from the device's IMEI
      * by the gateway's device mapping cache.
      */
-    private void updateDeviceState(UUID deviceId, Double battery,
-                                    Boolean charging, Integer gsmSignal,
-                                    Double voltage, Boolean ignitionOn, LocalDateTime recordedAt) {
+    private boolean updateDeviceState(UUID deviceId, Double battery,
+                                       Boolean charging, Integer gsmSignal,
+                                       Double voltage, Boolean ignitionOn, LocalDateTime recordedAt) {
         try {
             jdbcTemplate.update(
                     "UPDATE devices SET " +
@@ -163,8 +203,10 @@ public class TelemetryConsumer {
             );
             log.debug("Updated device state: deviceId={} battery={} charging={} gsm={} voltage={} ignition={}",
                     deviceId, battery, charging, gsmSignal, voltage, ignitionOn);
+            return true;
         } catch (Exception e) {
             log.error("Failed to update device state for deviceId={}: {}", deviceId, e.getMessage());
+            return false;
         }
     }
 }
