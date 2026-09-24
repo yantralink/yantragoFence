@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
-import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/dashboard/providers/dashboard_provider.dart';
 import 'package:yantrago/features/dashboard/widgets/battery_widget.dart';
@@ -27,12 +26,7 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(dashboardProvider);
-    final alerts = ref.watch(alertsProvider);
     final user = ref.watch(currentUserProvider);
-    final int? faultsCount = alerts.maybeWhen(
-      data: (list) => list.length,
-      orElse: () => null,
-    );
     final l10n = context.l10n;
 
     return Scaffold(
@@ -88,7 +82,10 @@ class DashboardPage extends ConsumerWidget {
                           ? data.machines.first.gsmSignal
                           : null,
                     ),
-                    FaultsWidget(count: faultsCount),
+                    FaultsWidget(
+                        batteryPct: data.machines.isNotEmpty
+                            ? data.machines.first.batteryPct
+                            : null),
                   ],
                 ),
                 AppSectionHeader(title: l10n.yourMachines),
