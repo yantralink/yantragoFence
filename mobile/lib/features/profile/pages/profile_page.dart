@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:yantrago/core/widgets/app_action_button.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
@@ -134,6 +135,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               icon: Icons.logout,
               onPressed: () => ref.read(authStateProvider.notifier).logout(),
             ),
+            const SizedBox(height: 12),
+
+            // App version + build number
+            const _AppVersionLabel(),
           ],
         ),
       ),
@@ -191,6 +196,49 @@ class _SettingsDivider extends StatelessWidget {
       height: 1,
       thickness: 1,
       color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+    );
+  }
+}
+
+/// Small app version + build number shown under the logout button, e.g.
+/// "v1.0.0 (59)". Build number matches the CI release tag because the APK
+/// workflow passes --build-number=${{ github.run_number }}.
+class _AppVersionLabel extends StatefulWidget {
+  const _AppVersionLabel();
+
+  @override
+  State<_AppVersionLabel> createState() => _AppVersionLabelState();
+}
+
+class _AppVersionLabelState extends State<_AppVersionLabel> {
+  String? _label;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      setState(() => _label = 'v${info.version} (${info.buildNumber})');
+    } catch (_) {
+      // Platform info unavailable (tests, unsupported platforms) — stay hidden.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _label;
+    if (label == null) return const SizedBox.shrink();
+    return Text(
+      label,
+      textAlign: TextAlign.center,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
     );
   }
 }

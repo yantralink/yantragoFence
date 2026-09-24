@@ -58,6 +58,7 @@ jobs:
         working-directory: mobile
         run: |
           flutter build apk --release --split-per-abi \
+            --build-number=${{ github.run_number }} \
             --dart-define=API_BASE_URL=https://yantrago.com \
             --dart-define=WS_BASE_URL=wss://yantrago.com/ws \
             --verbose 2>&1 || {
