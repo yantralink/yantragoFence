@@ -435,15 +435,15 @@ void main() {
       expect(find.text('No report received'), findsOneWidget);
     });
 
-    testWidgets('FaultsWidget 60 shows red glowing bulb', (tester) async {
+    testWidgets('FaultsWidget 100 shows red glowing bulb', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const Scaffold(body: FaultsWidget(batteryPct: 60)),
+        home: const Scaffold(body: FaultsWidget(batteryPct: 100)),
       ));
       expect(find.byIcon(Icons.lightbulb), findsWidgets);
     });
 
-    testWidgets('FaultsWidget non-60 shows off bulb', (tester) async {
+    testWidgets('FaultsWidget non-100 shows off bulb', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
         home: const Scaffold(body: FaultsWidget(batteryPct: 10)),
