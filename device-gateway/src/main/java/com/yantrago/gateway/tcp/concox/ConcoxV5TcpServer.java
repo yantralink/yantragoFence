@@ -101,9 +101,22 @@ public class ConcoxV5TcpServer {
             // Accumulation buffer for TCP fragmentation — IoT SIMs often split
             // a single protocol packet across multiple TCP segments.
             java.io.ByteArrayOutputStream accum = new java.io.ByteArrayOutputStream();
-            int bytesRead;
 
-            while (running && (bytesRead = in.read(buffer)) != -1) {
+            while (running) {
+                int bytesRead;
+                try {
+                    bytesRead = in.read(buffer);
+                } catch (SocketTimeoutException ste) {
+                    // Read timeout — no data arrived within the SO_TIMEOUT window.
+                    // This is NOT a disconnect. The device may be idle between
+                    // heartbeats or after a command reply. Continue waiting.
+                    log.debug("[TCP] Read timeout from {} (idle between packets)", clientId);
+                    continue;
+                }
+                if (bytesRead == -1) {
+                    break;
+                }
+
                 // Append new bytes to the accumulation buffer
                 accum.write(buffer, 0, bytesRead);
 

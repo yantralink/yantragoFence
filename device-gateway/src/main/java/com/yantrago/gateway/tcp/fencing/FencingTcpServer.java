@@ -110,9 +110,21 @@ public class FencingTcpServer {
             socket.setSoTimeout(60000); // 60s timeout
 
             byte[] buffer = new byte[1024];
-            int bytesRead;
 
-            while (running && (bytesRead = in.read(buffer)) != -1) {
+            while (running) {
+                int bytesRead;
+                try {
+                    bytesRead = in.read(buffer);
+                } catch (SocketTimeoutException ste) {
+                    // Read timeout — no data arrived within the SO_TIMEOUT window.
+                    // This is NOT a disconnect. The device may be idle between
+                    // heartbeats or after a command reply. Continue waiting.
+                    log.debug("[Fencing] Read timeout from {} (idle between packets)", clientId);
+                    continue;
+                }
+                if (bytesRead == -1) {
+                    break;
+                }
                 byte[] data = new byte[bytesRead];
                 System.arraycopy(buffer, 0, data, 0, bytesRead);
 

@@ -90,9 +90,18 @@ public class JT808TcpServer {
             socket.setSoTimeout(180000);
 
             byte[] buffer = new byte[65536];
-            int bytesRead;
 
-            while (running && (bytesRead = in.read(buffer)) != -1) {
+            while (running) {
+                int bytesRead;
+                try {
+                    bytesRead = in.read(buffer);
+                } catch (SocketTimeoutException ste) {
+                    log.debug("[JT808] Read timeout from {} (idle between packets)", clientId);
+                    continue;
+                }
+                if (bytesRead == -1) {
+                    break;
+                }
                 byte[] data = new byte[bytesRead];
                 System.arraycopy(buffer, 0, data, 0, bytesRead);
 
