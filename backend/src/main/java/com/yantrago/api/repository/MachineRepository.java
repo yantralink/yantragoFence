@@ -4,7 +4,9 @@ import com.yantrago.api.model.Machine;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -31,4 +33,14 @@ public interface MachineRepository extends JpaRepository<Machine, UUID> {
      */
     @Query(value = "SELECT MAX(machine_id) FROM machines WHERE machine_id ~ '^YG[0-9]+$'", nativeQuery = true)
     String findMaxNumericMachineId();
+
+    /**
+     * Updates only is_online + last_seen_at — a full-entity save() would
+     * write back stale columns loaded before a concurrent update.
+     */
+    @Modifying
+    @Query("UPDATE Machine m SET m.isOnline = :online, m.lastSeenAt = :seenAt WHERE m.id = :machineId")
+    int updateOnlineStatus(@Param("machineId") UUID machineId,
+                           @Param("online") boolean online,
+                           @Param("seenAt") java.time.LocalDateTime seenAt);
 }

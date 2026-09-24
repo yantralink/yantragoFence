@@ -1,8 +1,5 @@
 package com.yantrago.api.service;
 
-import com.yantrago.api.model.Device;
-import com.yantrago.api.model.DeviceState;
-import com.yantrago.api.model.Machine;
 import com.yantrago.api.repository.DeviceRepository;
 import com.yantrago.api.repository.MachineRepository;
 import org.slf4j.Logger;
@@ -44,22 +41,22 @@ public class DeviceHeartbeatService {
      */
     @Transactional
     public void recordHeartbeat(UUID deviceId) {
-        Device device = deviceRepository.findById(deviceId)
-                .orElseThrow(() -> new IllegalArgumentException("Device not found: " + deviceId));
-
         LocalDateTime now = LocalDateTime.now();
-        device.setLastSeenAt(now);
-        deviceRepository.save(device);
+
+        // Targeted single-column update — a full-entity save() writes back
+        // every column with the values loaded at findById time. When a
+        // heartbeat event and its telemetry message are processed together,
+        // that stale write reverts battery_pct/voltage/etc. (lost update).
+        int updated = deviceRepository.updateLastSeenAt(deviceId, now);
+        if (updated == 0) {
+            throw new IllegalArgumentException("Device not found: " + deviceId);
+        }
 
         // Update bound machine's online status
-        if (device.getMachineId() != null) {
-            machineRepository.findById(device.getMachineId()).ifPresent(machine -> {
-                machine.setIsOnline(true);
-                machine.setLastSeenAt(now);
-                machineRepository.save(machine);
-                log.debug("Machine {} marked online via device heartbeat", machine.getId());
-            });
-        }
+        deviceRepository.findMachineIdById(deviceId).ifPresent(machineId -> {
+            machineRepository.updateOnlineStatus(machineId, true, now);
+            log.debug("Machine {} marked online via device heartbeat", machineId);
+        });
 
         log.debug("Recorded heartbeat for device={} at {}", deviceId, now);
     }
@@ -72,16 +69,15 @@ public class DeviceHeartbeatService {
      */
     @Transactional
     public void markOffline(UUID deviceId) {
-        Device device = deviceRepository.findById(deviceId)
-                .orElseThrow(() -> new IllegalArgumentException("Device not found: " + deviceId));
-
-        if (device.getMachineId() != null) {
-            machineRepository.findById(device.getMachineId()).ifPresent(machine -> {
-                machine.setIsOnline(false);
-                machineRepository.save(machine);
-                log.info("Machine {} marked offline (device {} timeout)", machine.getId(), deviceId);
-            });
+        LocalDateTime now = LocalDateTime.now();
+        if (!deviceRepository.existsById(deviceId)) {
+            throw new IllegalArgumentException("Device not found: " + deviceId);
         }
+
+        deviceRepository.findMachineIdById(deviceId).ifPresent(machineId -> {
+            machineRepository.updateOnlineStatus(machineId, false, now);
+            log.info("Machine {} marked offline (device {} timeout)", machineId, deviceId);
+        });
 
         log.info("Device {} marked offline", deviceId);
     }
