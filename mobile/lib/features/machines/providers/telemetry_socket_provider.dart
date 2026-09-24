@@ -107,7 +107,22 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
       final json = jsonDecode(frame.body!) as Map<String, dynamic>;
       final frameMachineId = json['machineId'] as String?;
       if (frameMachineId != machineId) return;
-      state = Telemetry.fromJson(json);
+      final incoming = Telemetry.fromJson(json);
+      // Merge with existing state — GPS packets arrive with null for
+      // battery/voltage/gsm/charging/ignition, so we keep the last known
+      // values for fields that are null in the new frame.
+      final prev = state;
+      state = Telemetry(
+        id: incoming.id ?? prev?.id,
+        deviceId: incoming.deviceId ?? prev?.deviceId,
+        imei: incoming.imei ?? prev?.imei,
+        voltage: incoming.voltage ?? prev?.voltage,
+        battery: incoming.battery ?? prev?.battery,
+        gsmSignal: incoming.gsmSignal ?? prev?.gsmSignal,
+        charging: incoming.charging ?? prev?.charging,
+        ignitionOn: incoming.ignitionOn ?? prev?.ignitionOn,
+        timestamp: incoming.timestamp ?? prev?.timestamp,
+      );
     } catch (e) {
       // Never surface raw exceptions to the UI — log and swallow.
       debugPrint('TelemetrySocket: failed to handle telemetry frame: $e');
