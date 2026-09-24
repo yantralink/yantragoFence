@@ -20,6 +20,10 @@ import 'app_surface_card.dart';
 class AppMetricCard extends StatelessWidget {
   final String label;
   final IconData? icon;
+  final Color? iconColor;
+  final IconData? bodyIcon;
+  final Color? bodyIconColor;
+  final double? bodyIconSize;
   final AppMetricState state;
   final String? value;
   final String? unit;
@@ -32,6 +36,10 @@ class AppMetricCard extends StatelessWidget {
     required this.label,
     required this.state,
     this.icon,
+    this.iconColor,
+    this.bodyIcon,
+    this.bodyIconColor,
+    this.bodyIconSize,
     this.value,
     this.unit,
     this.statusText,
@@ -64,7 +72,7 @@ class AppMetricCard extends StatelessWidget {
           ),
         ),
         if (icon != null)
-          Icon(icon, size: 18, color: colors.onSurfaceVariant),
+          Icon(icon, size: 18, color: iconColor ?? colors.onSurfaceVariant),
       ],
     );
 
@@ -134,15 +142,28 @@ class AppMetricCard extends StatelessWidget {
           children: <Widget>[
             header,
             const SizedBox(height: AppSpacing.sm),
-            _ValueLine(value: value, unit: unit),
-            const SizedBox(height: AppSpacing.xs),
-            if (statusText != null)
-              _StatusLine(
-                text: statusText!,
-                tone: statusTone ?? StatusTone.neutral,
-                icon: _toneIcon(statusTone),
-              ),
-            if (freshness != null) _Freshness(text: freshness!),
+            if (bodyIcon != null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  child: Icon(
+                    bodyIcon,
+                    size: bodyIconSize ?? 48,
+                    color: bodyIconColor ?? colors.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else ...<Widget>[
+              _ValueLine(value: value, unit: unit),
+              const SizedBox(height: AppSpacing.xs),
+              if (statusText != null)
+                _StatusLine(
+                  text: statusText!,
+                  tone: statusTone ?? StatusTone.neutral,
+                  icon: _toneIcon(statusTone),
+                ),
+              if (freshness != null) _Freshness(text: freshness!),
+            ],
           ],
         );
     }

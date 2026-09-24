@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
 import 'package:yantrago/features/dashboard/widgets/battery_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/external_battery_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/faults_widget.dart';
@@ -35,7 +34,6 @@ class MachineTelemetryGrid extends ConsumerWidget {
     // Fall back to the Machine model's fields (from the machine detail
     // endpoint) while the telemetry endpoint is loading or on error.
     final telemetryAsync = ref.watch(machineTelemetryProvider(machine.id));
-    final alertsAsync = ref.watch(machineAlertsProvider(machine.id));
 
     // Live socket updates override the REST snapshot once a frame arrives.
     // Watching this provider also keeps the WebSocket connected while the
@@ -61,18 +59,13 @@ class MachineTelemetryGrid extends ConsumerWidget {
           ),
         );
 
-    final int? faultsCount = alertsAsync.maybeWhen(
-      data: (list) => list.length,
-      orElse: () => null,
-    );
-
     return LayoutBuilder(
       builder: (context, constraints) {
         // Stack to one column when narrow or when text scaling is large.
         final bool narrow = constraints.maxWidth < 320 ||
             MediaQuery.textScalerOf(context).scale(14) > 18;
         final crossAxisCount = narrow ? 1 : 2;
-        final tiles = _buildTiles(telemetry, faultsCount);
+        final tiles = _buildTiles(telemetry);
         return _Grid(
           crossAxisCount: crossAxisCount,
           spacing: 8,
@@ -83,7 +76,7 @@ class MachineTelemetryGrid extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildTiles(Telemetry telemetry, int? faultsCount) {
+  List<Widget> _buildTiles(Telemetry telemetry) {
     // Use the reusable dashboard widgets which already handle null states
     // (showing "No report received" when data is unavailable).
     return <Widget>[
@@ -93,7 +86,7 @@ class MachineTelemetryGrid extends ConsumerWidget {
         charging: telemetry.charging,
       ),
       BatteryWidget(battery: telemetry.battery, charging: telemetry.charging),
-      FaultsWidget(count: faultsCount),
+      FaultsWidget(batteryPct: telemetry.battery),
       GsmStatusWidget(signal: telemetry.gsmSignal),
       VoltageWidget(voltage: telemetry.voltage),
     ];

@@ -14,7 +14,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:yantrago/core/config/theme.dart';
-import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
 import 'package:yantrago/features/commands/providers/command_socket_provider.dart';
 import 'package:yantrago/features/machines/pages/machine_detail_page.dart';
@@ -22,7 +21,6 @@ import 'package:yantrago/features/machines/providers/machine_address_provider.da
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
-import 'package:yantrago/models/alert.dart';
 import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/machine_location.dart';
 import 'package:yantrago/models/telemetry.dart';
@@ -141,7 +139,6 @@ List<Override> _overrides({
     machineDetailProvider('m1').overrideWith((ref) async => machine),
     machineLocationProvider('m1').overrideWith((ref) async => location),
     machineTelemetryProvider('m1').overrideWith((ref) async => Telemetry.empty),
-    machineAlertsProvider('m1').overrideWith((ref) async => <Alert>[]),
     if (addressError != null)
       machineAddressProvider('m1').overrideWith((ref) async => throw addressError)
     else
@@ -199,18 +196,18 @@ void main() {
       (tester) async {
     await _pump(tester, _overrides(machine: _machine()));
     // Ignition, Ext. Battery, Battery, GSM, Voltage show unavailable;
-    // Faults shows 0 (no active faults).
-    expect(find.text('Unavailable'), findsNWidgets(5));
-    expect(find.text('No report received'), findsNWidgets(3));
+    // FaultsWidget (Fence Fault bulb) also shows unavailable when battery
+    // is null.
+    expect(find.text('Unavailable'), findsNWidgets(6));
+    expect(find.text('No report received'), findsNWidgets(4));
     // Ignition unavailable uses its own status text.
     expect(find.text('No ACC report'), findsOneWidget);
     // Ext. Battery unavailable uses its own status text (voltage-specific).
     expect(find.text('No voltage report'), findsOneWidget);
-    // "No active faults" appears in FaultsWidget + _FaultsSection, but the
-    // extra Ignition tile pushes _FaultsSection below the test viewport, so
-    // only the in-viewport grid tile is built.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('No active faults'), findsOneWidget);
+    // No battery percentage or charging status text is shown (bulb widgets).
+    expect(find.text('Charging'), findsNothing);
+    expect(find.text('On battery'), findsNothing);
+    expect(find.text('No active faults'), findsNothing);
     expect(find.text('24.2'), findsNothing);
     expect(find.text('88'), findsNothing);
   });
@@ -223,7 +220,6 @@ void main() {
       machineDetailProvider('m1').overrideWith((ref) async => _machine(voltage: 12.22)),
       machineLocationProvider('m1').overrideWith((ref) async => null),
       machineTelemetryProvider('m1').overrideWith((ref) => completer.future),
-      machineAlertsProvider('m1').overrideWith((ref) async => <Alert>[]),
       machineAddressProvider('m1').overrideWith((ref) async => null),
       commandProvider.overrideWith((ref) => _FakeCommandNotifier(false)),
     ]);
