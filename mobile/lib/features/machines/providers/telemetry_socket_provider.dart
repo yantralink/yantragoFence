@@ -74,26 +74,48 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
     // as fallback for non-SockJS clients.
     final wsUrl = '${AppConfig.wsBaseUrl}?token=$token';
 
+    debugPrint('TelemetrySocket: connecting for machineId=$machineId');
     _client = StompClient(
       config: StompConfig(
         url: wsUrl,
         stompConnectHeaders: {'Authorization': 'Bearer $token'},
         webSocketConnectHeaders: {'Authorization': 'Bearer $token'},
+        // STOMP heartbeats — required to detect half-dead mobile TCP
+        // connections where neither side sees a clean close.
+        heartbeatOutgoing: const Duration(seconds: 10),
+        heartbeatIncoming: const Duration(seconds: 10),
         onConnect: (frame) {
+          debugPrint('TelemetrySocket: connected, subscribing for $machineId');
+          // Clear any stale state carried over a reconnect — fresh frames
+          // will repopulate it.
+          state = null;
           _client?.subscribe(
             destination: AppConfig.wsTopicTelemetryMachine(machineId),
             callback: _onTelemetryFrame,
           );
         },
         onDisconnect: (frame) {
+          debugPrint('TelemetrySocket: disconnected (STOMP)');
+          state = null;
           _scheduleReconnect();
         },
         onStompError: (frame) {
           debugPrint('TelemetrySocket: STOMP error: ${frame.body}');
+          state = null;
           _scheduleReconnect();
         },
         onWebSocketError: (error) {
           debugPrint('TelemetrySocket: WebSocket error: $error');
+          state = null;
+          _scheduleReconnect();
+        },
+        onWebSocketDone: () {
+          // Fired when the underlying socket closes — including the
+          // heartbeat-timeout path in stomp_dart_client, which bypasses
+          // onDisconnect entirely. Clear state so the UI falls back to
+          // the REST snapshot instead of showing frozen telemetry.
+          debugPrint('TelemetrySocket: WebSocket done — clearing stale state');
+          state = null;
           _scheduleReconnect();
         },
       ),
@@ -122,7 +144,11 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
         charging: incoming.charging ?? prev?.charging,
         ignitionOn: incoming.ignitionOn ?? prev?.ignitionOn,
         timestamp: incoming.timestamp ?? prev?.timestamp,
+        receivedAt: DateTime.now(),
       );
+      if (prev == null) {
+        debugPrint('TelemetrySocket: first frame received for $machineId');
+      }
     } catch (e) {
       // Never surface raw exceptions to the UI — log and swallow.
       debugPrint('TelemetrySocket: failed to handle telemetry frame: $e');

@@ -3,6 +3,8 @@ package com.yantrago.api.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -48,6 +50,15 @@ public class AlertRuleState {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    @PreUpdate
+    protected void onSave() {
+        updatedAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = updatedAt;
+        }
+    }
 
     // Getters and setters
     public UUID getId() { return id; }

@@ -63,17 +63,23 @@ class MachineTelemetryGrid extends ConsumerWidget {
     // with null for battery/voltage/gsm/charging/ignition (those fields
     // only come from heartbeat/alarm packets), so keep the REST value
     // for any field the socket frame leaves null.
-    final Telemetry telemetry = liveTelemetry != null
+    //
+    // Freshness guard: if the last live frame is older than 5 minutes
+    // (dead socket that never delivered a close event, or frames simply
+    // stopped arriving), drop it entirely and show the REST snapshot.
+    final Telemetry? freshLive = _isFresh(liveTelemetry) ? liveTelemetry : null;
+    final Telemetry telemetry = freshLive != null
         ? Telemetry(
-            id: liveTelemetry.id ?? restTelemetry.id,
-            deviceId: liveTelemetry.deviceId ?? restTelemetry.deviceId,
-            imei: liveTelemetry.imei ?? restTelemetry.imei,
-            voltage: liveTelemetry.voltage ?? restTelemetry.voltage,
-            battery: liveTelemetry.battery ?? restTelemetry.battery,
-            gsmSignal: liveTelemetry.gsmSignal ?? restTelemetry.gsmSignal,
-            charging: liveTelemetry.charging ?? restTelemetry.charging,
-            ignitionOn: liveTelemetry.ignitionOn ?? restTelemetry.ignitionOn,
-            timestamp: liveTelemetry.timestamp ?? restTelemetry.timestamp,
+            id: freshLive.id ?? restTelemetry.id,
+            deviceId: freshLive.deviceId ?? restTelemetry.deviceId,
+            imei: freshLive.imei ?? restTelemetry.imei,
+            voltage: freshLive.voltage ?? restTelemetry.voltage,
+            battery: freshLive.battery ?? restTelemetry.battery,
+            gsmSignal: freshLive.gsmSignal ?? restTelemetry.gsmSignal,
+            charging: freshLive.charging ?? restTelemetry.charging,
+            ignitionOn: freshLive.ignitionOn ?? restTelemetry.ignitionOn,
+            timestamp: freshLive.timestamp ?? restTelemetry.timestamp,
+            receivedAt: freshLive.receivedAt,
           )
         : restTelemetry;
 
@@ -92,6 +98,15 @@ class MachineTelemetryGrid extends ConsumerWidget {
         );
       },
     );
+  }
+
+  /// A live frame is fresh if it was received within the last 5 minutes.
+  /// [Telemetry.receivedAt] is set client-side on each socket frame —
+  /// REST snapshots have it null and are never considered "live".
+  static bool _isFresh(Telemetry? live) {
+    final receivedAt = live?.receivedAt;
+    if (live == null || receivedAt == null) return false;
+    return DateTime.now().difference(receivedAt).inMinutes < 5;
   }
 
   List<Widget> _buildTiles(Telemetry telemetry) {

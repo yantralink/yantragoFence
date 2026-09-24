@@ -379,27 +379,23 @@ void main() {
         theme: AppTheme.lightTheme,
         home: const Scaffold(body: BatteryWidget(battery: 88)),
       ));
-      expect(find.text('88'), findsOneWidget);
-      expect(find.text('%'), findsOneWidget);
-      expect(find.text('On battery'), findsOneWidget);
+      expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
     });
 
-    testWidgets('BatteryWidget charging shows charging status', (tester) async {
+    testWidgets('BatteryWidget 10 shows green glowing bulb', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const Scaffold(body: BatteryWidget(battery: 100, charging: true)),
+        home: const Scaffold(body: BatteryWidget(battery: 10, charging: true)),
       ));
-      expect(find.text('100'), findsOneWidget);
-      expect(find.text('Charging'), findsOneWidget);
+      expect(find.byIcon(Icons.lightbulb), findsWidgets);
     });
 
-    testWidgets('BatteryWidget not charging shows on battery', (tester) async {
+    testWidgets('BatteryWidget non-10 shows off bulb', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
         home: const Scaffold(body: BatteryWidget(battery: 50, charging: false)),
       ));
-      expect(find.text('50'), findsOneWidget);
-      expect(find.text('On battery'), findsOneWidget);
+      expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
     });
 
     testWidgets('VoltageWidget null shows unavailable', (tester) async {
@@ -433,28 +429,26 @@ void main() {
     testWidgets('FaultsWidget null shows unavailable', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const Scaffold(body: FaultsWidget(count: null)),
+        home: const Scaffold(body: FaultsWidget(batteryPct: null)),
       ));
       expect(find.text('Unavailable'), findsOneWidget);
       expect(find.text('No report received'), findsOneWidget);
     });
 
-    testWidgets('FaultsWidget zero shows no active faults', (tester) async {
+    testWidgets('FaultsWidget 60 shows red glowing bulb', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const Scaffold(body: FaultsWidget(count: 0)),
+        home: const Scaffold(body: FaultsWidget(batteryPct: 60)),
       ));
-      expect(find.text('0'), findsOneWidget);
-      expect(find.text('No active faults'), findsOneWidget);
+      expect(find.byIcon(Icons.lightbulb), findsWidgets);
     });
 
-    testWidgets('FaultsWidget count shows active faults', (tester) async {
+    testWidgets('FaultsWidget non-60 shows off bulb', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const Scaffold(body: FaultsWidget(count: 3)),
+        home: const Scaffold(body: FaultsWidget(batteryPct: 10)),
       ));
-      expect(find.text('3'), findsOneWidget);
-      expect(find.text('3 active faults'), findsOneWidget);
+      expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
     });
   });
 }

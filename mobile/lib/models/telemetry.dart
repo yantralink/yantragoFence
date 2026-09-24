@@ -21,6 +21,11 @@ class Telemetry {
   final bool? ignitionOn; // true = ACC high (engine on), null = unknown
   final DateTime? timestamp;
 
+  /// Client-side receipt time for frames pushed over the telemetry socket.
+  /// Null for REST snapshots — used by the grid's freshness guard to drop
+  /// stale live frames after a dead/reconnecting socket.
+  final DateTime? receivedAt;
+
   const Telemetry({
     this.id,
     this.deviceId,
@@ -31,6 +36,7 @@ class Telemetry {
     this.charging,
     this.ignitionOn,
     this.timestamp,
+    this.receivedAt,
   });
 
   /// Creates a Telemetry from the backend TelemetryLatestDto JSON.
