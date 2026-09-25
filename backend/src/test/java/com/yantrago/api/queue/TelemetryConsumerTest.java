@@ -266,6 +266,26 @@ class TelemetryConsumerTest {
     }
 
     @Test
+    @DisplayName("handleTelemetry should skip battery evaluation for demo-suppressed IMEI")
+    void handleTelemetry_shouldSkipBatteryEvaluationForSuppressedImei() {
+        String demoImei = "866221070994202";
+        when(deviceResolverService.resolve(deviceId))
+                .thenReturn(new DeviceResolverService.DeviceInfo(orgId, machineId, demoImei));
+        when(jdbcTemplate.queryForList(
+                eq("SELECT battery_pct FROM devices WHERE id = ?"), eq(Double.class), eq(deviceId)))
+                .thenReturn(List.of(10.0));
+        TelemetryMessage msg = new TelemetryMessage(
+                deviceId, demoImei, null, 100.0, 3, true, Instant.now()
+        );
+
+        consumer.handleTelemetry(msg);
+
+        // Telemetry still persists; only the transition notification is suppressed
+        verify(telemetryService).storeBatteryReadings(any());
+        verify(batteryStateAlertService, never()).evaluate(any(), any(), any(), anyDouble(), any());
+    }
+
+    @Test
     @DisplayName("handleTelemetry should persist voltage reading and update device voltage state")
     void handleTelemetry_shouldPersistVoltageAndUpdateDeviceState() {
         TelemetryMessage msg = new TelemetryMessage(

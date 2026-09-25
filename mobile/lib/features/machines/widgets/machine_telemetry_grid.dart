@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:yantrago/core/config/app_config.dart';
 import 'package:yantrago/features/dashboard/widgets/battery_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/external_battery_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/faults_widget.dart';
@@ -139,8 +140,15 @@ class MachineTelemetryGrid extends ConsumerWidget {
         voltage: telemetry.voltage,
         charging: telemetry.charging,
       ),
-      BatteryWidget(battery: telemetry.battery, charging: telemetry.charging),
-      FaultsWidget(batteryPct: telemetry.battery),
+      BatteryWidget(
+        battery: AppConfig.demoSuppressBatteryPct(
+            telemetry.imei ?? machine.imei, telemetry.battery),
+        charging: telemetry.charging,
+      ),
+      FaultsWidget(
+        batteryPct: AppConfig.demoSuppressBatteryPct(
+            telemetry.imei ?? machine.imei, telemetry.battery),
+      ),
       GsmStatusWidget(signal: telemetry.gsmSignal),
       VoltageWidget(voltage: telemetry.voltage),
     ];

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:yantrago/core/config/app_config.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
@@ -65,9 +66,12 @@ class DashboardPage extends ConsumerWidget {
                 _MetricGrid(
                   children: <Widget>[
                     BatteryWidget(
-                      battery: data.machines.isNotEmpty
-                          ? data.machines.first.batteryPct
-                          : null,
+                      battery: AppConfig.demoSuppressBatteryPct(
+                        data.machines.isNotEmpty ? data.machines.first.imei : null,
+                        data.machines.isNotEmpty
+                            ? data.machines.first.batteryPct
+                            : null,
+                      ),
                       charging: data.machines.isNotEmpty
                           ? data.machines.first.charging
                           : null,
@@ -83,9 +87,13 @@ class DashboardPage extends ConsumerWidget {
                           : null,
                     ),
                     FaultsWidget(
-                        batteryPct: data.machines.isNotEmpty
+                      batteryPct: AppConfig.demoSuppressBatteryPct(
+                        data.machines.isNotEmpty ? data.machines.first.imei : null,
+                        data.machines.isNotEmpty
                             ? data.machines.first.batteryPct
-                            : null),
+                            : null,
+                      ),
+                    ),
                   ],
                 ),
                 AppSectionHeader(title: l10n.yourMachines),
