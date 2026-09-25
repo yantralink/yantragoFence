@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -35,15 +34,6 @@ import java.util.UUID;
 public class TelemetryConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(TelemetryConsumer.class);
-
-    /**
-     * Demo gating: battery-state transitions (MACHINE_CHARGING / FENCE_FAULT)
-     * are suppressed for these device IMEIs — no incidents, inbox items, or
-     * pushes are produced while the feature is under testing.
-     * Remove after demo sign-off.
-     */
-    private static final Set<String> BATTERY_STATE_SUPPRESSED_IMEIS =
-            Set.of("866221070994202");
 
     private final TelemetryService telemetryService;
     private final TelemetryBroadcastService telemetryBroadcastService;
@@ -147,9 +137,7 @@ public class TelemetryConsumer {
             // Skipped when the state update failed: devices.battery_pct would
             // still hold the stale value, so evaluating against it could emit
             // a phantom transition + duplicate push on every heartbeat.
-            // Also skipped for demo-suppressed device IMEIs.
-            if (deviceStateUpdated && message.getBattery() != null
-                    && !BATTERY_STATE_SUPPRESSED_IMEIS.contains(imei)) {
+            if (deviceStateUpdated && message.getBattery() != null) {
                 try {
                     Instant observedAt = message.getTimestamp() != null
                             ? message.getTimestamp()

@@ -54,19 +54,4 @@ class AppConfig {
   static const String wsTopicDeviceEvent = '/topic/devices';
   // User-specific notification invalidation queue (Phase 3/4)
   static const String wsUserQueueNotifications = '/user/queue/notifications';
-
-  /// Demo gating — for these device IMEIs the Fence Fault and Charging
-  /// Status bulbs always render OFF regardless of telemetry. Temporary
-  /// suppression while the feature is under testing; remove after demo
-  /// sign-off.
-  static const Set<String> demoSuppressedImeis = {'866221070994202'};
-
-  /// Returns a battery value that keeps the Fence Fault / Charging Status
-  /// bulbs OFF for demo-suppressed devices (any value other than the 10%
-  /// and 100% triggers maps to the unlit bulb while the tile stays in its
-  /// normal available state). Null stays null (unavailable tile).
-  static int? demoSuppressBatteryPct(String? imei, int? batteryPct) =>
-      imei != null && demoSuppressedImeis.contains(imei) && batteryPct != null
-          ? 50
-          : batteryPct;
 }
