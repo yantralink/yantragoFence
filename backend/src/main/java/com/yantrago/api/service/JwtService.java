@@ -71,6 +71,9 @@ public class JwtService {
                               String permissions, SecretKey key, long ttlSeconds) {
         Instant now = Instant.now();
         Map<String, Object> claims = new HashMap<>();
+        // Unique token id — concurrent refreshes within the same second must
+        // never produce identical JWTs (token_hash unique constraint).
+        claims.put("jti", UUID.randomUUID().toString());
         claims.put("userId", userId.toString());
         if (organizationId != null) {
             claims.put("organizationId", organizationId.toString());
