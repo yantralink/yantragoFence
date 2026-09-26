@@ -12,7 +12,15 @@ import 'package:yantrago/models/telemetry_series.dart';
 class BatteryHealthCard extends StatelessWidget {
   final List<TelemetryPoint> voltage;
 
-  const BatteryHealthCard({super.key, required this.voltage});
+  /// True when the machine was added <48h ago — the empty state then
+  /// explains that data appears once the device starts reporting.
+  final bool isNewDevice;
+
+  const BatteryHealthCard({
+    super.key,
+    required this.voltage,
+    this.isNewDevice = false,
+  });
 
   static const double healthyMin = 11.8;
   static const double healthyMax = 14.0;
@@ -37,7 +45,9 @@ class BatteryHealthCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: AppStatePanel.empty(
                   title: l10n.analyticsNoData,
-                  message: l10n.analyticsNoDataMessage,
+                  message: isNewDevice
+                      ? l10n.analyticsNewDeviceMessage
+                      : l10n.analyticsNoDataMessage,
                   icon: Icons.battery_unknown_outlined,
                 ),
               )

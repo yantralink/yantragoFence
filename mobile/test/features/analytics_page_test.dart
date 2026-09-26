@@ -9,6 +9,7 @@ import 'package:yantrago/features/analytics/providers/analytics_provider.dart';
 import 'package:yantrago/features/analytics/widgets/activity_timeline_card.dart';
 import 'package:yantrago/features/analytics/widgets/battery_health_card.dart';
 import 'package:yantrago/features/analytics/widgets/fault_timeline_card.dart';
+import 'package:yantrago/features/analytics/widgets/summary_header.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/l10n/generated/app_localizations.dart';
 import 'package:yantrago/models/fault_interval.dart';
@@ -222,6 +223,43 @@ void main() {
       final a = MachineActivity.fromJson(const {});
       expect(a.sessions, isEmpty);
       expect(a.commandMarkers, isEmpty);
+    });
+  });
+
+  group('AnalyticsSummaryHeader', () {
+    testWidgets('renders stats from providers', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 300));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          machineActivityProvider.overrideWith((ref) async =>
+              MachineActivity(sessions: [
+                MachineSession(
+                    startAt: DateTime(2026, 9, 26, 8),
+                    durationMinutes: 125),
+              ])),
+          faultTimelineProvider.overrideWith((ref) async => [
+                FaultInterval(
+                    id: 'a', triggeredAt: DateTime(2026, 9, 26, 9)),
+                FaultInterval(
+                    id: 'b', triggeredAt: DateTime(2026, 9, 26, 10)),
+              ]),
+          telemetrySeriesProvider.overrideWith((ref) async =>
+              TelemetrySeries(voltage: [
+                TelemetryPoint(DateTime(2026, 9, 26, 10), 12.9),
+              ])),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: AnalyticsSummaryHeader()),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('2h 5m'), findsOneWidget); // 125 min ON
+      expect(find.text('2'), findsOneWidget); // fault count
+      expect(find.text('12.9 V'), findsOneWidget);
     });
   });
 

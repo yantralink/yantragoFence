@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/analytics/widgets/analytics_format.dart';
@@ -107,28 +108,35 @@ class FaultTimelineCard extends StatelessWidget {
   Widget _faultRow(BuildContext context, FaultInterval f) {
     final l10n = context.l10n;
     final text = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline,
-              size: 14, color: f.ongoing ? Colors.orange : Colors.red),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              formatTimeRange(f.triggeredAt, f.resolvedAt),
-              style: text.bodySmall,
+    // Taps drill down into the existing alert detail screen.
+    return InkWell(
+      onTap: f.id.isEmpty ? null : () => context.push('/app/alerts/${f.id}'),
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline,
+                size: 14, color: f.ongoing ? Colors.orange : Colors.red),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                formatTimeRange(f.triggeredAt, f.resolvedAt),
+                style: text.bodySmall,
+              ),
             ),
-          ),
-          if (f.ongoing)
-            _ongoingChip(l10n.analyticsOngoing)
-          else
-            Text(
-              formatMinutes(l10n, f.durationMinutes),
-              style: text.bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-        ],
+            if (f.ongoing)
+              _ongoingChip(l10n.analyticsOngoing)
+            else
+              Text(
+                formatMinutes(l10n, f.durationMinutes),
+                style: text.bodySmall
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            if (f.id.isNotEmpty)
+              const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+          ],
+        ),
       ),
     );
   }

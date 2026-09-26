@@ -119,6 +119,31 @@
     "description": "Duration in minutes only; {m} is an integer.",
     "placeholders": {"m": {"type": "int"}}
   },
+  "analyticsLabelOn": "चालू समय",
+  "@analyticsLabelOn": {
+    "description": "Summary header label under the total ON duration."
+  },
+  "analyticsLabelFaults": "फॉल्ट",
+  "@analyticsLabelFaults": {
+    "description": "Summary header label under the fault count."
+  },
+  "analyticsLabelBattery": "बैटरी",
+  "@analyticsLabelBattery": {
+    "description": "Summary header label under the latest voltage."
+  },
+  "analyticsLabelLastSeen": "अंतिम बार देखा",
+  "@analyticsLabelLastSeen": {
+    "description": "Summary header label under the device's last-report relative time."
+  },
+  "batteryVolts": "{voltage} V",
+  "@batteryVolts": {
+    "description": "Compact voltage value; {voltage} is formatted volts.",
+    "placeholders": {"voltage": {"type": "String"}}
+  },
+  "analyticsNewDeviceMessage": "यह डिवाइस हाल ही में जोड़ा गया है — रिपोर्ट करने पर डेटा दिखेगा।",
+  "@analyticsNewDeviceMessage": {
+    "description": "Empty-state message when the selected device is too new to have history."
+  },
   "errorPageNotFound": "पेज नहीं मिला",
   "@errorPageNotFound": {
     "description": "AppBar title shown when a route does not exist."

@@ -9,6 +9,7 @@ import 'package:yantrago/features/analytics/widgets/battery_health_card.dart';
 import 'package:yantrago/features/analytics/widgets/fault_timeline_card.dart';
 import 'package:yantrago/features/analytics/widgets/machine_selector.dart';
 import 'package:yantrago/features/analytics/widgets/range_chips.dart';
+import 'package:yantrago/features/analytics/widgets/summary_header.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
@@ -57,7 +58,9 @@ class AnalyticsPage extends ConsumerWidget {
                   const AnalyticsMachineSelector(),
                   const SizedBox(height: 12),
                   const AnalyticsRangeChips(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  const AnalyticsSummaryHeader(),
+                  const SizedBox(height: 12),
                   if (machineId == null)
                     AppStatePanel.empty(
                       title: l10n.selectMachine,
@@ -105,7 +108,16 @@ class _BatterySection extends ConsumerWidget {
           ),
         ),
       ),
-      data: (data) => BatteryHealthCard(voltage: data.voltage),
+      data: (data) {
+        final machine =
+            AnalyticsSummaryHeader.selectedMachine(ref);
+        final isNew = machine?.createdAt != null &&
+            DateTime.now().difference(machine!.createdAt).inHours < 48;
+        return BatteryHealthCard(
+          voltage: data.voltage,
+          isNewDevice: isNew,
+        );
+      },
     );
   }
 }
