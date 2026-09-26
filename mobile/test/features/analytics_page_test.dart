@@ -37,14 +37,14 @@ void main() {
     testWidgets('empty series shows the no-data empty state', (tester) async {
       await _pump(tester, const BatteryHealthCard(voltage: []));
       expect(find.text('No data in this period'), findsOneWidget);
-      expect(find.text('External Battery Health'), findsOneWidget);
+      expect(find.text('Battery Health'), findsOneWidget);
     });
 
     testWidgets('healthy latest voltage shows Healthy chip', (tester) async {
       await _pump(tester, BatteryHealthCard(voltage: [
         _v(0, 12.6), _v(5, 12.7), _v(10, 12.8), _v(15, 12.9),
       ]));
-      expect(find.text('Healthy'), findsOneWidget);
+      expect(find.text('Battery Healthy'), findsOneWidget);
       expect(find.text('Now: 12.9 V'), findsOneWidget);
     });
 
@@ -177,7 +177,8 @@ void main() {
   });
 
   group('BatteryHealthCard with health', () {
-    testWidgets('shows score chip and stable insight', (tester) async {
+    testWidgets('shows bold healthy status; no score or insight text',
+        (tester) async {
       const health = BatteryHealth(
         score: 92,
         status: 'HEALTHY',
@@ -186,11 +187,13 @@ void main() {
       );
       await _pump(
           tester, BatteryHealthCard(voltage: [_v(0, 12.9)], health: health));
-      expect(find.text('Score 92/100'), findsOneWidget);
-      expect(find.text('Voltage stable — battery healthy'), findsOneWidget);
+      expect(find.text('Battery Healthy'), findsOneWidget);
+      expect(find.textContaining('Score'), findsNothing);
+      expect(find.textContaining('stable'), findsNothing);
+      expect(find.textContaining('92'), findsNothing);
     });
 
-    testWidgets('declining shows estimate with insight', (tester) async {
+    testWidgets('declining shows status but no estimate text', (tester) async {
       final health = BatteryHealth(
         score: 55,
         status: 'DECLINING',
@@ -205,7 +208,8 @@ void main() {
       await _pump(
           tester, BatteryHealthCard(voltage: [_v(0, 12.3)], health: health));
       expect(find.text('Declining'), findsOneWidget);
-      expect(find.textContaining('≈4 days until low'), findsOneWidget);
+      expect(find.textContaining('until low'), findsNothing);
+      expect(find.textContaining('Score'), findsNothing);
     });
 
     test('BatteryHealth parses response and tolerates missing fields', () {
@@ -315,6 +319,7 @@ void main() {
       expect(find.text('2h 5m'), findsOneWidget); // 125 min ON
       expect(find.text('2'), findsOneWidget); // fault count
       expect(find.text('12.9 V'), findsOneWidget);
+      expect(find.text('Last seen'), findsNothing);
     });
   });
 

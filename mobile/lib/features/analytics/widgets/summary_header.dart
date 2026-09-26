@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:yantrago/core/utils/date_utils.dart';
 import 'package:yantrago/features/analytics/providers/analytics_provider.dart';
 import 'package:yantrago/features/analytics/widgets/analytics_format.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
@@ -9,9 +8,9 @@ import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/machine.dart';
 
 /// At-a-glance strip over the analytics cards: total ON time, fault
-/// count, latest battery voltage, and device last-seen — all from the
-/// providers the page already fetches. Values render '—' while their
-/// provider is loading or failed, so one bad call never blocks the row.
+/// count, and latest battery voltage — all from the providers the page
+/// already fetches. Values render '—' while their provider is loading
+/// or failed, so one bad call never blocks the row.
 class AnalyticsSummaryHeader extends ConsumerWidget {
   const AnalyticsSummaryHeader({super.key});
 
@@ -33,7 +32,6 @@ class AnalyticsSummaryHeader extends ConsumerWidget {
     final activity = ref.watch(machineActivityProvider).valueOrNull;
     final faults = ref.watch(faultTimelineProvider).valueOrNull;
     final series = ref.watch(telemetrySeriesProvider).valueOrNull;
-    final machine = selectedMachine(ref);
 
     return Card(
       child: Padding(
@@ -62,12 +60,6 @@ class AnalyticsSummaryHeader extends ConsumerWidget {
                   : l10n.batteryVolts(
                       series.voltage.last.value.toStringAsFixed(1)),
               label: l10n.analyticsLabelBattery,
-            ),
-            _Stat(
-              icon: Icons.schedule,
-              color: Colors.grey.shade600,
-              value: relativeTime(l10n, machine?.lastSeenAt),
-              label: l10n.analyticsLabelLastSeen,
             ),
           ],
         ),

@@ -246,23 +246,23 @@ void main() {
         theme: AppTheme.lightTheme,
         home: const Scaffold(body: BatteryWidget(battery: 88)),
       ));
-      expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
+      expect(find.byIcon(Icons.electrical_services), findsWidgets);
     });
 
-    testWidgets('BatteryWidget 10 shows green glowing bulb', (tester) async {
+    testWidgets('BatteryWidget 10 shows green charging icon', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
         home: const Scaffold(body: BatteryWidget(battery: 10, charging: true)),
       ));
-      expect(find.byIcon(Icons.lightbulb), findsWidgets);
+      expect(find.byIcon(Icons.electrical_services), findsWidgets);
     });
 
-    testWidgets('BatteryWidget non-10 shows off bulb', (tester) async {
+    testWidgets('BatteryWidget non-10 shows grey icon', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
         home: const Scaffold(body: BatteryWidget(battery: 50, charging: false)),
       ));
-      expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
+      expect(find.byIcon(Icons.electrical_services), findsWidgets);
     });
 
     testWidgets('VoltageWidget null shows unavailable', (tester) async {
@@ -302,20 +302,20 @@ void main() {
       expect(find.text('No report received'), findsOneWidget);
     });
 
-    testWidgets('FaultsWidget 100 shows red glowing bulb', (tester) async {
+    testWidgets('FaultsWidget 100 shows red fence icon', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
         home: const Scaffold(body: FaultsWidget(batteryPct: 100)),
       ));
-      expect(find.byIcon(Icons.lightbulb), findsWidgets);
+      expect(find.byIcon(Icons.fence), findsWidgets);
     });
 
-    testWidgets('FaultsWidget non-100 shows off bulb', (tester) async {
+    testWidgets('FaultsWidget non-100 shows grey fence icon', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
         home: const Scaffold(body: FaultsWidget(batteryPct: 10)),
       ));
-      expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
+      expect(find.byIcon(Icons.fence), findsWidgets);
     });
   });
 }

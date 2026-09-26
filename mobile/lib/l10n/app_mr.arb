@@ -4,7 +4,7 @@
   "@navMachines": {
     "description": "Bottom navigation tab label for the machines list."
   },
-  "navAlerts": "अलर्ट",
+  "navAlerts": "सूचना",
   "@navAlerts": {
     "description": "Bottom navigation tab label for the alerts/inbox view."
   },
@@ -32,7 +32,7 @@
   "@analyticsRange30d": {
     "description": "Range chip: last 30 days."
   },
-  "batteryHealthTitle": "बाह्य बॅटरी आरोग्य",
+  "batteryHealthTitle": "बॅटरी आरोग्य",
   "@batteryHealthTitle": {
     "description": "Card title for the external battery voltage graph."
   },
@@ -41,7 +41,7 @@
     "description": "Latest external battery voltage; {voltage} is formatted volts.",
     "placeholders": {"voltage": {"type": "String"}}
   },
-  "batteryStatusHealthy": "निरोगी",
+  "batteryStatusHealthy": "बॅटरी निरोगी",
   "@batteryStatusHealthy": {
     "description": "Battery health status when voltage is inside the healthy band."
   },
@@ -131,10 +131,7 @@
   "@analyticsLabelBattery": {
     "description": "Summary header label under the latest voltage."
   },
-  "analyticsLabelLastSeen": "शेवटी पाहिले",
-  "@analyticsLabelLastSeen": {
-    "description": "Summary header label under the device's last-report relative time."
-  },
+
   "batteryVolts": "{voltage} V",
   "@batteryVolts": {
     "description": "Compact voltage value; {voltage} is formatted volts.",
@@ -144,11 +141,7 @@
   "@analyticsNewDeviceMessage": {
     "description": "Empty-state message when the selected device is too new to have history."
   },
-  "batteryScore": "स्कोअर {score}/100",
-  "@batteryScore": {
-    "description": "Battery health score chip; {score} is 0–100.",
-    "placeholders": {"score": {"type": "int"}}
-  },
+
   "batteryStatusDeclining": "कमकुवत होत आहे",
   "@batteryStatusDeclining": {
     "description": "Battery status when voltage shows a consistent downward trend."
@@ -157,31 +150,7 @@
   "@batteryStatusCritical": {
     "description": "Battery status when voltage is critically low."
   },
-  "insightStable": "व्होल्टेज स्थिर — बॅटरी निरोगी",
-  "@insightStable": {
-    "description": "Battery insight line when readings are steady."
-  },
-  "insightDeclining": "सातत्याने कमी होत आहे — आठवड्यात बॅटरी तपासा",
-  "@insightDeclining": {
-    "description": "Battery insight line when voltage shows a consistent decline."
-  },
-  "insightCriticallyLow": "बॅटरी गंभीर स्थितीत — लवकर चार्ज करा किंवा बदला",
-  "@insightCriticallyLow": {
-    "description": "Battery insight line when voltage is critically low."
-  },
-  "insightOvervoltage": "चार्जिंग व्होल्टेज जास्त — रेग्युलेटर तपासा",
-  "@insightOvervoltage": {
-    "description": "Battery insight line when voltage is above the healthy band (possible overcharge)."
-  },
-  "insightInsufficientData": "आरोग्य विश्लेषणासाठी अजून पुरेसा डेटा नाही",
-  "@insightInsufficientData": {
-    "description": "Battery insight line when there is too little history to analyze."
-  },
-  "batteryDaysUntilLow": "कमी होण्यास ≈{days, plural, =1{1 दिवस} other{{days} दिवस}}",
-  "@batteryDaysUntilLow": {
-    "description": "Estimated days until voltage reaches the low band; {days} is the rounded estimate.",
-    "placeholders": {"days": {"type": "int"}}
-  },
+
   "errorPageNotFound": "पेज सापडले नाही",
   "@errorPageNotFound": {
     "description": "AppBar title shown when a route does not exist."
@@ -727,7 +696,7 @@
       }
     }
   },
-  "alertsTitle": "अलर्ट",
+  "alertsTitle": "सूचना",
   "@alertsTitle": {
     "description": "AppBar title of the alerts page."
   },
@@ -738,30 +707,6 @@
   "filter": "फिल्टर",
   "@filter": {
     "description": "Tooltip for the inbox filter action."
-  },
-  "activeAlertsTab": "सक्रिय अलर्ट",
-  "@activeAlertsTab": {
-    "description": "Tab label and section header for active alerts."
-  },
-  "inboxTab": "इनबॉक्स",
-  "@inboxTab": {
-    "description": "Tab label for the notification inbox."
-  },
-  "loadingAlerts": "अलर्ट लोड होत आहेत…",
-  "@loadingAlerts": {
-    "description": "Loading state message for the active alerts list."
-  },
-  "alertsLoadFailed": "अलर्ट लोड होऊ शकले नाहीत. कृपया पुन्हा प्रयत्न करा.",
-  "@alertsLoadFailed": {
-    "description": "Error message for the active alerts list."
-  },
-  "noActiveAlerts": "कोणतेही सक्रिय अलर्ट नाही",
-  "@noActiveAlerts": {
-    "description": "Empty state title for the active alerts list."
-  },
-  "activeAlertsEmptyMessage": "डिव्हाइसचे सक्रिय अलर्ट येथे दिसतील.",
-  "@activeAlertsEmptyMessage": {
-    "description": "Empty state message for the active alerts list."
   },
   "alertDetailsTitle": "अलर्ट तपशील",
   "@alertDetailsTitle": {

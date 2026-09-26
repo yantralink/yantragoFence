@@ -101,7 +101,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/app/notifications',
-            builder: (context, state) => const AlertsPage(initialTab: 1),
+            builder: (context, state) => const AlertsPage(),
           ),
           GoRoute(
             path: '/app/analytics',

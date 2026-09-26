@@ -17,9 +17,10 @@ class BatteryHealthCard extends StatelessWidget {
   /// explains that data appears once the device starts reporting.
   final bool isNewDevice;
 
-  /// Optional Smart Battery Health analysis — when present the card
-  /// also shows the 0–100 score, backend status, insight line, and a
-  /// dashed decline projection. Null keeps the card chart-only.
+  /// Optional Smart Battery Health analysis — when present the status
+  /// text reflects the backend analysis (incl. DECLINING/CRITICAL) and
+  /// a dashed decline projection overlays the chart. Score and insight
+  /// text are intentionally not shown. Null keeps the card chart-only.
   final BatteryHealth? health;
 
   const BatteryHealthCard({
@@ -62,11 +63,6 @@ class BatteryHealthCard extends StatelessWidget {
               SizedBox(height: 180, child: _chart(colors, text)),
               const SizedBox(height: 12),
               _statusRow(context),
-              if (health != null &&
-                  health!.insight != 'INSUFFICIENT_DATA') ...[
-                const SizedBox(height: 8),
-                _insightRow(context),
-              ],
             ],
           ],
         ),
@@ -234,70 +230,12 @@ class BatteryHealthCard extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
-        if (health != null && health!.score >= 0) ...[
-          _chip(l10n.batteryScore(health!.score), _scoreTone(health!.score)),
-          const SizedBox(width: 6),
-        ],
-        _chip(status, tone),
-      ],
-    );
-  }
-
-  Widget _insightRow(BuildContext context) {
-    final l10n = context.l10n;
-    final h = health!;
-    final String text;
-    final Color tone;
-    switch (h.insight) {
-      case 'DECLINING':
-        text = h.estimatedDaysUntilLow != null
-            ? '${l10n.insightDeclining} (${l10n.batteryDaysUntilLow(h.estimatedDaysUntilLow!)})'
-            : l10n.insightDeclining;
-        tone = Colors.orange;
-      case 'CRITICALLY_LOW':
-        text = l10n.insightCriticallyLow;
-        tone = Colors.red;
-      case 'OVERVOLTAGE':
-        text = l10n.insightOvervoltage;
-        tone = Colors.orange;
-      default:
-        text = l10n.insightStable;
-        tone = Colors.green;
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.tips_and_updates_outlined, size: 15, color: tone),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(text,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: tone)),
+        Text(
+          status,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: tone, fontWeight: FontWeight.w700),
         ),
       ],
     );
-  }
-
-  Widget _chip(String label, Color tone) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-            color: tone, fontWeight: FontWeight.w600, fontSize: 12),
-      ),
-    );
-  }
-
-  Color _scoreTone(int score) {
-    if (score >= 70) return Colors.green;
-    if (score >= 40) return Colors.orange;
-    return Colors.red;
   }
 }

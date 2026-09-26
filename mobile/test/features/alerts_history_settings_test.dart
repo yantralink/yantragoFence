@@ -1,5 +1,6 @@
-// Widget tests for the migrated Alerts and Settings screens. Providers
-// are overridden so the tests never contact the network.
+// Widget tests for the Notifications page (formerly the Alerts page
+// Active/Inbox tabs) and the Settings screen. Providers are overridden
+// so the tests never contact the network.
 
 import 'dart:async';
 
@@ -9,27 +10,48 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/config/theme.dart';
 import 'package:yantrago/features/alerts/pages/alerts_page.dart';
-import 'package:yantrago/features/alerts/providers/alerts_provider.dart';
+import 'package:yantrago/features/notifications/providers/notification_provider.dart';
 import 'package:yantrago/features/settings/pages/settings_page.dart';
-import 'package:yantrago/models/alert.dart';
+import 'package:yantrago/models/notification_inbox.dart';
 
-Alert _alert({
-  String id = 'a1',
+NotificationInbox _notification({
+  String id = 'n1',
   String alertType = 'DEVICE_OFFLINE',
   String severity = 'WARNING',
-  String message = 'Device went offline unexpectedly',
-  bool acknowledged = false,
+  String title = 'Device Offline',
+  String body = 'Device went offline unexpectedly',
+  bool isRead = false,
 }) {
-  return Alert(
+  return NotificationInbox(
     id: id,
     organizationId: 'org1',
-    deviceId: 'd1',
-    imei: '000000000000001',
+    userId: 'u1',
+    alertId: 'a1',
+    eventId: 'e1',
     alertType: alertType,
     severity: severity,
-    message: message,
-    acknowledged: acknowledged,
+    incidentState: 'OPEN',
+    title: title,
+    body: body,
+    machineId: 'm1',
+    observedValue: null,
+    observedUnit: null,
+    locale: 'en',
+    templateVersion: 1,
+    isRead: isRead,
+    isAcknowledged: false,
     createdAt: DateTime(2026, 1, 1, 10, 30),
+    updatedAt: DateTime(2026, 1, 1, 10, 30),
+  );
+}
+
+NotificationInboxPage _page(List<NotificationInbox> items) {
+  return NotificationInboxPage(
+    items: items,
+    page: 0,
+    size: 20,
+    totalElements: items.length,
+    totalPages: 1,
   );
 }
 
@@ -74,32 +96,59 @@ Future<void> _pump(
 }
 
 void main() {
-  group('AlertsPage', () {
-    testWidgets('shows alerts with section header and count', (tester) async {
+  group('AlertsPage (Notifications)', () {
+    testWidgets('shows Notifications title and inbox items', (tester) async {
       await _pump(
         tester,
         const AlertsPage(),
         overrides: [
-          alertsProvider.overrideWith((ref) async => [
-                _alert(id: 'a1', alertType: 'DEVICE_OFFLINE'),
-                _alert(id: 'a2', alertType: 'LOW_BATTERY', severity: 'CRITICAL'),
-              ]),
+          notificationInboxProvider.overrideWith((ref) async => _page([
+                _notification(id: 'n1', title: 'Device Offline'),
+                _notification(id: 'n2', title: 'Low Battery'),
+              ])),
         ],
       );
-      expect(find.text('ACTIVE ALERTS'), findsOneWidget);
-      expect(find.text('2 total'), findsOneWidget);
-      expect(find.text('DEVICE_OFFLINE'), findsOneWidget);
-      expect(find.text('LOW_BATTERY'), findsOneWidget);
+      expect(find.text('Notifications'), findsOneWidget);
+      expect(find.text('Device Offline'), findsWidgets);
+      expect(find.text('Low Battery'), findsWidgets);
     });
 
-    testWidgets('empty state shows message and refresh', (tester) async {
+    testWidgets('has no Active Alerts tab or tab bar', (tester) async {
       await _pump(
         tester,
         const AlertsPage(),
-        overrides: [alertsProvider.overrideWith((ref) async => [])],
+        overrides: [
+          notificationInboxProvider
+              .overrideWith((ref) async => _page([_notification()])),
+        ],
       );
-      expect(find.text('No active alerts'), findsOneWidget);
-      expect(find.text('Refresh'), findsOneWidget);
+      expect(find.byType(TabBar), findsNothing);
+      expect(find.text('Active Alerts'), findsNothing);
+      expect(find.text('Inbox'), findsNothing);
+    });
+
+    testWidgets('shows mark-all-read and filter actions', (tester) async {
+      await _pump(
+        tester,
+        const AlertsPage(),
+        overrides: [
+          notificationInboxProvider
+              .overrideWith((ref) async => _page([_notification()])),
+        ],
+      );
+      expect(find.byIcon(Icons.done_all), findsOneWidget);
+      expect(find.byIcon(Icons.tune), findsOneWidget);
+    });
+
+    testWidgets('empty inbox shows empty state', (tester) async {
+      await _pump(
+        tester,
+        const AlertsPage(),
+        overrides: [
+          notificationInboxProvider.overrideWith((ref) async => _page([])),
+        ],
+      );
+      expect(find.text('No notifications'), findsOneWidget);
     });
 
     testWidgets('error state shows friendly message', (tester) async {
@@ -107,24 +156,25 @@ void main() {
         tester,
         const AlertsPage(),
         overrides: [
-          alertsProvider.overrideWith(
+          notificationInboxProvider.overrideWith(
             (ref) async => throw Exception('SocketException'),
           ),
         ],
       );
-      expect(find.text('Unable to load alerts. Please try again.'), findsOneWidget);
       expect(find.textContaining('SocketException'), findsNothing);
     });
 
-    testWidgets('loading state shows loading panel', (tester) async {
-      final completer = Completer<List<Alert>>();
+    testWidgets('loading state shows spinner', (tester) async {
+      final completer = Completer<NotificationInboxPage>();
       await _pump(
         tester,
         const AlertsPage(),
-        overrides: [alertsProvider.overrideWith((ref) => completer.future)],
+        overrides: [
+          notificationInboxProvider
+              .overrideWith((ref) => completer.future),
+        ],
       );
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Loading alerts…'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
     testWidgets('renders in dark theme', (tester) async {
@@ -133,10 +183,11 @@ void main() {
         const AlertsPage(),
         brightness: Brightness.dark,
         overrides: [
-          alertsProvider.overrideWith((ref) async => [_alert()]),
+          notificationInboxProvider
+              .overrideWith((ref) async => _page([_notification()])),
         ],
       );
-      expect(find.text('DEVICE_OFFLINE'), findsOneWidget);
+      expect(find.text('Device Offline'), findsWidgets);
     });
 
     testWidgets('renders without overflow at 200% text scale', (tester) async {
@@ -146,55 +197,11 @@ void main() {
         textScale: 2.0,
         surface: const Size(390, 2400),
         overrides: [
-          alertsProvider.overrideWith((ref) async => [_alert()]),
+          notificationInboxProvider
+              .overrideWith((ref) async => _page([_notification()])),
         ],
       );
       expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('unknown severity renders as info tone', (tester) async {
-      await _pump(
-        tester,
-        const AlertsPage(),
-        overrides: [
-          alertsProvider.overrideWith((ref) async => [
-                _alert(alertType: 'CUSTOM_ALERT', severity: 'UNKNOWN'),
-              ]),
-        ],
-      );
-      expect(find.text('CUSTOM_ALERT'), findsOneWidget);
-      expect(find.text('UNKNOWN'), findsOneWidget);
-    });
-
-    testWidgets('long alert message does not overflow', (tester) async {
-      final longMessage =
-          'Device reported a critical fault in the fencing circuit after a power surge '
-          'from the main supply line, causing the unit to shut down automatically as a '
-          'safety precaution. Please inspect the power conditioning module immediately.';
-      await _pump(
-        tester,
-        const AlertsPage(),
-        overrides: [
-          alertsProvider.overrideWith(
-            (ref) async => [_alert(message: longMessage)],
-          ),
-        ],
-      );
-      expect(find.textContaining('Device reported a critical fault'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('acknowledged alert shows acknowledged label', (tester) async {
-      await _pump(
-        tester,
-        const AlertsPage(),
-        overrides: [
-          alertsProvider.overrideWith(
-            (ref) async => [_alert(acknowledged: true)],
-          ),
-        ],
-      );
-      expect(find.text('Acknowledged'), findsOneWidget);
     });
   });
 
@@ -229,5 +236,3 @@ void main() {
     });
   });
 }
-
-

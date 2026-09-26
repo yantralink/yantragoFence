@@ -213,7 +213,7 @@ void main() {
       (tester) async {
     await _pump(tester, _overrides(machine: _machine()));
     // Ignition, Ext. Battery, Battery, GSM, Voltage show unavailable;
-    // FaultsWidget (Fence Fault bulb) also shows unavailable when battery
+    // FaultsWidget (Fence Fault icon) also shows unavailable when battery
     // is null.
     expect(find.text('Unavailable'), findsNWidgets(6));
     expect(find.text('No report received'), findsNWidgets(4));
@@ -357,10 +357,14 @@ void main() {
 
   // Live-vs-REST merge: a stale socket frame must never outrank a newer
   // REST snapshot, and a genuinely newer live frame must override it.
-  // Bulb assertions use the 48px body icon rendered by AppMetricCard.
+  // Metric assertions use the 48px body icon rendered by AppMetricCard
+  // (Fence Fault uses Icons.fence, Charging uses Icons.electrical_services).
 
-  bool isBulb(Widget w, Color color) =>
-      w is Icon && w.icon == Icons.lightbulb && w.size == 48 && w.color == color;
+  bool isMetricIcon(Widget w, Color color) =>
+      w is Icon &&
+      (w.icon == Icons.fence || w.icon == Icons.electrical_services) &&
+      w.size == 48 &&
+      w.color == color;
 
   testWidgets('stale live frame (older timestamp) is rejected in favor of REST',
       (tester) async {
@@ -377,9 +381,9 @@ void main() {
         ),
       ),
     );
-    // REST battery=100 wins → Fence Fault bulb red, Charging bulb off.
-    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.red)), findsWidgets);
-    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.green)), findsNothing);
+    // REST battery=100 wins → Fence Fault icon red, Charging icon off.
+    expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.red)), findsWidgets);
+    expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.green)), findsNothing);
   });
 
   testWidgets('newer live frame overrides REST snapshot', (tester) async {
@@ -393,9 +397,9 @@ void main() {
         liveTelemetry: Telemetry(battery: 10, timestamp: now, receivedAt: now),
       ),
     );
-    // Live battery=10 wins → Charging bulb green, Fence Fault off.
-    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.green)), findsWidgets);
-    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.red)), findsNothing);
+    // Live battery=10 wins → Charging icon green, Fence Fault grey.
+    expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.green)), findsWidgets);
+    expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.red)), findsNothing);
   });
 
   testWidgets('live frame older than 5 min by receivedAt falls back to REST',
@@ -414,8 +418,8 @@ void main() {
         ),
       ),
     );
-    // Socket frame is stale → REST battery=100 wins → red fault bulb.
-    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.red)), findsWidgets);
-    expect(find.byWidgetPredicate((w) => isBulb(w, Colors.green)), findsNothing);
+    // Socket frame is stale → REST battery=100 wins → red fault icon.
+    expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.red)), findsWidgets);
+    expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.green)), findsNothing);
   });
 }

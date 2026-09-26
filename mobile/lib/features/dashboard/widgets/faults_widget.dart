@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
-/// Fence Fault widget — displays a bulb indicator based on internal battery.
+/// Fence Fault widget — displays an electric-fence indicator based on
+/// internal battery.
 ///
-/// Composes [AppMetricCard]. The bulb glows RED when the internal battery
-/// is exactly 100%, indicating a fence fault. Otherwise the bulb is off
-/// (grey outline). No value or status text is shown — only the bulb icon.
+/// Composes [AppMetricCard]. The fence icon glows RED when the internal
+/// battery is exactly 100%, indicating a fence fault. Otherwise it is
+/// grey. No value or status text is shown — only the icon.
 ///
-/// - battery == 100  → bulb ON (red, Icons.lightbulb)
-/// - battery != 100  → bulb OFF (grey, Icons.lightbulb_outline)
+/// - battery == 100  → fault (red, Icons.fence)
+/// - battery != 100  → normal (grey, Icons.fence)
 /// - battery == null → unavailable
 class FaultsWidget extends StatelessWidget {
   final int? batteryPct;
@@ -23,13 +24,13 @@ class FaultsWidget extends StatelessWidget {
     if (batteryPct == null) {
       return AppMetricCard(
         label: l10n.metricLabelFenceFault,
-        icon: Icons.lightbulb_outline,
+        icon: Icons.fence,
         state: AppMetricState.unavailable,
       );
     }
 
     final bool isFault = batteryPct == 100;
-    final IconData icon = isFault ? Icons.lightbulb : Icons.lightbulb_outline;
+    const IconData icon = Icons.fence;
     final Color iconColor = isFault ? Colors.red : Colors.grey;
 
     return AppMetricCard(
