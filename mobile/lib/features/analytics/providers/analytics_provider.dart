@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/network/api_client.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
+import 'package:yantrago/models/fault_interval.dart';
+import 'package:yantrago/models/machine_activity.dart';
 import 'package:yantrago/models/telemetry_series.dart';
 
 /// Time range for analytics graphs — chips on the Analytics page.
@@ -63,4 +65,48 @@ final telemetrySeriesProvider =
     return TelemetrySeries.fromJson(response.data as Map<String, dynamic>);
   }
   return TelemetrySeries.empty;
+});
+
+Map<String, String> _rangeParams(AnalyticsRange range) {
+  final (from, to) = range.window();
+  return {'from': from.toIso8601String(), 'to': to.toIso8601String()};
+}
+
+/// FENCE_FAULT incidents for the selected machine + range.
+final faultTimelineProvider =
+    FutureProvider<List<FaultInterval>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  final machineId = ref.watch(effectiveAnalyticsMachineProvider);
+  if (user == null || machineId == null) return const [];
+
+  final dio = ref.watch(apiClientProvider);
+  final response = await dio.get(
+    '/api/v1/machines/$machineId/faults',
+    queryParameters: _rangeParams(ref.watch(analyticsRangeProvider)),
+  );
+  if (response.statusCode == 200 && response.data is List) {
+    return [
+      for (final item in response.data as List)
+        if (item is Map<String, dynamic>) FaultInterval.fromJson(item),
+    ];
+  }
+  return const [];
+});
+
+/// Ignition sessions + command markers for the selected machine + range.
+final machineActivityProvider =
+    FutureProvider<MachineActivity>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  final machineId = ref.watch(effectiveAnalyticsMachineProvider);
+  if (user == null || machineId == null) return MachineActivity.empty;
+
+  final dio = ref.watch(apiClientProvider);
+  final response = await dio.get(
+    '/api/v1/machines/$machineId/sessions',
+    queryParameters: _rangeParams(ref.watch(analyticsRangeProvider)),
+  );
+  if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+    return MachineActivity.fromJson(response.data as Map<String, dynamic>);
+  }
+  return MachineActivity.empty;
 });

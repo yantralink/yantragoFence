@@ -4,16 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/analytics/providers/analytics_provider.dart';
+import 'package:yantrago/features/analytics/widgets/activity_timeline_card.dart';
 import 'package:yantrago/features/analytics/widgets/battery_health_card.dart';
+import 'package:yantrago/features/analytics/widgets/fault_timeline_card.dart';
 import 'package:yantrago/features/analytics/widgets/machine_selector.dart';
 import 'package:yantrago/features/analytics/widgets/range_chips.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
-/// Analytics tab — historical graphs for the selected machine.
-///
-/// Phase 2 scope: External Battery Health card. Fence Fault and
-/// Machine Activity cards land in Phase 3.
+/// Analytics tab — battery health, fence fault timeline, and machine
+/// activity (ignition sessions) for the selected machine + range.
 class AnalyticsPage extends ConsumerWidget {
   const AnalyticsPage({super.key});
 
@@ -41,7 +41,12 @@ class AnalyticsPage extends ConsumerWidget {
             );
           }
           return RefreshIndicator(
-            onRefresh: () => ref.refresh(telemetrySeriesProvider.future),
+            onRefresh: () async {
+              ref.invalidate(telemetrySeriesProvider);
+              ref.invalidate(faultTimelineProvider);
+              ref.invalidate(machineActivityProvider);
+              await ref.read(telemetrySeriesProvider.future);
+            },
             child: AppPageBody(
               scrollable: true,
               safeArea: false,
@@ -59,8 +64,13 @@ class AnalyticsPage extends ConsumerWidget {
                       message: l10n.selectMachineMessage,
                       icon: Icons.precision_manufacturing_outlined,
                     )
-                  else
+                  else ...[
                     const _BatterySection(),
+                    const SizedBox(height: 12),
+                    const _FaultSection(),
+                    const SizedBox(height: 12),
+                    const _ActivitySection(),
+                  ],
                 ],
               ),
             ),
@@ -96,6 +106,74 @@ class _BatterySection extends ConsumerWidget {
         ),
       ),
       data: (data) => BatteryHealthCard(voltage: data.voltage),
+    );
+  }
+}
+
+class _FaultSection extends ConsumerWidget {
+  const _FaultSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final faults = ref.watch(faultTimelineProvider);
+    final (from, to) = ref.watch(analyticsRangeProvider).window();
+
+    return faults.when(
+      loading: () => const Card(
+        child: SizedBox(
+          height: 160,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (_, __) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: AppStatePanel.error(
+            message: l10n.errorSomethingWentWrong,
+            onRetry: () => ref.invalidate(faultTimelineProvider),
+          ),
+        ),
+      ),
+      data: (list) => FaultTimelineCard(
+        faults: list,
+        rangeStart: from,
+        rangeEnd: to,
+      ),
+    );
+  }
+}
+
+class _ActivitySection extends ConsumerWidget {
+  const _ActivitySection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final activity = ref.watch(machineActivityProvider);
+    final (from, to) = ref.watch(analyticsRangeProvider).window();
+
+    return activity.when(
+      loading: () => const Card(
+        child: SizedBox(
+          height: 160,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (_, __) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: AppStatePanel.error(
+            message: l10n.errorSomethingWentWrong,
+            onRetry: () => ref.invalidate(machineActivityProvider),
+          ),
+        ),
+      ),
+      data: (data) => ActivityTimelineCard(
+        activity: data,
+        rangeStart: from,
+        rangeEnd: to,
+      ),
     );
   }
 }

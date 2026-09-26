@@ -61,6 +61,64 @@
   "@analyticsNoDataMessage": {
     "description": "Body message explaining the empty analytics graph."
   },
+  "analyticsFaultTitle": "फेंस फॉल्ट",
+  "@analyticsFaultTitle": {
+    "description": "Card title for the fence fault timeline."
+  },
+  "analyticsFaultEmpty": "इस अवधि में कोई फॉल्ट नहीं",
+  "@analyticsFaultEmpty": {
+    "description": "Empty state when the fence had no faults in the selected range."
+  },
+  "analyticsFaultCount": "{count, plural, =1{1 फॉल्ट} other{{count} फॉल्ट}}",
+  "@analyticsFaultCount": {
+    "description": "Fault count label on the fault card summary; {count} is the number of incidents.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "analyticsActivityTitle": "मशीन गतिविधि",
+  "@analyticsActivityTitle": {
+    "description": "Card title for the machine ON/OFF activity timeline."
+  },
+  "analyticsActivityEmpty": "इस अवधि में कोई गतिविधि नहीं",
+  "@analyticsActivityEmpty": {
+    "description": "Empty state when the machine had no ignition sessions in the selected range."
+  },
+  "analyticsSessionCount": "{count, plural, =1{1 सत्र} other{{count} सत्र}}",
+  "@analyticsSessionCount": {
+    "description": "Session count label; {count} is the number of ON sessions.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "analyticsOnTimeSummary": "{duration} चालू",
+  "@analyticsOnTimeSummary": {
+    "description": "Total ON-time summary on the activity card; {duration} is formatted like '2h 5m'.",
+    "placeholders": {"duration": {"type": "String"}}
+  },
+  "analyticsOngoing": "जारी",
+  "@analyticsOngoing": {
+    "description": "Badge shown on a fault or session that is still open."
+  },
+  "analyticsMoreRows": "+{count} और",
+  "@analyticsMoreRows": {
+    "description": "Footer when a timeline card truncates its detail list; {count} is the hidden row count.",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "analyticsLegendCommand": "कमांड",
+  "@analyticsLegendCommand": {
+    "description": "Legend label for command marker ticks on the activity strip."
+  },
+  "analyticsLegendOn": "फेंस चालू",
+  "@analyticsLegendOn": {
+    "description": "Legend label for ON-session bars on the activity strip."
+  },
+  "durationHm": "{h} घं {m} मि",
+  "@durationHm": {
+    "description": "Duration in hours and minutes; {h} and {m} are integers.",
+    "placeholders": {"h": {"type": "int"}, "m": {"type": "int"}}
+  },
+  "durationM": "{m} मिनट",
+  "@durationM": {
+    "description": "Duration in minutes only; {m} is an integer.",
+    "placeholders": {"m": {"type": "int"}}
+  },
   "errorPageNotFound": "पेज नहीं मिला",
   "@errorPageNotFound": {
     "description": "AppBar title shown when a route does not exist."
