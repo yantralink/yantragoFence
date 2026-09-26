@@ -208,8 +208,50 @@ Ordered by value/effort:
 | **2** | Mobile: Analytics tab + machine selector + range chips + Battery Health card | ✅ ships partial screen |
 | **3** | Mobile: Fence Fault + Activity timeline cards | ✅ full feature |
 | **4** | Extras from §5 (as approved) | ✅ |
+| **5 (deferred)** | Smart Battery Health — see §9. **Approved for design; implement later** | — |
 
 Each phase self-contained per rule 20 — stop for verification between.
+
+---
+
+## 9. Phase 5 (deferred) — Smart Battery Health
+
+User-approved design; implementation deferred to a later round.
+
+**Honest scope**: rule-based analytics on existing `voltage_readings` —
+NOT ML. True end-of-life prediction needs current/temperature/cycle
+data we don't collect. Label in UI: "Smart Battery Health" /
+"Predictive alert" (not "AI") — a heuristic failure presented as AI
+will burn credibility.
+
+### 9.1 Features
+
+1. **Health score 0–100** — composite of resting voltage, variance,
+   and time spent below 12 V (standard lead-acid SOC table)
+2. **Trend line + dotted projection** — when a steady decline exists,
+   extrapolate and show "≈ N days until low" (labeled "estimated";
+   hidden when slope is inconsistent)
+3. **Smart insight line** — one sentence under the chart:
+   - `Voltage stable — battery healthy`
+   - `Dropping 0.1 V/day — check battery within a week`
+   - `Charging on but voltage flat — battery may not be holding charge`
+
+### 9.2 Detection rules (backend, computed on read — no new tables)
+
+| Signal | Rule | Output |
+|---|---|---|
+| Resting voltage | SOC table (12.6+=full … <11.8=discharged) | score component |
+| Variance | noisy readings = unstable supply/connection | score component |
+| Trend slope | multi-day mV/day decline (24h too noisy) | projection + warning |
+| Charge failure | external power on AND voltage flat/falling | insight 3 |
+| Sudden sag | large drop between adjacent readings | overlaps VOLTAGE_DROP alert |
+
+### 9.3 Unlocks real prediction later
+
+Forward the fencing-state packet (output voltage + **fence current**)
+from gateway → backend (currently parsed but dropped — same gap found
+in the fence-fault analysis). Voltage-under-load is the true health
+signal; with it, slope + sag-depth models become genuinely predictive.
 
 ---
 
