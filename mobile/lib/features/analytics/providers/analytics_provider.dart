@@ -30,11 +30,15 @@ final analyticsRangeProvider =
 final analyticsMachineIdProvider = StateProvider<String?>((ref) => null);
 
 /// Effective machine id — explicit selection, else the first machine.
+/// A stale selection (machine unassigned since) falls back to the
+/// first machine so the dropdown never holds an invalid value.
 final effectiveAnalyticsMachineProvider = Provider<String?>((ref) {
   final selected = ref.watch(analyticsMachineIdProvider);
-  if (selected != null) return selected;
   final machines = ref.watch(machineListProvider).valueOrNull;
   if (machines == null || machines.isEmpty) return null;
+  if (selected != null && machines.any((m) => m.id == selected)) {
+    return selected;
+  }
   return machines.first.id;
 });
 

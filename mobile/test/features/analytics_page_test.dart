@@ -1,11 +1,15 @@
 // Widget tests for the Analytics Battery Health card (Phase 2).
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:yantrago/core/config/theme.dart';
+import 'package:yantrago/features/analytics/providers/analytics_provider.dart';
 import 'package:yantrago/features/analytics/widgets/battery_health_card.dart';
+import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/l10n/generated/app_localizations.dart';
+import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/telemetry_series.dart';
 
 Future<void> _pump(WidgetTester tester, Widget child) async {
@@ -51,6 +55,43 @@ void main() {
         _v(0, 14.1), _v(5, 14.4),
       ]));
       expect(find.text('High'), findsOneWidget);
+    });
+  });
+
+  group('effectiveAnalyticsMachineProvider', () {
+    Machine machine(String id) => Machine(
+          id: id,
+          machineId: 'M-$id',
+          name: 'Machine $id',
+          status: 'ACTIVE',
+          isOnline: true,
+          createdAt: DateTime(2026, 1, 1),
+        );
+
+    test('defaults to first machine when nothing selected', () async {
+      final container = ProviderContainer(overrides: [
+        machineListProvider.overrideWith(
+            (ref) async => [machine('m1'), machine('m2')]),
+      ]);
+      addTearDown(container.dispose);
+      await container.read(machineListProvider.future);
+
+      expect(container.read(effectiveAnalyticsMachineProvider), 'm1');
+    });
+
+    test('stale selection falls back to first machine', () async {
+      final container = ProviderContainer(overrides: [
+        machineListProvider.overrideWith(
+            (ref) async => [machine('m1'), machine('m2')]),
+      ]);
+      addTearDown(container.dispose);
+      await container.read(machineListProvider.future);
+
+      container.read(analyticsMachineIdProvider.notifier).state = 'ghost';
+      expect(container.read(effectiveAnalyticsMachineProvider), 'm1');
+
+      container.read(analyticsMachineIdProvider.notifier).state = 'm2';
+      expect(container.read(effectiveAnalyticsMachineProvider), 'm2');
     });
   });
 
