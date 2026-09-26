@@ -12,6 +12,7 @@ import 'package:yantrago/features/machines/pages/machine_detail_page.dart';
 import 'package:yantrago/features/machines/pages/machine_location_map_page.dart';
 import 'package:yantrago/features/alerts/pages/alert_detail_page.dart';
 import 'package:yantrago/features/alerts/pages/alerts_page.dart';
+import 'package:yantrago/features/analytics/pages/analytics_page.dart';
 import 'package:yantrago/features/notifications/pages/notification_detail_page.dart';
 import 'package:yantrago/features/notifications/pages/notification_preferences_page.dart';
 import 'package:yantrago/features/notifications/providers/notification_socket_provider.dart';
@@ -103,6 +104,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AlertsPage(initialTab: 1),
           ),
           GoRoute(
+            path: '/app/analytics',
+            builder: (context, state) => const AnalyticsPage(),
+          ),
+          GoRoute(
             path: '/app/notifications/preferences',
             builder: (context, state) =>
                 const NotificationPreferencesPage(),
@@ -164,6 +169,7 @@ class _AppShell extends ConsumerWidget {
   static const _routes = [
     '/app/machines',
     '/app/alerts',
+    '/app/analytics',
     '/app/profile',
   ];
 
@@ -204,6 +210,11 @@ class _AppShell extends ConsumerWidget {
             ),
             selectedIcon: const Icon(Icons.warning),
             label: l10n.navAlerts,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.insights_outlined),
+            selectedIcon: const Icon(Icons.insights),
+            label: l10n.navAnalytics,
           ),
           NavigationDestination(
             icon: const Icon(Icons.person_outlined),

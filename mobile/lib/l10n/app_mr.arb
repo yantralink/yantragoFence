@@ -12,6 +12,55 @@
   "@navProfile": {
     "description": "Bottom navigation tab label for the profile page."
   },
+  "navAnalytics": "अ‍ॅनालिटिक्स",
+  "@navAnalytics": {
+    "description": "Bottom navigation tab label for the analytics/graphs page."
+  },
+  "analyticsTitle": "अ‍ॅनालिटिक्स",
+  "@analyticsTitle": {
+    "description": "Title of the analytics page."
+  },
+  "analyticsRangeToday": "आज",
+  "@analyticsRangeToday": {
+    "description": "Range chip: today's data."
+  },
+  "analyticsRange7d": "7 दिवस",
+  "@analyticsRange7d": {
+    "description": "Range chip: last 7 days."
+  },
+  "analyticsRange30d": "30 दिवस",
+  "@analyticsRange30d": {
+    "description": "Range chip: last 30 days."
+  },
+  "batteryHealthTitle": "बाह्य बॅटरी आरोग्य",
+  "@batteryHealthTitle": {
+    "description": "Card title for the external battery voltage graph."
+  },
+  "batteryNowVolts": "आता: {voltage} V",
+  "@batteryNowVolts": {
+    "description": "Latest external battery voltage; {voltage} is formatted volts.",
+    "placeholders": {"voltage": {"type": "String"}}
+  },
+  "batteryStatusHealthy": "निरोगी",
+  "@batteryStatusHealthy": {
+    "description": "Battery health status when voltage is inside the healthy band."
+  },
+  "batteryStatusLow": "कमी",
+  "@batteryStatusLow": {
+    "description": "Battery health status when voltage is below the healthy band."
+  },
+  "batteryStatusHigh": "जास्त",
+  "@batteryStatusHigh": {
+    "description": "Battery health status when voltage is above the healthy band."
+  },
+  "analyticsNoData": "या कालावधीत डेटा नाही",
+  "@analyticsNoData": {
+    "description": "Empty state when a graph has no points in the selected range."
+  },
+  "analyticsNoDataMessage": "निवडलेल्या कालावधीत डिव्हाइस रिपोर्ट करेल तेव्हा डेटा येथे दिसेल.",
+  "@analyticsNoDataMessage": {
+    "description": "Body message explaining the empty analytics graph."
+  },
   "errorPageNotFound": "पेज सापडले नाही",
   "@errorPageNotFound": {
     "description": "AppBar title shown when a route does not exist."
