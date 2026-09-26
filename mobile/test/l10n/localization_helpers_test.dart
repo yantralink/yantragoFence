@@ -7,7 +7,6 @@
 import 'dart:ui' show Locale;
 
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yantrago/core/network/interceptors/error_interceptor.dart';
 import 'package:yantrago/core/network/network_error_messages.dart';
@@ -103,13 +102,7 @@ void main() {
     });
 
     test('ErrorInterceptor attaches the code to the request options', () async {
-      // The interceptor needs a Ref (it is unused in onError, but the
-      // constructor requires one) — obtain one from a container.
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      final interceptor = ErrorInterceptor(
-        container.read(_refProvider),
-      );
+      final interceptor = ErrorInterceptor();
       final options = RequestOptions(path: '/api/v1/x');
       final original = DioException(
         requestOptions: options,
@@ -153,10 +146,6 @@ void main() {
     });
   });
 }
-
-/// Provider exposing the container's Ref so ErrorInterceptor can be built
-/// in tests without network access.
-final _refProvider = Provider<Ref>((ref) => ref);
 
 /// Minimal interceptor handler that forwards the modified error to a sink.
 class _CapturingHandler extends ErrorInterceptorHandler {

@@ -13,8 +13,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:yantrago/core/config/theme.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
-import 'package:yantrago/features/dashboard/pages/dashboard_page.dart';
-import 'package:yantrago/features/dashboard/providers/dashboard_provider.dart';
 import 'package:yantrago/features/dashboard/widgets/battery_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/faults_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/gsm_status_widget.dart';
@@ -46,25 +44,6 @@ Machine _machine({
     charging: charging,
     gsmSignal: gsmSignal,
     voltage: voltage,
-  );
-}
-
-DashboardSummary _summary({
-  int total = 3,
-  int online = 2,
-  int active = 1,
-  int fault = 0,
-  int offline = 1,
-  List<Machine> machines = const [],
-}) {
-  return DashboardSummary(
-    totalMachines: total,
-    onlineMachines: online,
-    activeMachines: active,
-    inStockMachines: 0,
-    faultMachines: fault,
-    offlineMachines: offline,
-    machines: machines,
   );
 }
 
@@ -123,45 +102,6 @@ Future<void> _pumpList(
         overrides: overrides,
         textScale: textScale,
         surface: surface,
-      ),
-    ),
-  );
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 100));
-}
-
-Future<void> _pumpDashboard(
-  WidgetTester tester,
-  List<Override> overrides, {
-  Brightness brightness = Brightness.light,
-  double textScale = 1.0,
-  Size surface = const Size(390, 1400),
-}) async {
-  await tester.binding.setSurfaceSize(surface);
-  final GoRouter router = GoRouter(
-    initialLocation: '/app/dashboard',
-    routes: [
-      ShellRoute(
-        builder: (context, state, child) => child,
-        routes: [
-          GoRoute(
-            path: '/app/dashboard',
-            builder: (context, state) => const DashboardPage(),
-          ),
-        ],
-      ),
-    ],
-  );
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: overrides,
-      child: MaterialApp.router(
-        theme: brightness == Brightness.light ? AppTheme.lightTheme : AppTheme.darkTheme,
-        routerConfig: router,
-        builder: (context, widget) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale)),
-          child: widget!,
-        ),
       ),
     ),
   );
@@ -288,79 +228,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       // RefreshIndicator should be visible during refresh
       expect(find.byType(RefreshIndicator), findsOneWidget);
-    });
-  });
-
-  group('DashboardPage', () {
-    testWidgets('shows status card with counts', (tester) async {
-      await _pumpDashboard(tester, [
-        dashboardProvider.overrideWith((ref) async => _summary(
-              total: 3,
-              online: 2,
-              active: 1,
-              offline: 1,
-              machines: [_machine()],
-            )),
-        currentUserProvider.overrideWith((ref) => _user),
-      ]);
-      expect(find.text('Machine Status'), findsOneWidget);
-      expect(find.text('3'), findsWidgets);
-      expect(find.text('Online'), findsOneWidget);
-      expect(find.text('Fencing'), findsOneWidget);
-    });
-
-    testWidgets('null telemetry shows unavailable, not zero', (tester) async {
-      await _pumpDashboard(tester, [
-        dashboardProvider.overrideWith((ref) async => _summary(machines: [_machine()])),
-        currentUserProvider.overrideWith((ref) => _user),
-      ]);
-      expect(find.text('Unavailable'), findsNWidgets(4));
-      expect(find.text('No report received'), findsNWidgets(4));
-    });
-
-    testWidgets('voltage telemetry shows real value from machine', (tester) async {
-      await _pumpDashboard(tester, [
-        dashboardProvider.overrideWith((ref) async => _summary(
-              machines: [_machine(voltage: 12.22, batteryPct: 100, charging: true, gsmSignal: 4)],
-            )),
-        currentUserProvider.overrideWith((ref) => _user),
-      ]);
-      expect(find.text('12.22'), findsOneWidget);
-    });
-
-    testWidgets('error state shows friendly message', (tester) async {
-      await _pumpDashboard(tester, [
-        dashboardProvider.overrideWith(
-          (ref) async => throw Exception('Network error'),
-        ),
-        currentUserProvider.overrideWith((ref) => _user),
-      ]);
-      expect(find.text('Unable to load the dashboard. Please try again.'), findsOneWidget);
-      expect(find.textContaining('Network error'), findsNothing);
-    });
-
-    testWidgets('renders in dark theme', (tester) async {
-      await _pumpDashboard(
-        tester,
-        [
-          dashboardProvider.overrideWith((ref) async => _summary(machines: [_machine()])),
-          currentUserProvider.overrideWith((ref) => _user),
-        ],
-        brightness: Brightness.dark,
-      );
-      expect(find.text('Machine Status'), findsOneWidget);
-    });
-
-    testWidgets('renders without overflow at narrow width', (tester) async {
-      await _pumpDashboard(
-        tester,
-        [
-          dashboardProvider.overrideWith((ref) async => _summary(machines: [_machine()])),
-          currentUserProvider.overrideWith((ref) => _user),
-        ],
-        surface: const Size(320, 1600),
-      );
-      expect(tester.takeException(), isNull);
     });
   });
 

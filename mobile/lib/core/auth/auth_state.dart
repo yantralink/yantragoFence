@@ -1,4 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/network/network_error_messages.dart';
 import 'package:yantrago/models/user.dart';
 

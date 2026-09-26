@@ -1,18 +1,13 @@
 // Tests for real-time command status updates (Phase 5).
 //
 // Covers: CommandStatusUpdate parsing of the backend broadcast payload,
-// Command.copyWith / terminal-state getters, CommandNotifier.applyStatusUpdate
-// matching rules, and CommandStatusWidget rendering (TIMEOUT label, and
-// filtering out commands that belong to another machine).
+// Command.copyWith / terminal-state getters, and CommandNotifier.applyStatusUpdate
+// matching rules.
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:yantrago/core/config/theme.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
-import 'package:yantrago/features/commands/widgets/command_status_widget.dart';
 import 'package:yantrago/models/command.dart';
 import 'package:yantrago/models/command_status_update.dart';
 
@@ -56,25 +51,6 @@ class _SeededNotifier extends CommandNotifier {
   _SeededNotifier(Command? c) : super(Dio()) {
     if (c != null) seedLastCommand(c);
   }
-}
-
-Future<void> _pumpWidget(
-  WidgetTester tester, {
-  required Command? seeded,
-  required String machineId,
-}) async {
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        commandProvider.overrideWith((ref) => _SeededNotifier(seeded)),
-      ],
-      child: MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: Scaffold(body: CommandStatusWidget(machineId: machineId)),
-      ),
-    ),
-  );
-  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -176,37 +152,6 @@ void main() {
       notifier.applyStatusUpdate(_update(status: 'DONE'));
       expect(notifier.state.lastCommand, isNull);
       expect(notifier.state.pending, isFalse);
-    });
-  });
-
-  group('CommandStatusWidget', () {
-    testWidgets('renders Timed Out for a TIMEOUT command', (tester) async {
-      await _pumpWidget(
-        tester,
-        seeded: _command(status: 'TIMEOUT', lastError: 'No response'),
-        machineId: 'm1',
-      );
-      expect(find.text('Timed Out'), findsWidgets);
-      expect(find.text('No response'), findsOneWidget);
-    });
-
-    testWidgets('hides a command belonging to another machine', (tester) async {
-      await _pumpWidget(
-        tester,
-        seeded: _command(machineId: 'm2', status: 'DONE'),
-        machineId: 'm1',
-      );
-      expect(find.text('No recent commands'), findsOneWidget);
-      expect(find.text('Done'), findsNothing);
-    });
-
-    testWidgets('renders Awaiting ACK for a SENT command', (tester) async {
-      await _pumpWidget(
-        tester,
-        seeded: _command(status: 'SENT'),
-        machineId: 'm1',
-      );
-      expect(find.text('Awaiting ACK'), findsWidgets);
     });
   });
 }

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/network/network_error_messages.dart';
 
@@ -11,9 +10,6 @@ import 'package:yantrago/core/network/network_error_messages.dart';
 /// code to a localized message via [networkErrorMessage]; raw backend
 /// messages and exception strings are never shown to users.
 class ErrorInterceptor extends Interceptor {
-  final Ref _ref;
-
-  ErrorInterceptor(this._ref);
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {

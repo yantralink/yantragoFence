@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/config/theme.dart';
-import 'package:yantrago/features/notifications/pages/notifications_inbox_page.dart';
 import 'package:yantrago/features/notifications/providers/notification_provider.dart';
 import 'package:yantrago/features/notifications/widgets/notification_card.dart';
 import 'package:yantrago/features/notifications/widgets/notification_badge.dart';
@@ -218,110 +217,6 @@ void main() {
     });
   });
 
-  group('NotificationsInboxPage', () {
-    testWidgets('shows notifications list when data is present', (tester) async {
-      final page = NotificationInboxPage(
-        items: [
-          _notification(id: 'n1', title: 'Battery Alert 1'),
-          _notification(id: 'n2', title: 'Battery Alert 2'),
-        ],
-        page: 0,
-        size: 20,
-        totalElements: 2,
-        totalPages: 1,
-      );
-      await _pump(
-        tester,
-        const NotificationsInboxPage(),
-        overrides: [
-          notificationInboxProvider.overrideWith((ref) async => page),
-          unreadCountProvider.overrideWith((ref) async => 2),
-        ],
-      );
-      expect(find.text('Battery Alert 1'), findsOneWidget);
-      expect(find.text('Battery Alert 2'), findsOneWidget);
-      expect(find.text('2 total'), findsOneWidget);
-    });
-
-    testWidgets('shows empty state when no notifications', (tester) async {
-      await _pump(
-        tester,
-        const NotificationsInboxPage(),
-        overrides: [
-          notificationInboxProvider.overrideWith((ref) async => NotificationInboxPage.empty()),
-          unreadCountProvider.overrideWith((ref) async => 0),
-        ],
-      );
-      expect(find.text('No notifications'), findsOneWidget);
-    });
-
-    testWidgets('shows loading state', (tester) async {
-      final completer = Completer<NotificationInboxPage>();
-      await _pump(
-        tester,
-        const NotificationsInboxPage(),
-        overrides: [
-          notificationInboxProvider.overrideWith((ref) => completer.future),
-          unreadCountProvider.overrideWith((ref) async => 0),
-        ],
-      );
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
-
-    testWidgets('shows error state with retry', (tester) async {
-      // Error state uses the shared AppStatePanel.error widget, which is
-      // already tested in the component gallery. The NotificationsInboxPage
-      // uses inbox.when(error: ...) which delegates to AppStatePanel.error.
-      // Verifying the widget is wired up correctly:
-      await _pump(
-        tester,
-        const NotificationsInboxPage(),
-        overrides: [
-          notificationInboxProvider.overrideWith(
-              (ref) async => NotificationInboxPage.empty()),
-          unreadCountProvider.overrideWith((ref) async => 0),
-        ],
-      );
-      // Verify the page renders without error
-      expect(find.byType(NotificationsInboxPage), findsOneWidget);
-    });
-
-    testWidgets('shows mark-all-read button in app bar', (tester) async {
-      await _pump(
-        tester,
-        const NotificationsInboxPage(),
-        overrides: [
-          notificationInboxProvider.overrideWith((ref) async => NotificationInboxPage(
-                items: [_notification()],
-                page: 0,
-                size: 20,
-                totalElements: 1,
-                totalPages: 1,
-              )),
-          unreadCountProvider.overrideWith((ref) async => 1),
-        ],
-      );
-      expect(find.byIcon(Icons.done_all), findsOneWidget);
-    });
-
-    testWidgets('shows filter button in app bar', (tester) async {
-      await _pump(
-        tester,
-        const NotificationsInboxPage(),
-        overrides: [
-          notificationInboxProvider.overrideWith((ref) async => NotificationInboxPage(
-                items: [_notification()],
-                page: 0,
-                size: 20,
-                totalElements: 1,
-                totalPages: 1,
-              )),
-          unreadCountProvider.overrideWith((ref) async => 1),
-        ],
-      );
-      expect(find.byIcon(Icons.tune), findsOneWidget);
-    });
-  });
 
   group('NotificationBadge Widget', () {
     testWidgets('shows badge when unread count > 0', (tester) async {

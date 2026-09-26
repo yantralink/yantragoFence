@@ -22,7 +22,7 @@ final apiClientProvider = Provider<Dio>((ref) {
 
   dio.interceptors.addAll([
     AuthInterceptor(ref),
-    ErrorInterceptor(ref),
+    ErrorInterceptor(),
     LogInterceptor(
       request: true,
       requestHeader: false,

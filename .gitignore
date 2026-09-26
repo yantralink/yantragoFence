@@ -68,3 +68,9 @@ docker-compose.override.yml
 
 # Intermediate extraction output
 docs/br05_extracted/
+
+# Generated / build artifacts
+mobile/lib/l10n/generated/
+*.tsbuildinfo
+*.tar.gz
+nul
