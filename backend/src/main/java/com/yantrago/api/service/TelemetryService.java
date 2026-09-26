@@ -63,23 +63,33 @@ public class TelemetryService {
 
         List<VoltageDto> voltage = voltageRows.stream()
                 .map(r -> new VoltageDto(
-                        (LocalDateTime) r.get("recorded_at"),
+                        toLocalDateTime(r.get("recorded_at")),
                         ((Number) r.get("voltage")).doubleValue()))
                 .collect(Collectors.toList());
 
         List<BatteryDto> battery = batteryRows.stream()
                 .map(r -> new BatteryDto(
-                        (LocalDateTime) r.get("recorded_at"),
+                        toLocalDateTime(r.get("recorded_at")),
                         ((Number) r.get("battery_pct")).doubleValue()))
                 .collect(Collectors.toList());
 
         List<GsmDto> gsm = gsmRows.stream()
                 .map(r -> new GsmDto(
-                        (LocalDateTime) r.get("recorded_at"),
+                        toLocalDateTime(r.get("recorded_at")),
                         ((Number) r.get("gsm_signal")).intValue()))
                 .collect(Collectors.toList());
 
         return new TelemetryDto(machineId.toString(), voltage, battery, gsm, from, to);
+    }
+
+    /**
+     * JdbcTemplate returns java.sql.Timestamp for timestamp columns —
+     * a plain (LocalDateTime) cast throws ClassCastException.
+     */
+    private static LocalDateTime toLocalDateTime(Object value) {
+        if (value instanceof java.sql.Timestamp ts) return ts.toLocalDateTime();
+        if (value instanceof LocalDateTime ldt) return ldt;
+        throw new IllegalArgumentException("Cannot convert " + value + " to LocalDateTime");
     }
 
     /**

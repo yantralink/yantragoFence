@@ -31,12 +31,12 @@ import java.util.UUID;
  * getFaultIntervals: FENCE_FAULT incidents from the alerts table,
  * overlapping the requested range.
  *
- * getSessions: ignition-ON sessions derived from
- * location_history.ignition_on transitions. Consecutive points more
- * than SESSION_GAP_MINUTES apart split sessions, so heartbeat gaps do
- * not silently merge two runs — and a brief reporting gap does not
- * split one. Manual ON/OFF commands are returned as markers so the UI
- * can compare issued commands against actual ignition state.
+ * getSessions: ON sessions derived primarily from DONE machine
+ * commands — on this hardware the device ACK is the only confirmed
+ * fence-energized signal (location_history.ignition_on carries the GPS
+ * ACC-wire bit, which is not wired on deployed units and stays false
+ * even while the fence is on). When a machine has no commands at all,
+ * sessions fall back to ignition_on transitions for ACC-wired units.
  *
  * Per AGENTS.md rule 7/8: tenant isolation uses organizationId from the
  * JWT context (OwnerContextService), never from the request.
@@ -47,6 +47,7 @@ public class AnalyticsService {
     private static final Logger log = LoggerFactory.getLogger(AnalyticsService.class);
 
     private static final String ALERT_TYPE_FENCE_FAULT = "FENCE_FAULT";
+    private static final String STATUS_DONE = "DONE";
 
     /** Max gap between ignition-ON points that still counts as one session. */
     private static final Duration SESSION_GAP = Duration.ofMinutes(10);
@@ -99,15 +100,30 @@ public class AnalyticsService {
     }
 
     /**
-     * Ignition-ON sessions plus manual command markers for [from, to].
+     * ON sessions plus manual command markers for [from, to].
      */
     @Transactional(readOnly = true)
     public SessionsResponse getSessions(UUID machineId, LocalDateTime from, LocalDateTime to) {
         UUID orgId = validateMachineAccess(machineId);
 
-        List<Map<String, Object>> points =
-                locationRepository.findIgnitionHistory(orgId, machineId, from, to);
-        List<MachineSessionDto> sessions = deriveSessions(points, from, to);
+        List<MachineCommand> doneBefore = commandRepository
+                .findTop1ByOrganizationIdAndMachineIdAndStatusAndCreatedAtLessThanOrderByCreatedAtDesc(
+                        orgId, machineId, STATUS_DONE, from)
+                .map(List::of)
+                .orElse(List.of());
+        List<MachineCommand> doneInRange = commandRepository
+                .findByOrganizationIdAndMachineIdAndStatusAndCreatedAtBetweenOrderByCreatedAtAsc(
+                        orgId, machineId, STATUS_DONE, from, to);
+
+        List<MachineSessionDto> sessions;
+        if (!doneBefore.isEmpty() || !doneInRange.isEmpty()) {
+            sessions = deriveSessionsFromCommands(
+                    doneBefore.isEmpty() ? null : doneBefore.get(0), doneInRange, from);
+        } else {
+            // ACC-wired trackers: fall back to the ignition bit.
+            sessions = deriveSessions(
+                    locationRepository.findIgnitionHistory(orgId, machineId, from, to), from, to);
+        }
 
         List<CommandMarkerDto> markers = commandRepository
                 .findByOrganizationIdAndMachineIdAndCreatedAtBetweenOrderByCreatedAtAsc(
@@ -189,6 +205,45 @@ public class AnalyticsService {
         }
 
         return sessions;
+    }
+
+    /**
+     * Derives ON sessions from DONE ON/OFF command transitions.
+     *
+     * - `lastBefore` is the most recent DONE command before `from`; an
+     *   ON-type there means the fence entered the range energized, so
+     *   the session opens at the range boundary.
+     * - An ON command opens a session at its completion time (device-
+     *   confirmed, not requested time); OFF closes it.
+     * - Duplicate ON/ON or OFF/OFF commands are no-ops.
+     * - A session still open after the last command is ongoing — the
+     *   fence stays energized until a confirmed OFF arrives.
+     */
+    static List<MachineSessionDto> deriveSessionsFromCommands(
+            MachineCommand lastBefore, List<MachineCommand> inRange, LocalDateTime from) {
+        List<MachineSessionDto> sessions = new ArrayList<>();
+        LocalDateTime sessionStart = isOnCommand(lastBefore) ? from : null;
+
+        for (MachineCommand cmd : inRange) {
+            LocalDateTime at = cmd.getCompletedAt() != null ? cmd.getCompletedAt() : cmd.getCreatedAt();
+            if (isOnCommand(cmd) && sessionStart == null) {
+                sessionStart = at;
+            } else if (!isOnCommand(cmd) && sessionStart != null) {
+                sessions.add(closedSession(sessionStart, at));
+                sessionStart = null;
+            }
+        }
+
+        if (sessionStart != null) {
+            sessions.add(new MachineSessionDto(sessionStart, null,
+                    Duration.between(sessionStart, LocalDateTime.now()).toMinutes(), true));
+        }
+        return sessions;
+    }
+
+    private static boolean isOnCommand(MachineCommand cmd) {
+        if (cmd == null || cmd.getCommandType() == null) return false;
+        return cmd.getCommandType().equals("ON") || cmd.getCommandType().equals("FENCING_ON");
     }
 
     private static MachineSessionDto closedSession(LocalDateTime start, LocalDateTime end) {

@@ -66,6 +66,16 @@ class AnalyticsServiceTest {
         machine.setId(machineId);
         machine.setOrganizationId(orgId);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
+
+        // Default: no DONE commands → sessions fall back to ignition bit.
+        when(commandRepository
+                .findTop1ByOrganizationIdAndMachineIdAndStatusAndCreatedAtLessThanOrderByCreatedAtDesc(
+                        any(), any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(commandRepository
+                .findByOrganizationIdAndMachineIdAndStatusAndCreatedAtBetweenOrderByCreatedAtAsc(
+                        any(), any(), any(), any(), any()))
+                .thenReturn(List.of());
     }
 
     // ---------- faults ----------
@@ -205,6 +215,65 @@ class AnalyticsServiceTest {
         assertEquals(at(9, 8), sessions.get(0).endAt());
     }
 
+    // ---------- command-based session derivation ----------
+
+    @Test
+    @DisplayName("command sessions: ON before range opens session at range start")
+    void commandSessions_onBeforeRange() {
+        List<MachineSessionDto> sessions = AnalyticsService.deriveSessionsFromCommands(
+                cmd("ON", at(20, 0), null), List.of(), FROM);
+
+        assertEquals(1, sessions.size());
+        assertEquals(FROM, sessions.get(0).startAt());
+        assertTrue(sessions.get(0).ongoing());
+    }
+
+    @Test
+    @DisplayName("command sessions: ON then OFF in range closes at completion time")
+    void commandSessions_onOffInRange() {
+        List<MachineCommand> cmds = List.of(
+                cmd("ON", at(9, 0), at(9, 0, 30)),
+                cmd("OFF", at(10, 0), at(10, 0, 20)));
+
+        List<MachineSessionDto> sessions =
+                AnalyticsService.deriveSessionsFromCommands(null, cmds, FROM);
+
+        assertEquals(1, sessions.size());
+        assertEquals(at(9, 0, 30), sessions.get(0).startAt());
+        assertEquals(at(10, 0, 20), sessions.get(0).endAt());
+        assertFalse(sessions.get(0).ongoing());
+    }
+
+    @Test
+    @DisplayName("command sessions: OFF before range then ON→OFF gives one bounded session")
+    void commandSessions_offBeforeRange() {
+        List<MachineSessionDto> sessions = AnalyticsService.deriveSessionsFromCommands(
+                cmd("OFF", at(7, 0), null),
+                List.of(cmd("ON", at(9, 0), at(9, 0, 5)),
+                        cmd("OFF", at(9, 30), at(9, 30, 5))),
+                FROM);
+
+        assertEquals(1, sessions.size());
+        assertEquals(at(9, 0, 5), sessions.get(0).startAt());
+        assertEquals(at(9, 30, 5), sessions.get(0).endAt());
+    }
+
+    @Test
+    @DisplayName("command sessions: duplicate ON commands are no-ops")
+    void commandSessions_duplicateOn() {
+        List<MachineCommand> cmds = List.of(
+                cmd("ON", at(9, 0), at(9, 0, 10)),
+                cmd("ON", at(9, 20), at(9, 20, 10)),
+                cmd("OFF", at(10, 0), at(10, 0, 10)));
+
+        List<MachineSessionDto> sessions =
+                AnalyticsService.deriveSessionsFromCommands(null, cmds, FROM);
+
+        assertEquals(1, sessions.size());
+        assertEquals(at(9, 0, 10), sessions.get(0).startAt());
+        assertEquals(at(10, 0, 10), sessions.get(0).endAt());
+    }
+
     // ---------- sessions endpoint ----------
 
     @Test
@@ -231,10 +300,46 @@ class AnalyticsServiceTest {
         assertEquals("DONE", resp.commandMarkers().get(0).status());
     }
 
+    @Test
+    @DisplayName("sessions: endpoint prefers command-derived sessions over ignition bit")
+    void sessions_prefersCommands() {
+        // ignition bit stuck OFF (unwired ACC) — commands still show the
+        // real ON session.
+        when(locationRepository.findIgnitionHistory(eq(orgId), eq(machineId), any(), any()))
+                .thenReturn(List.of(pt(at(9, 0), false), pt(at(9, 5), false)));
+        when(commandRepository
+                .findByOrganizationIdAndMachineIdAndStatusAndCreatedAtBetweenOrderByCreatedAtAsc(
+                        eq(orgId), eq(machineId), eq("DONE"), any(), any()))
+                .thenReturn(List.of(
+                        cmd("ON", at(8, 0), at(8, 0, 30)),
+                        cmd("OFF", at(9, 0), at(9, 0, 30))));
+
+        SessionsResponse resp = service.getSessions(machineId, FROM, TO);
+
+        assertEquals(1, resp.sessions().size());
+        assertEquals(at(8, 0, 30), resp.sessions().get(0).startAt());
+        assertEquals(at(9, 0, 30), resp.sessions().get(0).endAt());
+    }
+
     // ---------- helpers ----------
 
     private static LocalDateTime at(int hour, int minute) {
         return LocalDateTime.of(2026, 9, 26, hour, minute);
+    }
+
+    private static LocalDateTime at(int hour, int minute, int second) {
+        return LocalDateTime.of(2026, 9, 26, hour, minute, second);
+    }
+
+    private static MachineCommand cmd(String type, LocalDateTime created,
+                                      LocalDateTime completed) {
+        MachineCommand c = new MachineCommand();
+        c.setId(UUID.randomUUID());
+        c.setCommandType(type);
+        c.setStatus("DONE");
+        c.setCreatedAt(created);
+        c.setCompletedAt(completed);
+        return c;
     }
 
     private static Map<String, Object> pt(LocalDateTime at, Boolean on) {
