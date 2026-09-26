@@ -63,4 +63,17 @@ public class LocationRepository {
                 "ORDER BY recorded_at ASC";
         return jdbcTemplate.queryForList(sql, organizationId, machineId, from, to);
     }
+
+    /**
+     * Ignition timeline for session derivation (Analytics). Returns
+     * recorded_at + ignition_on ordered ascending; ignition_on may be
+     * null for packets that predate V50.
+     */
+    public List<Map<String, Object>> findIgnitionHistory(UUID organizationId, UUID machineId,
+                                                          LocalDateTime from, LocalDateTime to) {
+        String sql = "SELECT recorded_at, ignition_on FROM location_history " +
+                "WHERE organization_id = ? AND machine_id = ? AND recorded_at BETWEEN ? AND ? " +
+                "ORDER BY recorded_at ASC";
+        return jdbcTemplate.queryForList(sql, organizationId, machineId, from, to);
+    }
 }
