@@ -34,7 +34,7 @@ public class DeviceTokenController {
      * Registers (or re-activates) a device push token for the current user.
      */
     @PostMapping
-    @PreAuthorize("hasAuthority('push_token:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('push_token:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<DeviceTokenDto> registerToken(@Valid @RequestBody DeviceTokenRequest request) {
         return ResponseEntity.ok(deviceTokenService.registerToken(request));
     }
@@ -43,7 +43,7 @@ public class DeviceTokenController {
      * Unregisters a specific device token (e.g. user removes a device).
      */
     @DeleteMapping("/{tokenId}")
-    @PreAuthorize("hasAuthority('push_token:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('push_token:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> unregisterToken(@PathVariable UUID tokenId) {
         deviceTokenService.unregisterToken(tokenId);
         return ResponseEntity.noContent().build();
@@ -53,7 +53,7 @@ public class DeviceTokenController {
      * Deactivates all device tokens for the current user (on logout).
      */
     @PostMapping("/deactivate-all")
-    @PreAuthorize("hasAuthority('push_token:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('push_token:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deactivateAll() {
         deviceTokenService.deactivateAllForUser();
         return ResponseEntity.noContent().build();
@@ -63,7 +63,7 @@ public class DeviceTokenController {
      * Lists all active device tokens for the current user.
      */
     @GetMapping
-    @PreAuthorize("hasAuthority('push_token:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('push_token:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<DeviceTokenDto>> listMyTokens() {
         return ResponseEntity.ok(deviceTokenService.listMyTokens());
     }

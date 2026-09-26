@@ -5,6 +5,7 @@ import com.yantrago.api.dto.theft.CustomerSettingsRequest;
 import com.yantrago.api.service.CustomerSettingsService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -32,11 +33,16 @@ public class CustomerSettingsController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('settings:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<CustomerSettingsDto> getSettings() {
         return ResponseEntity.ok(customerSettingsService.getSettings());
     }
 
     @PutMapping
+    // Self-service endpoint: scoped to the caller's own customer record.
+    // Customers only hold settings:read (not :write) — the write to their
+    // own row is intentional and already tenant-scoped by the service.
+    @PreAuthorize("hasAuthority('settings:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<CustomerSettingsDto> updateSettings(
             @Valid @RequestBody CustomerSettingsRequest request) {
         return ResponseEntity.ok(customerSettingsService.updateSettings(request));

@@ -34,19 +34,19 @@ public class TheftProtectionController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('geofence:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<TheftProtectionStatusDto> getStatus(@PathVariable UUID machineId) {
         return ResponseEntity.ok(theftProtectionService.getStatus(machineId));
     }
 
     @PostMapping("/enable")
-    @PreAuthorize("hasAuthority('geofence:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<TheftProtectionStatusDto> enable(@PathVariable UUID machineId) {
         return ResponseEntity.ok(theftProtectionService.enable(machineId));
     }
 
     @PostMapping("/disable")
-    @PreAuthorize("hasAuthority('geofence:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<TheftProtectionStatusDto> disable(@PathVariable UUID machineId) {
         return ResponseEntity.ok(theftProtectionService.disable(machineId));
     }

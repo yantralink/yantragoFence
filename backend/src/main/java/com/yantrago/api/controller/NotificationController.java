@@ -40,7 +40,7 @@ public class NotificationController {
      * For user-facing inbox, use /api/v1/notifications/inbox instead.
      */
     @GetMapping
-    @PreAuthorize("hasAuthority('notification:read_all') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:read_all') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Page<NotificationDto>> listNotifications(Pageable pageable) {
         return ResponseEntity.ok(notificationService.listNotifications(pageable));
     }
@@ -55,7 +55,7 @@ public class NotificationController {
      * "inbox" would be caught by this handler and fail UUID parsing.
      */
     @GetMapping("/{id:[a-fA-F0-9-]+}")
-    @PreAuthorize("hasAuthority('notification:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<NotificationDto> getNotification(@PathVariable UUID id) {
         return ResponseEntity.ok(notificationService.getNotification(id));
     }
@@ -65,7 +65,7 @@ public class NotificationController {
      * Admin-only. Push delivery remains OFF in Phase 3.
      */
     @PostMapping("/{id:[a-fA-F0-9-]+}/dispatch")
-    @PreAuthorize("hasAuthority('notification:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<NotificationDto> dispatchNotification(@PathVariable UUID id) {
         return ResponseEntity.ok(notificationService.dispatchNotification(id));
     }

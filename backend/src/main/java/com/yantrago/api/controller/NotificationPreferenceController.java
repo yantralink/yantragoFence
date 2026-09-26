@@ -35,7 +35,7 @@ public class NotificationPreferenceController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('notification_preference:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification_preference:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<NotificationPreferenceDto>> getMyPreferences() {
         return ResponseEntity.ok(preferenceService.getMyPreferences());
     }
@@ -45,19 +45,19 @@ public class NotificationPreferenceController {
      * Per SIG 16: allows clients to discover configurable event types.
      */
     @GetMapping("/catalog")
-    @PreAuthorize("hasAuthority('notification_preference:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification_preference:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<EventCatalogDto>> getEventCatalog() {
         return ResponseEntity.ok(preferenceService.getEventCatalog());
     }
 
     @GetMapping("/{userId:[a-fA-F0-9-]+}")
-    @PreAuthorize("hasAuthority('notification_preference:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification_preference:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<NotificationPreferenceDto>> getUserPreferences(@PathVariable UUID userId) {
         return ResponseEntity.ok(preferenceService.getUserPreferences(userId));
     }
 
     @PutMapping
-    @PreAuthorize("hasAuthority('notification_preference:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification_preference:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<NotificationPreferenceDto> setPreference(@RequestBody PreferenceRequest request) {
         return ResponseEntity.ok(preferenceService.setMyPreference(
                 request.channel(), request.alertType(), request.isEnabled(),

@@ -5,6 +5,7 @@ import com.yantrago.api.service.AuditLogService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class AuditLogController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('audit:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Page<AuditLog>> listAuditLogs(
             @RequestParam(required = false) UUID userId,
             Pageable pageable) {

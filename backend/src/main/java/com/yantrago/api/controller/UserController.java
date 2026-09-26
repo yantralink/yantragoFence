@@ -28,11 +28,13 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('user:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Page<UserDto>> listUsers(Pageable pageable) {
         return ResponseEntity.ok(userService.listUsers(pageable));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('user:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<UserDto> getUser(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUser(id));
     }

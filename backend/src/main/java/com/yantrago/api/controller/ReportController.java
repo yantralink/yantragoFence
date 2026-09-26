@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -39,6 +40,7 @@ public class ReportController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('report:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Map<String, Object>> generateReport(
             @RequestParam String reportType,
             @RequestParam String from,
@@ -52,6 +54,7 @@ public class ReportController {
     }
 
     @PostMapping("/export")
+    @PreAuthorize("hasAuthority('report:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<byte[]> exportReport(@Valid @RequestBody ReportExportRequest request) throws Exception {
         ReportFilterDto filter = request.getFilter();
         Map<String, Object> reportData = reportService.generateReport(

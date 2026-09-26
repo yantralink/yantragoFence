@@ -4,6 +4,7 @@ import com.yantrago.api.dto.location.LocationDto;
 import com.yantrago.api.service.LocationService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -27,6 +28,7 @@ public class LocationController {
     }
 
     @GetMapping("/{machineId}")
+    @PreAuthorize("hasAuthority('location:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<LocationDto> getCurrentLocation(@PathVariable UUID machineId) {
         LocationDto location = locationService.getCurrentLocation(machineId);
         if (location == null) {
@@ -36,6 +38,7 @@ public class LocationController {
     }
 
     @GetMapping("/{machineId}/history")
+    @PreAuthorize("hasAuthority('location:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<LocationDto>> getLocationHistory(
             @PathVariable UUID machineId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,

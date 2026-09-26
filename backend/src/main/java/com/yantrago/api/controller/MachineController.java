@@ -33,6 +33,7 @@ public class MachineController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('machine:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Page<MachineDto>> listMachines(
             @RequestParam(required = false) UUID customerId,
             Pageable pageable) {
@@ -43,16 +44,19 @@ public class MachineController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('machine:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<MachineDto> getMachine(@PathVariable UUID id) {
         return ResponseEntity.ok(machineService.getMachine(id));
     }
 
     @GetMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('machine:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<MachineStatusDto> getMachineStatus(@PathVariable UUID id) {
         return ResponseEntity.ok(machineService.getMachineStatus(id));
     }
 
     @GetMapping("/{id}/telemetry/latest")
+    @PreAuthorize("hasAuthority('machine:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<TelemetryLatestDto> getLatestTelemetry(@PathVariable UUID id) {
         return ResponseEntity.ok(machineService.getLatestTelemetry(id));
     }

@@ -5,6 +5,7 @@ import com.yantrago.api.model.SystemSetting;
 import com.yantrago.api.service.SettingsService;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,17 +41,20 @@ public class SettingsController {
     // ===== Machine Settings =====
 
     @GetMapping("/machines/{machineId}")
+    @PreAuthorize("hasAuthority('settings:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<MachineSetting>> getMachineSettings(@PathVariable UUID machineId) {
         return ResponseEntity.ok(settingsService.getMachineSettings(machineId));
     }
 
     @GetMapping("/machines/{machineId}/{key}")
+    @PreAuthorize("hasAuthority('settings:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<MachineSetting> getMachineSetting(@PathVariable UUID machineId,
                                                             @PathVariable String key) {
         return ResponseEntity.ok(settingsService.getMachineSetting(machineId, key));
     }
 
     @PutMapping("/machines/{machineId}/{key}")
+    @PreAuthorize("hasAuthority('settings:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<MachineSetting> upsertMachineSetting(@PathVariable UUID machineId,
                                                                @PathVariable String key,
                                                                @RequestBody Map<String, String> body) {
@@ -62,6 +66,7 @@ public class SettingsController {
     }
 
     @DeleteMapping("/machines/{machineId}/{key}")
+    @PreAuthorize("hasAuthority('settings:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteMachineSetting(@PathVariable UUID machineId,
                                                      @PathVariable String key) {
         settingsService.deleteMachineSetting(machineId, key);
@@ -71,16 +76,19 @@ public class SettingsController {
     // ===== System Settings =====
 
     @GetMapping("/system")
+    @PreAuthorize("hasAuthority('settings:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<SystemSetting>> getSystemSettings() {
         return ResponseEntity.ok(settingsService.getSystemSettings());
     }
 
     @GetMapping("/system/{key}")
+    @PreAuthorize("hasAuthority('settings:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<SystemSetting> getSystemSetting(@PathVariable String key) {
         return ResponseEntity.ok(settingsService.getSystemSetting(key));
     }
 
     @PutMapping("/system/{key}")
+    @PreAuthorize("hasAuthority('settings:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<SystemSetting> upsertSystemSetting(@PathVariable String key,
                                                              @RequestBody Map<String, String> body) {
         Boolean isSensitive = body.get("isSensitive") != null

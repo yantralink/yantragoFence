@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +35,7 @@ public class RechargeController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('recharge:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Page<Recharge>> listRecharges(
             @RequestParam(required = false) UUID deviceId,
             Pageable pageable) {
@@ -44,11 +46,13 @@ public class RechargeController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('recharge:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Recharge> getRecharge(@PathVariable UUID id) {
         return ResponseEntity.ok(rechargeService.getRecharge(id));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('recharge:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Recharge> createRecharge(@RequestBody Map<String, Object> body) {
         UUID deviceId = UUID.fromString((String) body.get("deviceId"));
         BigDecimal amount = new BigDecimal(body.get("amount").toString());

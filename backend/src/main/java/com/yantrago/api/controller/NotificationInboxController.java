@@ -39,7 +39,7 @@ public class NotificationInboxController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('notification:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Page<NotificationInboxDto>> listMyNotifications(
             Pageable pageable,
             @RequestParam(required = false) Boolean unreadOnly,
@@ -48,31 +48,31 @@ public class NotificationInboxController {
     }
 
     @GetMapping("/{id:[a-fA-F0-9-]+}")
-    @PreAuthorize("hasAuthority('notification:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<NotificationInboxDto> getNotification(@PathVariable UUID id) {
         return ResponseEntity.ok(inboxService.getNotification(id));
     }
 
     @GetMapping("/unread-count")
-    @PreAuthorize("hasAuthority('notification:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Map<String, Long>> getUnreadCount() {
         return ResponseEntity.ok(Map.of("unreadCount", inboxService.countUnread()));
     }
 
     @PostMapping("/{id:[a-fA-F0-9-]+}/read")
-    @PreAuthorize("hasAuthority('notification:mark_read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:mark_read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<NotificationInboxDto> markAsRead(@PathVariable UUID id) {
         return ResponseEntity.ok(inboxService.markAsRead(id));
     }
 
     @PostMapping("/read-all")
-    @PreAuthorize("hasAuthority('notification:mark_read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:mark_read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Map<String, Integer>> markAllAsRead() {
         return ResponseEntity.ok(Map.of("markedRead", inboxService.markAllAsRead()));
     }
 
     @PostMapping("/{id:[a-fA-F0-9-]+}/acknowledge")
-    @PreAuthorize("hasAuthority('notification:mark_read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:mark_read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<NotificationInboxDto> acknowledge(@PathVariable UUID id) {
         return ResponseEntity.ok(inboxService.acknowledge(id));
     }

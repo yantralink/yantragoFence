@@ -4,6 +4,7 @@ import com.yantrago.api.model.Role;
 import com.yantrago.api.repository.RoleRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,6 +24,7 @@ public class RoleController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('user:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<Role>> listRoles() {
         return ResponseEntity.ok(roleRepository.findAll());
     }

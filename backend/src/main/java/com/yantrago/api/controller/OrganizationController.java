@@ -28,11 +28,13 @@ public class OrganizationController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('organization:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Page<OrganizationDto>> listOrganizations(Pageable pageable) {
         return ResponseEntity.ok(organizationService.listOrganizations(pageable));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('organization:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<OrganizationDto> getOrganization(@PathVariable UUID id) {
         return ResponseEntity.ok(organizationService.getOrganization(id));
     }

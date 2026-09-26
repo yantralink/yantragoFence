@@ -4,6 +4,7 @@ import com.yantrago.api.dto.telemetry.TelemetryDto;
 import com.yantrago.api.service.TelemetryService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ public class TelemetryController {
     }
 
     @GetMapping("/{machineId}")
+    @PreAuthorize("hasAuthority('telemetry:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<TelemetryDto> getTelemetry(
             @PathVariable UUID machineId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,

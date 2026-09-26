@@ -33,7 +33,7 @@ public class AlertController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('alert:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Page<AlertDto>> listAlerts(
             @RequestParam(required = false) UUID machineId,
             @RequestParam(required = false) Boolean unacknowledged,
@@ -48,13 +48,13 @@ public class AlertController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('alert:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<AlertDto> getAlert(@PathVariable UUID id) {
         return ResponseEntity.ok(alertService.getAlert(id));
     }
 
     @PostMapping("/{id}/acknowledge")
-    @PreAuthorize("hasAuthority('alert:acknowledge') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert:acknowledge') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<AlertDto> acknowledgeAlert(@PathVariable UUID id) {
         return ResponseEntity.ok(alertService.acknowledgeAlert(id));
     }

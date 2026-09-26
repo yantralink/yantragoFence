@@ -29,52 +29,52 @@ public class GeofenceController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('geofence:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<GeofenceDto>> listGeofences() {
         return ResponseEntity.ok(geofenceService.listGeofences());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('geofence:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<GeofenceDto> getGeofence(@PathVariable UUID id) {
         return ResponseEntity.ok(geofenceService.getGeofence(id));
     }
 
     @GetMapping("/machine/{machineId}")
-    @PreAuthorize("hasAuthority('geofence:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<GeofenceDto> getGeofenceForMachine(@PathVariable UUID machineId) {
         GeofenceDto dto = geofenceService.getGeofenceForMachine(machineId);
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.noContent().build();
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('geofence:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<GeofenceDto> createGeofence(@Valid @RequestBody GeofenceRequest request) {
         return ResponseEntity.ok(geofenceService.createGeofence(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('geofence:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<GeofenceDto> updateGeofence(@PathVariable UUID id,
                                                       @Valid @RequestBody GeofenceRequest request) {
         return ResponseEntity.ok(geofenceService.updateGeofence(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('geofence:delete') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:delete') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteGeofence(@PathVariable UUID id) {
         geofenceService.deleteGeofence(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/activate")
-    @PreAuthorize("hasAuthority('geofence:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<GeofenceDto> activateGeofence(@PathVariable UUID id) {
         return ResponseEntity.ok(geofenceService.toggleGeofence(id, true));
     }
 
     @PostMapping("/{id}/deactivate")
-    @PreAuthorize("hasAuthority('geofence:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('geofence:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<GeofenceDto> deactivateGeofence(@PathVariable UUID id) {
         return ResponseEntity.ok(geofenceService.toggleGeofence(id, false));
     }

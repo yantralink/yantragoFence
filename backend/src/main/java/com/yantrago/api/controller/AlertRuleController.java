@@ -34,45 +34,45 @@ public class AlertRuleController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('alert_rule:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert_rule:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Page<AlertRuleDto>> listRules(Pageable pageable) {
         return ResponseEntity.ok(alertRuleService.listRules(pageable));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('alert_rule:read') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert_rule:read') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<AlertRuleDto> getRule(@PathVariable UUID id) {
         return ResponseEntity.ok(alertRuleService.getRule(id));
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('alert_rule:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert_rule:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<AlertRuleDto> createRule(@Valid @RequestBody AlertRuleRequest request) {
         return ResponseEntity.ok(alertRuleService.createRule(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('alert_rule:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert_rule:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<AlertRuleDto> updateRule(@PathVariable UUID id,
                                                     @Valid @RequestBody AlertRuleRequest request) {
         return ResponseEntity.ok(alertRuleService.updateRule(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('alert_rule:delete') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert_rule:delete') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteRule(@PathVariable UUID id) {
         alertRuleService.deleteRule(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/activate")
-    @PreAuthorize("hasAuthority('alert_rule:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert_rule:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<AlertRuleDto> activateRule(@PathVariable UUID id) {
         return ResponseEntity.ok(alertRuleService.toggleRule(id, true));
     }
 
     @PostMapping("/{id}/deactivate")
-    @PreAuthorize("hasAuthority('alert_rule:write') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('alert_rule:write') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<AlertRuleDto> deactivateRule(@PathVariable UUID id) {
         return ResponseEntity.ok(alertRuleService.toggleRule(id, false));
     }

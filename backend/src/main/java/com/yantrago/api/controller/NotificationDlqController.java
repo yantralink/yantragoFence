@@ -36,7 +36,7 @@ public class NotificationDlqController {
      * The message body is the original DLQ message JSON.
      */
     @PostMapping("/replay")
-    @PreAuthorize("hasAuthority('notification:replay') or hasRole('super_admin')")
+    @PreAuthorize("hasAuthority('notification:replay') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<NotificationDlqReplayService.ReplayResult> replayMessage(
             @Valid @RequestBody ReplayRequest request) {
         var userId = permissionEvaluator.getCurrentUserId();
