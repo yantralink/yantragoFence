@@ -12,6 +12,7 @@ import 'package:yantrago/features/analytics/widgets/fault_timeline_card.dart';
 import 'package:yantrago/features/analytics/widgets/summary_header.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/l10n/generated/app_localizations.dart';
+import 'package:yantrago/models/battery_health.dart';
 import 'package:yantrago/models/fault_interval.dart';
 import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/machine_activity.dart';
@@ -172,6 +173,60 @@ void main() {
       expect(find.textContaining('2h 5m ON'), findsOneWidget);
       expect(find.text('2h 0m'), findsOneWidget);
       expect(find.text('5 min'), findsOneWidget);
+    });
+  });
+
+  group('BatteryHealthCard with health', () {
+    testWidgets('shows score chip and stable insight', (tester) async {
+      final health = BatteryHealth(
+        score: 92,
+        status: 'HEALTHY',
+        insight: 'STABLE',
+        latestVoltage: 12.9,
+      );
+      await _pump(
+          tester, BatteryHealthCard(voltage: [_v(0, 12.9)], health: health));
+      expect(find.text('Score 92/100'), findsOneWidget);
+      expect(find.text('Voltage stable — battery healthy'), findsOneWidget);
+    });
+
+    testWidgets('declining shows estimate with insight', (tester) async {
+      final health = BatteryHealth(
+        score: 55,
+        status: 'DECLINING',
+        insight: 'DECLINING',
+        latestVoltage: 12.3,
+        estimatedDaysUntilLow: 4,
+        projection: [
+          TelemetryPoint(DateTime(2026, 9, 26, 10), 12.3),
+          TelemetryPoint(DateTime(2026, 9, 30, 10), 11.8),
+        ],
+      );
+      await _pump(
+          tester, BatteryHealthCard(voltage: [_v(0, 12.3)], health: health));
+      expect(find.text('Declining'), findsOneWidget);
+      expect(find.textContaining('≈4 days until low'), findsOneWidget);
+    });
+
+    test('BatteryHealth parses response and tolerates missing fields', () {
+      final h = BatteryHealth.fromJson({
+        'score': 78,
+        'status': 'HEALTHY',
+        'insight': 'STABLE',
+        'latestVoltage': 12.7,
+        'slopeMvPerDay': -12.0,
+        'estimatedDaysUntilLow': null,
+        'projection': [
+          {'at': '2026-09-27T10:00:00', 'voltage': 12.5},
+        ],
+      });
+      expect(h.score, 78);
+      expect(h.projection, hasLength(1));
+      expect(h.projection.single.value, 12.5);
+
+      final empty = BatteryHealth.fromJson(const {});
+      expect(empty.score, -1);
+      expect(empty.insight, 'INSUFFICIENT_DATA');
     });
   });
 

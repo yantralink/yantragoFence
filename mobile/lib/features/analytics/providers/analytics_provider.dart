@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/network/api_client.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
+import 'package:yantrago/models/battery_health.dart';
 import 'package:yantrago/models/fault_interval.dart';
 import 'package:yantrago/models/machine_activity.dart';
 import 'package:yantrago/models/telemetry_series.dart';
@@ -109,4 +110,26 @@ final machineActivityProvider =
     return MachineActivity.fromJson(response.data as Map<String, dynamic>);
   }
   return MachineActivity.empty;
+});
+
+/// Smart Battery Health — score, trend insight, and projection for the
+/// battery card. Deliberately independent of the selected range chip:
+/// the backend analyzes a fixed 7-day window since trend detection
+/// needs multi-day history.
+final batteryHealthProvider = FutureProvider<BatteryHealth>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  final machineId = ref.watch(effectiveAnalyticsMachineProvider);
+  if (user == null || machineId == null) {
+    return const BatteryHealth(
+        score: -1, status: 'INSUFFICIENT_DATA', insight: 'INSUFFICIENT_DATA');
+  }
+
+  final dio = ref.watch(apiClientProvider);
+  final response =
+      await dio.get('/api/v1/machines/$machineId/battery-health');
+  if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+    return BatteryHealth.fromJson(response.data as Map<String, dynamic>);
+  }
+  return const BatteryHealth(
+      score: -1, status: 'INSUFFICIENT_DATA', insight: 'INSUFFICIENT_DATA');
 });

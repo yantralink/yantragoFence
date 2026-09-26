@@ -46,6 +46,7 @@ class AnalyticsPage extends ConsumerWidget {
               ref.invalidate(telemetrySeriesProvider);
               ref.invalidate(faultTimelineProvider);
               ref.invalidate(machineActivityProvider);
+              ref.invalidate(batteryHealthProvider);
               await ref.read(telemetrySeriesProvider.future);
             },
             child: AppPageBody(
@@ -113,9 +114,13 @@ class _BatterySection extends ConsumerWidget {
             AnalyticsSummaryHeader.selectedMachine(ref);
         final isNew = machine?.createdAt != null &&
             DateTime.now().difference(machine!.createdAt).inHours < 48;
+        // Health loads independently — a failure only hides the score/
+        // insight, never the chart.
+        final health = ref.watch(batteryHealthProvider).valueOrNull;
         return BatteryHealthCard(
           voltage: data.voltage,
           isNewDevice: isNew,
+          health: health,
         );
       },
     );

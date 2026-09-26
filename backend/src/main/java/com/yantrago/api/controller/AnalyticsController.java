@@ -1,8 +1,10 @@
 package com.yantrago.api.controller;
 
+import com.yantrago.api.dto.analytics.BatteryHealthDto;
 import com.yantrago.api.dto.analytics.FaultIntervalDto;
 import com.yantrago.api.dto.analytics.SessionsResponse;
 import com.yantrago.api.service.AnalyticsService;
+import com.yantrago.api.service.BatteryHealthService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,9 +29,12 @@ import java.util.UUID;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final BatteryHealthService batteryHealthService;
 
-    public AnalyticsController(AnalyticsService analyticsService) {
+    public AnalyticsController(AnalyticsService analyticsService,
+                               BatteryHealthService batteryHealthService) {
         this.analyticsService = analyticsService;
+        this.batteryHealthService = batteryHealthService;
     }
 
     @GetMapping("/{machineId}/faults")
@@ -56,5 +61,20 @@ public class AnalyticsController {
         if (from == null) from = to.minusHours(24);
 
         return ResponseEntity.ok(analyticsService.getSessions(machineId, from, to));
+    }
+
+    @GetMapping("/{machineId}/battery-health")
+    @PreAuthorize("hasAuthority('machine:read') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<BatteryHealthDto> getBatteryHealth(
+            @PathVariable UUID machineId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+
+        if (to == null) to = LocalDateTime.now();
+        // Trend analysis needs more history than the card's chart shows;
+        // default to 7 days so a declining slope is detectable.
+        if (from == null) from = to.minusDays(7);
+
+        return ResponseEntity.ok(batteryHealthService.getBatteryHealth(machineId, from, to));
     }
 }

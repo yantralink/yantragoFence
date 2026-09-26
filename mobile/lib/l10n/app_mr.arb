@@ -144,6 +144,40 @@
   "@analyticsNewDeviceMessage": {
     "description": "Empty-state message when the selected device is too new to have history."
   },
+  "batteryScore": "स्कोअर {score}/100",
+  "@batteryScore": {
+    "description": "Battery health score chip; {score} is 0–100.",
+    "placeholders": {"score": {"type": "int"}}
+  },
+  "batteryStatusDeclining": "कमकुवत होत आहे",
+  "@batteryStatusDeclining": {
+    "description": "Battery status when voltage shows a consistent downward trend."
+  },
+  "batteryStatusCritical": "गंभीर",
+  "@batteryStatusCritical": {
+    "description": "Battery status when voltage is critically low."
+  },
+  "insightStable": "व्होल्टेज स्थिर — बॅटरी निरोगी",
+  "@insightStable": {
+    "description": "Battery insight line when readings are steady."
+  },
+  "insightDeclining": "सातत्याने कमी होत आहे — आठवड्यात बॅटरी तपासा",
+  "@insightDeclining": {
+    "description": "Battery insight line when voltage shows a consistent decline."
+  },
+  "insightCriticallyLow": "बॅटरी गंभीर स्थितीत — लवकर चार्ज करा किंवा बदला",
+  "@insightCriticallyLow": {
+    "description": "Battery insight line when voltage is critically low."
+  },
+  "insightInsufficientData": "आरोग्य विश्लेषणासाठी अजून पुरेसा डेटा नाही",
+  "@insightInsufficientData": {
+    "description": "Battery insight line when there is too little history to analyze."
+  },
+  "batteryDaysUntilLow": "कमी होण्यास ≈{days, plural, =1{1 दिवस} other{{days} दिवस}}",
+  "@batteryDaysUntilLow": {
+    "description": "Estimated days until voltage reaches the low band; {days} is the rounded estimate.",
+    "placeholders": {"days": {"type": "int"}}
+  },
   "errorPageNotFound": "पेज सापडले नाही",
   "@errorPageNotFound": {
     "description": "AppBar title shown when a route does not exist."

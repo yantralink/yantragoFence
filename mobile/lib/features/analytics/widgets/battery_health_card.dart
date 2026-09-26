@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/l10n/l10n.dart';
+import 'package:yantrago/models/battery_health.dart';
 import 'package:yantrago/models/telemetry_series.dart';
 
 /// External Battery Health card — voltage line chart over the selected
@@ -16,10 +17,16 @@ class BatteryHealthCard extends StatelessWidget {
   /// explains that data appears once the device starts reporting.
   final bool isNewDevice;
 
+  /// Optional Smart Battery Health analysis — when present the card
+  /// also shows the 0–100 score, backend status, insight line, and a
+  /// dashed decline projection. Null keeps the card chart-only.
+  final BatteryHealth? health;
+
   const BatteryHealthCard({
     super.key,
     required this.voltage,
     this.isNewDevice = false,
+    this.health,
   });
 
   static const double healthyMin = 11.8;
@@ -55,6 +62,11 @@ class BatteryHealthCard extends StatelessWidget {
               SizedBox(height: 180, child: _chart(colors, text)),
               const SizedBox(height: 12),
               _statusRow(context),
+              if (health != null &&
+                  health!.insight != 'INSUFFICIENT_DATA') ...[
+                const SizedBox(height: 8),
+                _insightRow(context),
+              ],
             ],
           ],
         ),
@@ -80,6 +92,10 @@ class BatteryHealthCard extends StatelessWidget {
     maxY = (maxY + 0.5 > healthyMax) ? maxY + 0.5 : healthyMax + 0.5;
 
     final labelCount = spots.length == 1 ? 2 : 4;
+    final xSpan = spots.last.x - spots.first.x;
+    // fl_chart asserts on interval == 0 — a single-point series (or
+    // same-timestamp points) gets no fixed interval.
+    final xInterval = xSpan > 0 ? xSpan / (labelCount - 1) : null;
 
     return LineChart(
       LineChartData(
@@ -120,7 +136,7 @@ class BatteryHealthCard extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 22,
-              interval: (spots.last.x - spots.first.x) / (labelCount - 1),
+              interval: xInterval,
               getTitlesWidget: (value, meta) {
                 if (value < meta.min || value > meta.max) {
                   return const SizedBox.shrink();
@@ -157,6 +173,17 @@ class BatteryHealthCard extends StatelessWidget {
               color: colors.primary.withValues(alpha: 0.08),
             ),
           ),
+          if (health != null && health!.projection.length > 1)
+            LineChartBarData(
+              spots: [
+                for (final p in health!.projection)
+                  FlSpot(p.at.millisecondsSinceEpoch.toDouble(), p.value),
+              ],
+              color: Colors.orange,
+              barWidth: 2,
+              dashArray: const [6, 4],
+              dotData: const FlDotData(show: false),
+            ),
         ],
       ),
     );
@@ -167,7 +194,25 @@ class BatteryHealthCard extends StatelessWidget {
     final latest = voltage.last.value;
     final String status;
     final Color tone;
-    if (latest < healthyMin) {
+    if (health != null) {
+      switch (health!.status) {
+        case 'LOW':
+          status = l10n.batteryStatusLow;
+          tone = Colors.red;
+        case 'CRITICAL':
+          status = l10n.batteryStatusCritical;
+          tone = Colors.red;
+        case 'HIGH':
+          status = l10n.batteryStatusHigh;
+          tone = Colors.orange;
+        case 'DECLINING':
+          status = l10n.batteryStatusDeclining;
+          tone = Colors.orange;
+        default:
+          status = l10n.batteryStatusHealthy;
+          tone = Colors.green;
+      }
+    } else if (latest < healthyMin) {
       status = l10n.batteryStatusLow;
       tone = Colors.red;
     } else if (latest > healthyMax) {
@@ -186,19 +231,67 @@ class BatteryHealthCard extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: tone.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            status,
-            style: TextStyle(
-                color: tone, fontWeight: FontWeight.w600, fontSize: 12),
-          ),
+        if (health != null && health!.score >= 0) ...[
+          _chip(l10n.batteryScore(health!.score), _scoreTone(health!.score)),
+          const SizedBox(width: 6),
+        ],
+        _chip(status, tone),
+      ],
+    );
+  }
+
+  Widget _insightRow(BuildContext context) {
+    final l10n = context.l10n;
+    final h = health!;
+    final String text;
+    final Color tone;
+    switch (h.insight) {
+      case 'DECLINING':
+        text = h.estimatedDaysUntilLow != null
+            ? '${l10n.insightDeclining} (${l10n.batteryDaysUntilLow(h.estimatedDaysUntilLow!)})'
+            : l10n.insightDeclining;
+        tone = Colors.orange;
+      case 'CRITICALLY_LOW':
+        text = l10n.insightCriticallyLow;
+        tone = Colors.red;
+      default:
+        text = l10n.insightStable;
+        tone = Colors.green;
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.tips_and_updates_outlined, size: 15, color: tone),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(text,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: tone)),
         ),
       ],
     );
+  }
+
+  Widget _chip(String label, Color tone) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+            color: tone, fontWeight: FontWeight.w600, fontSize: 12),
+      ),
+    );
+  }
+
+  Color _scoreTone(int score) {
+    if (score >= 70) return Colors.green;
+    if (score >= 40) return Colors.orange;
+    return Colors.red;
   }
 }
