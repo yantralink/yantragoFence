@@ -103,8 +103,10 @@ public class BatteryHealthService {
                 && slopeVPerDay < -DECLINE_V_PER_DAY
                 && regression[2] >= MIN_R2;
 
+        // Clamp at 0 — a battery already below the band while declining
+        // reports "≈0 days", never a negative estimate.
         Integer daysUntilLow = declining
-                ? (int) Math.round((latest - BAND_MIN) / -slopeVPerDay)
+                ? Math.max(0, (int) Math.round((latest - BAND_MIN) / -slopeVPerDay))
                 : null;
 
         List<BatteryHealthDto.ProjectionPoint> projection = List.of();
@@ -162,6 +164,7 @@ public class BatteryHealthService {
 
     private static String insight(double latest, boolean declining) {
         if (latest < CRITICAL_V) return "CRITICALLY_LOW";
+        if (latest > BAND_MAX) return "OVERVOLTAGE";
         return declining ? "DECLINING" : "STABLE";
     }
 

@@ -169,6 +169,10 @@
   "@insightCriticallyLow": {
     "description": "Battery insight line when voltage is critically low."
   },
+  "insightOvervoltage": "चार्जिंग वोल्टेज ज़्यादा — रेगुलेटर जांचें",
+  "@insightOvervoltage": {
+    "description": "Battery insight line when voltage is above the healthy band (possible overcharge)."
+  },
   "insightInsufficientData": "स्वास्थ्य विश्लेषण के लिए अभी पर्याप्त डेटा नहीं",
   "@insightInsufficientData": {
     "description": "Battery insight line when there is too little history to analyze."

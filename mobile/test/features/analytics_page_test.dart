@@ -178,7 +178,7 @@ void main() {
 
   group('BatteryHealthCard with health', () {
     testWidgets('shows score chip and stable insight', (tester) async {
-      final health = BatteryHealth(
+      const health = BatteryHealth(
         score: 92,
         status: 'HEALTHY',
         insight: 'STABLE',

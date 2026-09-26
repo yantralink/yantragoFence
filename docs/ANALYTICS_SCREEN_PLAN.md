@@ -208,7 +208,7 @@ Ordered by value/effort:
 | **2** | Mobile: Analytics tab + machine selector + range chips + Battery Health card | ✅ ships partial screen |
 | **3** | Mobile: Fence Fault + Activity timeline cards | ✅ full feature |
 | **4** | Extras from §5 (as approved) | ✅ |
-| **5 (deferred)** | Smart Battery Health — see §9. **Approved for design; implement later** | — |
+| **5** | Smart Battery Health — see §9. **Implemented** (`/machines/{id}/battery-health` + score/insight/projection on the card) | ✅ |
 
 Each phase self-contained per rule 20 — stop for verification between.
 

@@ -104,6 +104,19 @@ class BatteryHealthServiceTest {
     void highVoltage() {
         BatteryHealthDto dto = BatteryHealthService.analyze(ramp(14.5, 0.0, 30));
         assertEquals("HIGH", dto.status());
+        assertEquals("OVERVOLTAGE", dto.insight());
+    }
+
+    @Test
+    @DisplayName("already-below-band decline clamps estimate at 0 days")
+    void belowBandDecline() {
+        // Declining and already under the band (but above critical) →
+        // "≈0 days", never negative. Latest ≈11.1 V.
+        BatteryHealthDto dto = BatteryHealthService.analyze(ramp(12.3, -0.3, 96));
+
+        assertEquals("DECLINING", dto.insight());
+        assertNotNull(dto.estimatedDaysUntilLow());
+        assertTrue(dto.estimatedDaysUntilLow() >= 0);
     }
 
     // ---------- helpers ----------

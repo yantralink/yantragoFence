@@ -194,7 +194,10 @@ class BatteryHealthCard extends StatelessWidget {
     final latest = voltage.last.value;
     final String status;
     final Color tone;
-    if (health != null) {
+    // INSUFFICIENT_DATA has no meaningful status — fall back to the
+    // plain voltage band so we never label unknown data "Healthy".
+    final useHealth = health != null && health!.status != 'INSUFFICIENT_DATA';
+    if (useHealth) {
       switch (health!.status) {
         case 'LOW':
           status = l10n.batteryStatusLow;
@@ -254,6 +257,9 @@ class BatteryHealthCard extends StatelessWidget {
       case 'CRITICALLY_LOW':
         text = l10n.insightCriticallyLow;
         tone = Colors.red;
+      case 'OVERVOLTAGE':
+        text = l10n.insightOvervoltage;
+        tone = Colors.orange;
       default:
         text = l10n.insightStable;
         tone = Colors.green;

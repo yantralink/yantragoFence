@@ -82,6 +82,8 @@
   "@insightDeclining": {"description": "Battery insight line when voltage shows a consistent decline."},
   "insightCriticallyLow": "Battery critically low — charge or replace soon",
   "@insightCriticallyLow": {"description": "Battery insight line when voltage is critically low."},
+  "insightOvervoltage": "Charging voltage high — check the regulator",
+  "@insightOvervoltage": {"description": "Battery insight line when voltage is above the healthy band (possible overcharge)."},
   "insightInsufficientData": "Not enough data for health analysis yet",
   "@insightInsufficientData": {"description": "Battery insight line when there is too little history to analyze."},
   "batteryDaysUntilLow": "≈{days, plural, =1{1 day} other{{days} days}} until low",
