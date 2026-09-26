@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
-/// Charging Status widget — displays an electrical-services indicator
-/// based on internal battery.
+/// Charging Status widget — bulb indicator based on internal battery.
 ///
-/// Composes [AppMetricCard]. The icon glows GREEN when the internal
-/// battery is exactly 10%. Otherwise it is grey. No battery percentage
-/// or charging status text is shown — only the icon.
+/// Composes [AppMetricCard]. The body bulb glows GREEN when the internal
+/// battery is exactly 10%. Otherwise the bulb is off (grey outline). The
+/// small header icon is an electrical-services symbol. No battery
+/// percentage or charging status text is shown — only the bulb.
 ///
-/// - battery == 10  → charging (green, Icons.electrical_services)
-/// - battery != 10  → not charging (grey, Icons.electrical_services)
+/// - battery == 10  → bulb ON (green, Icons.lightbulb)
+/// - battery != 10  → bulb OFF (grey, Icons.lightbulb_outline)
 /// - battery == null → unavailable
 class BatteryWidget extends StatelessWidget {
   final int? battery;
@@ -31,15 +31,15 @@ class BatteryWidget extends StatelessWidget {
     }
 
     final bool isOn = battery == 10;
-    const IconData icon = Icons.electrical_services;
-    final Color iconColor = isOn ? Colors.green : Colors.grey;
+    final IconData bodyIcon =
+        isOn ? Icons.lightbulb : Icons.lightbulb_outline;
+    final Color bodyColor = isOn ? Colors.green : Colors.grey;
 
     return AppMetricCard(
       label: l10n.metricLabelChargingStatus,
-      icon: icon,
-      iconColor: iconColor,
-      bodyIcon: icon,
-      bodyIconColor: iconColor,
+      icon: Icons.electrical_services,
+      bodyIcon: bodyIcon,
+      bodyIconColor: bodyColor,
       bodyIconSize: 48,
       state: AppMetricState.available,
     );

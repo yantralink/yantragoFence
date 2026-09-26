@@ -357,12 +357,12 @@ void main() {
 
   // Live-vs-REST merge: a stale socket frame must never outrank a newer
   // REST snapshot, and a genuinely newer live frame must override it.
-  // Metric assertions use the 48px body icon rendered by AppMetricCard
-  // (Fence Fault uses Icons.fence, Charging uses Icons.electrical_services).
+  // Metric assertions use the 48px body icon rendered by AppMetricCard —
+  // a lit bulb (Icons.lightbulb) in the state color.
 
   bool isMetricIcon(Widget w, Color color) =>
       w is Icon &&
-      (w.icon == Icons.fence || w.icon == Icons.electrical_services) &&
+      w.icon == Icons.lightbulb &&
       w.size == 48 &&
       w.color == color;
 
