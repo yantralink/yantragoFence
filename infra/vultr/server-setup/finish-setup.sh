@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# SEC-17: fail closed — SSH must not be opened to the world.
+# Re-run with: sudo ADMIN_IP=$(curl -s ifconfig.me) bash finish-setup.sh
+if [ -z "${ADMIN_IP:-}" ]; then
+    echo "ERROR: ADMIN_IP is required. Re-run with:"
+    echo "  sudo ADMIN_IP=\$(curl -s ifconfig.me) bash finish-setup.sh"
+    exit 1
+fi
+
 echo "=== Finishing YantraGO setup ==="
 
 # Generate passwords
@@ -40,14 +48,17 @@ echo "Redis status: $(systemctl is-active redis-server)"
 
 # ─── Configure RabbitMQ ──────────────────────────────────────────────
 echo ">>> Configuring RabbitMQ..."
+# SEC-17: isolated vhost + least-privilege service account (no administrator tag).
+rabbitmqctl add_vhost yantrago 2>/dev/null || true
 rabbitmqctl add_user "$RABBIT_USER" "$RABBIT_PASS" 2>/dev/null || rabbitmqctl change_password "$RABBIT_USER" "$RABBIT_PASS"
-rabbitmqctl set_user_tags "$RABBIT_USER" administrator
-rabbitmqctl set_permissions -p / "$RABBIT_USER" ".*" ".*" ".*"
+rabbitmqctl set_permissions -p yantrago "$RABBIT_USER" ".*" ".*" ".*"
 rabbitmqctl delete_user guest 2>/dev/null || true
 
 cat > /etc/rabbitmq/rabbitmq.conf <<CONF
 # YantraGO RabbitMQ configuration (single server)
-listeners.tcp.default = 5672
+# SEC-17: AMQP + management bind loopback only — all clients are on this host.
+listeners.tcp.local = 127.0.0.1:5672
+management.tcp.ip = 127.0.0.1
 management.tcp.port = 15672
 heartbeat = 60
 vm_memory_high_watermark.relative = 0.4
@@ -135,7 +146,12 @@ spring:
     port: 5672
     username: ${RABBIT_USER}
     password: ${RABBIT_PASS}
-    virtual-host: /
+    virtual-host: yantrago
+
+# SEC-13: explicit CORS origin allowlist for the admin web.
+security:
+  cors:
+    allowed-origins: "https://${DOMAIN},https://www.${DOMAIN},https://admin.${DOMAIN},https://api.${DOMAIN}"
 
 jwt:
   access:
@@ -182,6 +198,7 @@ spring:
     port: 5672
     username: ${RABBIT_USER}
     password: ${RABBIT_PASS}
+    virtual-host: yantrago
 
 tcp:
   server:
@@ -387,7 +404,8 @@ echo ">>> Configuring firewall..."
 ufw --force reset >/dev/null 2>&1
 ufw default deny incoming >/dev/null 2>&1
 ufw default allow outgoing >/dev/null 2>&1
-ufw allow 22/tcp >/dev/null 2>&1
+# SEC-17: SSH restricted to the admin workstation IP (required at script start)
+ufw allow from ${ADMIN_IP} to any port 22 proto tcp >/dev/null 2>&1
 ufw allow 80/tcp >/dev/null 2>&1
 ufw allow 443/tcp >/dev/null 2>&1
 ufw allow 5000/tcp >/dev/null 2>&1
@@ -414,5 +432,10 @@ echo "Credentials: /opt/yantrago/config/credentials.txt"
 echo ""
 echo "=== NEXT STEPS ==="
 echo "1. Point DNS A record for yantrago.com to this server's IP"
-echo "2. Run: sudo certbot --nginx -d yantrago.com -d www.yantrago.com"
-echo "3. Build and deploy: bash /opt/yantrago/repo/infra/vultr/deploy/deploy-single-server.sh all"
+echo "2. Run: sudo certbot --nginx -d yantrago.com -d www.yantrago.com -d api.yantrago.com -d admin.yantrago.com"
+echo "3. Install the full production Nginx config (API/WS/admin + public privacy site):"
+echo "   cp /opt/yantrago/repo/infra/vultr/nginx/nginx.conf /etc/nginx/sites-available/yantrago"
+echo "   cp /opt/yantrago/repo/infra/vultr/nginx/nginx.websocket.conf /etc/nginx/sites-available/"
+echo "   cp -r /opt/yantrago/repo/infra/vultr/public-site/. /var/www/yantrago-public/"
+echo "   nginx -t && systemctl reload nginx"
+echo "4. Build and deploy: bash /opt/yantrago/repo/infra/vultr/deploy/deploy-single-server.sh all"

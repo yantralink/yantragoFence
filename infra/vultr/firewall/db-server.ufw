@@ -1,6 +1,7 @@
 # YantraGO — DB Server Firewall Rules (UFW)
-# Apply with: sudo bash -c "cat firewall/db-server.ufw | while read line; do eval \$line; done"
-# Or manually run each command.
+# Apply with: ADMIN_IP=1.2.3.4 APP_SERVER_IP=10.0.0.5 GATEWAY_SERVER_IP=10.0.0.6 \
+#             sudo -E bash firewall/db-server.ufw
+# NOTE: run as a script — do NOT eval line-by-line (contains multi-line if blocks).
 
 # Reset UFW
 ufw --force reset
@@ -9,12 +10,20 @@ ufw --force reset
 ufw default deny incoming
 ufw default allow outgoing
 
-# SSH (restrict to admin IP if possible)
-ufw allow from ${ADMIN_IP:-0.0.0.0/0} to any port 22 proto tcp
+# SSH — SEC-17: fail closed if ADMIN_IP is not set
+if [ -z "${ADMIN_IP:-}" ]; then
+    echo "ERROR: ADMIN_IP is required. Set it to the admin workstation IP."
+    exit 1
+fi
+ufw allow from ${ADMIN_IP} to any port 22 proto tcp
 
-# PostgreSQL — only from internal network (app + gateway servers)
-ufw allow from ${APP_SERVER_IP:-10.0.0.0/8} to any port 5432 proto tcp
-ufw allow from ${GATEWAY_SERVER_IP:-10.0.0.0/8} to any port 5432 proto tcp
+# PostgreSQL — SEC-17: fail closed if source IPs are not set
+if [ -z "${APP_SERVER_IP:-}" ] || [ -z "${GATEWAY_SERVER_IP:-}" ]; then
+    echo "ERROR: APP_SERVER_IP and GATEWAY_SERVER_IP are required."
+    exit 1
+fi
+ufw allow from ${APP_SERVER_IP} to any port 5432 proto tcp
+ufw allow from ${GATEWAY_SERVER_IP} to any port 5432 proto tcp
 
 # Enable
 ufw --force enable

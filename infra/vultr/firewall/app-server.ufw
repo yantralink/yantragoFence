@@ -1,5 +1,6 @@
 # YantraGO — App Server Firewall Rules (UFW)
-# Apply with: sudo bash -c "cat firewall/app-server.ufw | while read line; do eval \$line; done"
+# Apply with: ADMIN_IP=1.2.3.4 sudo -E bash firewall/app-server.ufw
+# NOTE: run as a script — do NOT eval line-by-line (contains multi-line if blocks).
 
 # Reset UFW
 ufw --force reset
@@ -8,8 +9,12 @@ ufw --force reset
 ufw default deny incoming
 ufw default allow outgoing
 
-# SSH
-ufw allow from ${ADMIN_IP:-0.0.0.0/0} to any port 22 proto tcp
+# SSH — SEC-17: fail closed if ADMIN_IP is not set
+if [ -z "${ADMIN_IP:-}" ]; then
+    echo "ERROR: ADMIN_IP is required. Set it to the admin workstation IP."
+    exit 1
+fi
+ufw allow from ${ADMIN_IP} to any port 22 proto tcp
 
 # HTTP/HTTPS (public — Nginx reverse proxy)
 ufw allow 80/tcp

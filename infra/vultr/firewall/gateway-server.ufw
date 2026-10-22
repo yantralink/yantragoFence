@@ -1,5 +1,7 @@
 # YantraGO — Gateway Server Firewall Rules (UFW)
-# Apply with: sudo bash -c "cat firewall/gateway-server.ufw | while read line; do eval \$line; done"
+# Apply with: ADMIN_IP=1.2.3.4 APP_SERVER_IP=10.0.0.5 \
+#             sudo -E bash firewall/gateway-server.ufw
+# NOTE: run as a script — do NOT eval line-by-line (contains multi-line if blocks).
 
 # Reset UFW
 ufw --force reset
@@ -8,16 +10,24 @@ ufw --force reset
 ufw default deny incoming
 ufw default allow outgoing
 
-# SSH
-ufw allow from ${ADMIN_IP:-0.0.0.0/0} to any port 22 proto tcp
+# SSH — SEC-17: fail closed if ADMIN_IP is not set
+if [ -z "${ADMIN_IP:-}" ]; then
+    echo "ERROR: ADMIN_IP is required. Set it to the admin workstation IP."
+    exit 1
+fi
+ufw allow from ${ADMIN_IP} to any port 22 proto tcp
 
 # TCP device ports (public — devices connect directly)
 ufw allow 5000/tcp comment "Concox V5"
 ufw allow 5001/tcp comment "JT808"
 ufw allow 5002/tcp comment "Fencing"
 
-# Actuator (internal only)
-ufw allow from ${APP_SERVER_IP:-10.0.0.0/8} to any port 8081 proto tcp
+# Actuator — SEC-17: fail closed if APP_SERVER_IP is not set
+if [ -z "${APP_SERVER_IP:-}" ]; then
+    echo "ERROR: APP_SERVER_IP is required."
+    exit 1
+fi
+ufw allow from ${APP_SERVER_IP} to any port 8081 proto tcp
 
 # Enable
 ufw --force enable

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Privacy Policy — YantraGO</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.65; color: #1a2332; background: #fff;
+    margin: 0; padding: 0;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 1.9rem; margin: 0 0 4px; }
+  h2 { font-size: 1.25rem; margin: 2rem 0 .5rem; }
+  .meta { color: #5b6773; font-size: .9rem; margin-bottom: 2rem; }
+  ul { padding-left: 1.3rem; }
+  li { margin-bottom: .3rem; }
+  a { color: #0b65c2; }
+  address { font-style: normal; }
+  .box {
+    background: #f4f7fa; border: 1px solid #dde5ec;
+    border-radius: 8px; padding: 14px 18px; margin: 1rem 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Privacy Policy</h1>
+  <p class="meta">YantraGO &middot; Effective date: 1 February 2026 &middot;
+     Last updated: 1 February 2026</p>
+
+  <p>
+    YantraGO ("YantraGO", "we", "us") operates a GPS-based machine and
+    fleet tracking service consisting of the YantraGO mobile application,
+    the YantraGO admin web console, and the YantraGO cloud backend. This
+    policy explains what personal data we process, why, who receives it,
+    how long we keep it, and how you can exercise your rights — including
+    your right to have your data deleted.
+  </p>
+
+  <div class="box">
+    <strong>How accounts work.</strong> YantraGO accounts are created by an
+    organisation administrator — there is no self-service sign-up in the
+    app. If your employer or fleet operator gave you YantraGO credentials,
+    that organisation is the account holder; we process your data to
+    provide the tracking service to them.
+  </div>
+
+  <h2>1. Who is responsible for your data</h2>
+  <address>
+    YantraGO<br>
+    Email (support): <a href="mailto:support@yantrago.com">support@yantrago.com</a><br>
+    Email (privacy &amp; deletion requests):
+    <a href="mailto:privacy@yantrago.com">privacy@yantrago.com</a><br>
+    Web: <a href="https://yantrago.com">https://yantrago.com</a>
+  </address>
+
+  <h2>2. Data we process</h2>
+  <ul>
+    <li><strong>Account &amp; identity data</strong> — name, work email,
+      phone number, organisation, role, and password (stored only as a
+      BCrypt hash — we never store plaintext passwords).</li>
+    <li><strong>Machine &amp; device data</strong> — tracker IMEI/device
+      ID, machine name, model and registration details entered by your
+      organisation.</li>
+    <li><strong>Precise machine location</strong> — GPS coordinates of
+      tracked machines, reported by the installed tracker (not by your
+      phone) while the tracker is powered, together with telemetry such
+      as speed, ignition state, battery/voltage and GSM signal.</li>
+    <li><strong>Alerts, commands &amp; audit records</strong> — geofence
+      and theft alerts, commands sent to trackers, and security/audit
+      logs of actions performed in the system.</li>
+    <li><strong>Push-notification data</strong> — Firebase Cloud Messaging
+      device tokens used to deliver alerts to your phone.</li>
+    <li><strong>Technical &amp; security metadata</strong> — login session
+      records (IP address, device/user-agent, timestamps) and rate-limit
+      counters used to keep the service secure.</li>
+    <li><strong>Preferences</strong> — language preference and your
+      map-display consent choice.</li>
+  </ul>
+  <p>We do <strong>not</strong> collect your phone's own GPS location,
+    your contacts, photos, files, advertising identifiers, or payment
+    data.</p>
+
+  <h2>3. Why we process it (purposes &amp; legal basis)</h2>
+  <ul>
+    <li>Provide the tracking service: live machine positions, trip
+      history, telemetry, alerts and reports — performance of the
+      contract with your organisation.</li>
+    <li>Deliver push alerts (geofence, theft, offline, expiry
+      warnings).</li>
+    <li>Security, abuse prevention and auditing — legitimate interest in
+      keeping the service secure and accountable.</li>
+    <li>Customer support and service communications.</li>
+    <li>Compliance with legal obligations, including retention required
+      for accounting or lawful requests.</li>
+  </ul>
+
+  <h2>4. Map &amp; geocoding services — explicit consent</h2>
+  <p>
+    When you open a machine's map in the app, the app first asks for your
+    consent. Only if you allow it:
+  </p>
+  <ul>
+    <li>Map tiles are loaded from the <strong>OpenStreetMap</strong> tile
+      service (openstreetmap.org), which sees your device's IP address
+      and the map area you view.</li>
+    <li>The machine's coordinates are sent to <strong>our backend</strong>,
+      which forwards a rounded position (reduced precision, approx. 11&nbsp;m)
+      to our geocoding provider to convert coordinates into a place name.
+      Your device never contacts the geocoding provider directly.</li>
+  </ul>
+  <p>
+    If you decline, no map or geocoding request is made and you can still
+    view the raw coordinates inside the app. You can withdraw consent at
+    any time by logging out (consent is stored per login) or on a fresh
+    sign-in.
+  </p>
+
+  <h2>5. Who receives your data</h2>
+  <ul>
+    <li><strong>Hosting infrastructure</strong> — our servers run on
+      Vultr cloud infrastructure.</li>
+    <li><strong>Google Firebase Cloud Messaging</strong> — receives your
+      push token to deliver notifications.</li>
+    <li><strong>OpenStreetMap Foundation tile CDN</strong> — receives map
+      tile requests only after your consent (section&nbsp;4).</li>
+    <li><strong>Geocoding provider</strong> — receives rounded machine
+      coordinates via our backend, only after your consent.</li>
+    <li><strong>Your organisation</strong> — administrators of your
+      organisation can see account and machine data belonging to that
+      organisation.</li>
+  </ul>
+  <p>
+    We do not sell personal data and do not share it for advertising.
+    Data may be transferred internationally where our providers operate;
+    transfers rely on the providers' contractual safeguards.
+  </p>
+
+  <h2>6. Security</h2>
+  <p>
+    Traffic is encrypted in transit (TLS). Passwords are stored as BCrypt
+    hashes. Access is controlled by role-based permissions and strict
+    organisation (tenant) isolation — users can only see their own
+    organisation's data. Administrative and security-relevant actions are
+    recorded in audit logs.
+  </p>
+
+  <h2>7. Retention</h2>
+  <ul>
+    <li><strong>Account &amp; identity data</strong> — kept while your
+      account is active; erased within 30 days of a processed deletion
+      request or account termination.</li>
+    <li><strong>Location &amp; telemetry history</strong> — retained
+      according to your organisation's plan and storage limits; older
+      data is removed as retention windows roll forward.</li>
+    <li><strong>Audit &amp; command records</strong> — retained in
+      pseudonymous form (user IDs without names/emails) for at least
+      12 months for security auditing and legal accountability.</li>
+    <li><strong>Login sessions &amp; push tokens</strong> — deleted
+      immediately on logout, deactivation or erasure.</li>
+  </ul>
+
+  <h2>8. Your rights — including deletion</h2>
+  <p>
+    Depending on your jurisdiction, you may have rights of access,
+    correction, deletion, restriction, portability, and to object to or
+    withdraw consent for processing.
+  </p>
+  <p><strong>To request deletion of your account and personal data</strong>
+    you can:</p>
+  <ul>
+    <li>Submit a deletion request inside the app —
+      <em>Profile &rarr; Support &amp; privacy &rarr; Request account
+      deletion</em> (you must be signed in), or</li>
+    <li>Email <a href="mailto:privacy@yantrago.com">privacy@yantrago.com</a>
+      from the address associated with your account, or</li>
+    <li>Ask your organisation's YantraGO administrator.</li>
+  </ul>
+  <p>
+    Deletion is processed within 30 days. Erasure removes your name,
+    email, phone number, credentials, sessions, push tokens and
+    notification data, and deletes your customer record. We retain only
+    pseudonymous audit and command records (section&nbsp;7) where needed
+    for security and legal obligations — they can no longer be linked to
+    your identity. Deleting the app alone does not delete your account.
+  </p>
+
+  <h2>9. India — DPDP Act</h2>
+  <p>
+    For users in India, processing is carried out under the Digital
+    Personal Data Protection Act, 2023. We process personal data for the
+    specified, lawful purposes described above and, where required, on
+    the basis of your consent (such as the map/geocoding consent in
+    section&nbsp;4). As a Data Principal you may exercise your rights of
+    access, correction, erasure and grievance redressal by contacting
+    <a href="mailto:privacy@yantrago.com">privacy@yantrago.com</a>. We aim
+    to acknowledge grievances within 7 days and resolve them within
+    30 days.
+  </p>
+
+  <h2>10. Children</h2>
+  <p>
+    YantraGO is a business product and is not directed at children. We do
+    not knowingly collect data from children under the applicable minimum
+    age.
+  </p>
+
+  <h2>11. Cookies &amp; tracking</h2>
+  <p>
+    The admin console stores an authentication token in your browser's
+    local storage to keep you signed in. We use no advertising, analytics
+    or cross-site tracking cookies.
+  </p>
+
+  <h2>12. Changes &amp; contact</h2>
+  <p>
+    We may update this policy; the "last updated" date will change and,
+    for material changes, we will notify users in the app or by email.
+    Questions, requests and complaints:
+    <a href="mailto:privacy@yantrago.com">privacy@yantrago.com</a> or
+    <a href="mailto:support@yantrago.com">support@yantrago.com</a>.
+  </p>
+</div>
+</body>
+</html>

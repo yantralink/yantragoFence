@@ -4,6 +4,19 @@ set -euo pipefail
 # YantraGO Database Seed Script
 # Runs Flyway migrations and seeds initial data (organizations, users, sample machines)
 # Usage: ./infra/scripts/seed-db.sh
+#
+# DEPRECATED: this script's embedded SQL targets the OLD schema
+# (users.role, devices.name/status) which no longer exists — roles were
+# normalized into roles/user_roles in migration V2 and the device model
+# changed in V4. Use the current seed files instead:
+#   psql -d yantrago -f database/seeds/V1__seed_super_admin.sql
+#   psql -d yantrago -f database/seeds/V2__seed_sample_organization.sql
+#   psql -d yantrago -f database/seeds/V3__seed_sample_customers.sql
+#   psql -d yantrago -f database/seeds/V4__seed_sample_machines.sql
+# For the Play reviewer account: infra/scripts/seed-play-reviewer.sh
+echo "ERROR: seed-db.sh is deprecated — its SQL targets the old schema." >&2
+echo "Apply database/seeds/V1-V5*.sql via psql instead (see header comments)." >&2
+exit 1
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"

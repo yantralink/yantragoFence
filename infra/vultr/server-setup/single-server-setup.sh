@@ -16,6 +16,14 @@ set -euo pipefail
 #   YANTRAGO_RABBITMQ_PASSWORD — RabbitMQ password (default: auto-generated)
 #   JWT_ACCESS_SECRET   — JWT access token secret (default: auto-generated)
 #   JWT_REFRESH_SECRET  — JWT refresh token secret (default: auto-generated)
+#   ADMIN_IP            — your admin workstation IP for SSH (REQUIRED — SEC-17)
+
+# SEC-17: fail closed — SSH must not be opened to the world.
+if [ -z "${ADMIN_IP:-}" ]; then
+    echo "ERROR: ADMIN_IP is required. Re-run with:"
+    echo "  sudo ADMIN_IP=\$(curl -s ifconfig.me) bash single-server-setup.sh"
+    exit 1
+fi
 
 DOMAIN="${YANTRAGO_DOMAIN:-yantrago.com}"
 DB_NAME="yantrago"
@@ -136,14 +144,17 @@ fi
 
 rabbitmq-plugins enable rabbitmq_management
 
+# SEC-17: isolated vhost + least-privilege service account (no administrator tag).
+rabbitmqctl add_vhost yantrago
 rabbitmqctl add_user "$RABBIT_USER" "$RABBIT_PASS"
-rabbitmqctl set_user_tags "$RABBIT_USER" administrator
-rabbitmqctl set_permissions -p / "$RABBIT_USER" ".*" ".*" ".*"
+rabbitmqctl set_permissions -p yantrago "$RABBIT_USER" ".*" ".*" ".*"
 rabbitmqctl delete_user guest 2>/dev/null || true
 
 cat > /etc/rabbitmq/rabbitmq.conf <<CONF
 # YantraGO RabbitMQ configuration (single server)
-listeners.tcp.default = 5672
+# SEC-17: AMQP + management bind loopback only — all clients are on this host.
+listeners.tcp.local = 127.0.0.1:5672
+management.tcp.ip = 127.0.0.1
 management.tcp.port = 15672
 heartbeat = 60
 vm_memory_high_watermark.relative = 0.4
@@ -242,7 +253,12 @@ spring:
     port: 5672
     username: ${RABBIT_USER}
     password: ${RABBIT_PASS}
-    virtual-host: /
+    virtual-host: yantrago
+
+# SEC-13: explicit CORS origin allowlist for the admin web.
+security:
+  cors:
+    allowed-origins: "https://${DOMAIN},https://www.${DOMAIN},https://admin.${DOMAIN},https://api.${DOMAIN}"
 
 jwt:
   access:
@@ -293,6 +309,7 @@ spring:
     port: 5672
     username: ${RABBIT_USER}
     password: ${RABBIT_PASS}
+    virtual-host: yantrago
 
 tcp:
   server:
@@ -484,13 +501,26 @@ server {
 
     client_max_body_size 10m;
 
+    # Privacy policy — public static page, no auth (Play requirement).
+    # Deploy: cp -r /opt/yantrago/repo/infra/vultr/public-site/. /var/www/yantrago-public/
+    location = /privacy-policy {
+        return 301 /privacy-policy/;
+    }
+    location /privacy-policy/ {
+        alias /var/www/yantrago-public/privacy-policy/;
+        index index.html;
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
     # Backend API
     location /api/ {
         limit_req zone=api_limit burst=20 nodelay;
         proxy_pass http://yantrago_backend;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        # SEC-06: overwrite (not append) X-Forwarded-For — clients must not
+        # be able to spoof the source IP seen by the backend.
+        proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_connect_timeout 10s;
         proxy_read_timeout 60s;
@@ -501,7 +531,7 @@ server {
         proxy_pass http://yantrago_backend;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
@@ -528,7 +558,7 @@ server {
         proxy_pass http://yantrago_admin_web;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For \$remote_addr;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
@@ -555,14 +585,19 @@ rm -f /etc/nginx/sites-enabled/default
 mkdir -p /var/www/certbot
 chown -R www-data:www-data /var/www/certbot
 
+# PLAY-06: public static site root (privacy policy + future public pages).
+# Populated from the repo after cloning — see final instructions.
+mkdir -p /var/www/yantrago-public
+chown -R www-data:www-data /var/www/yantrago-public
+
 # ─── 16. Firewall ────────────────────────────────────────────────────
 echo ">>> Configuring firewall..."
 ufw --force reset
 ufw default deny incoming
 ufw default allow outgoing
 
-# SSH
-ufw allow 22/tcp
+# SSH — SEC-17: restricted to the admin workstation IP (required at script start)
+ufw allow from ${ADMIN_IP} to any port 22 proto tcp
 
 # HTTP/HTTPS (public)
 ufw allow 80/tcp
@@ -624,7 +659,11 @@ echo "6. Deploy admin web:"
 echo "   cd admin-web && npm install && npm run build"
 echo "   (use pm2 or systemd to run 'npm start' on port 3001)"
 echo ""
-echo "7. Verify:"
+echo "7. Deploy the public site (privacy policy — required for Play Store):"
+echo "   cp -r /opt/yantrago/repo/infra/vultr/public-site/. /var/www/yantrago-public/"
+echo "   curl https://${DOMAIN}/privacy-policy/"
+echo ""
+echo "8. Verify:"
 echo "   systemctl status yantrago-backend"
 echo "   systemctl status yantrago-gateway"
 echo "   curl https://${DOMAIN}/health"
