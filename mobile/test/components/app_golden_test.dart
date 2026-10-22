@@ -1,5 +1,9 @@
 // Golden tests for the shared presentation components.
 //
+// All tests carry the 'golden' tag — CI excludes them because the
+// committed baselines were rendered on Windows and font rasterization
+// differs on Linux runners. They still run in local `flutter test`.
+//
 // Run `flutter test --update-goldens` once to generate the baseline
 // images under test/components/goldens/. Subsequent runs compare
 // against the committed baselines. Golden baselines must be visually
@@ -24,7 +28,7 @@ import 'package:yantrago/core/widgets/app_surface_card.dart';
 
 void main() {
   group('Golden: AppSurfaceCard', () {
-    testWidgets('light theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 200));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
@@ -43,7 +47,7 @@ void main() {
       );
     });
 
-    testWidgets('dark theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 200));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.darkTheme,
@@ -64,7 +68,7 @@ void main() {
   });
 
   group('Golden: AppStatusBadge', () {
-    testWidgets('all tones in light theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 300));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
@@ -93,7 +97,7 @@ void main() {
       );
     });
 
-    testWidgets('all tones in dark theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 300));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.darkTheme,
@@ -124,7 +128,7 @@ void main() {
   });
 
   group('Golden: AppMetricCard', () {
-    testWidgets('available and unavailable in light theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 300));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
@@ -159,7 +163,7 @@ void main() {
   });
 
   group('Golden: AppActionButton', () {
-    testWidgets('all variants in light theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 400));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
@@ -209,7 +213,7 @@ void main() {
   });
 
   group('Golden: AppStatePanel', () {
-    testWidgets('loading state in light theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 200));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
@@ -223,7 +227,7 @@ void main() {
       );
     });
 
-    testWidgets('error state in light theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 300));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
@@ -240,7 +244,7 @@ void main() {
       );
     });
 
-    testWidgets('empty state in light theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 200));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
@@ -260,7 +264,7 @@ void main() {
   });
 
   group('Golden: AppMetadataRow and AppSectionHeader', () {
-    testWidgets('light theme', (tester) async {
+    testWidgets('', tags: ['golden'], (tester) async {
       await tester.binding.setSurfaceSize(const Size(400, 250));
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,

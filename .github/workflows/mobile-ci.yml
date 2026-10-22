@@ -40,5 +40,7 @@ jobs:
         run: flutter analyze
 
       - name: Test
+        # Golden baselines are generated on Windows — excluded on the
+        # Linux runner (font rasterization differs). They run locally.
         working-directory: mobile
-        run: flutter test
+        run: flutter test --exclude-tags golden
