@@ -66,7 +66,7 @@ VALUES (
 ON CONFLICT DO NOTHING;
 
 -- ===== Synthetic machines =====
-INSERT INTO machines (id, organization_id, customer_id, name, serial_number, model, status, is_online)
+INSERT INTO machines (id, organization_id, customer_id, name, serial_number, model, status, is_online, machine_id)
 VALUES
     (
         'b0000000-0000-0000-0000-000000000020',
@@ -76,7 +76,8 @@ VALUES
         'YG-REVIEW-0001',
         'YG-Pro-2',
         'ACTIVE',
-        TRUE
+        TRUE,
+        'YG-REVIEW-A'
     ),
     (
         'b0000000-0000-0000-0000-000000000021',
@@ -86,7 +87,8 @@ VALUES
         'YG-REVIEW-0002',
         'YG-Lite-1',
         'ACTIVE',
-        FALSE
+        FALSE,
+        'YG-REVIEW-B'
     )
 ON CONFLICT DO NOTHING;
 
