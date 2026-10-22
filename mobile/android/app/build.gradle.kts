@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -11,7 +13,7 @@ plugins {
 // Format: storeFile/storePassword/keyAlias/keyPassword.
 // When the file is absent (local dev builds) the release build falls back
 // to the debug key so `flutter run --release` keeps working.
-val keystoreProperties = java.util.Properties().apply {
+val keystoreProperties = Properties().apply {
     val keyFile = rootProject.file("key.properties")
     if (keyFile.exists()) keyFile.inputStream().use { load(it) }
 }
