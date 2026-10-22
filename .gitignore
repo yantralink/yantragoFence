@@ -74,3 +74,14 @@ mobile/lib/l10n/generated/
 *.tsbuildinfo
 *.tar.gz
 nul
+
+# Signing material — never commit (PLAY Task 12.1/12.3)
+**/key.properties
+*.jks
+*.keystore
+*.pem
+*.pkcs12
+*.p12
+
+# Office lock/temp files
+~$*

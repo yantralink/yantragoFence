@@ -8,6 +8,9 @@ on:
       - 'admin-web/**'
       - '.github/workflows/admin-web-ci.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build-and-lint:
     name: Build & Lint (Node 20)

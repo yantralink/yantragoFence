@@ -15,6 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      # secrets context is unavailable in step `if:` — expose via env.
+      KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -46,13 +52,30 @@ jobs:
             flutter create --platforms=android --org com.yantrago --project-name yantrago .
           fi
 
+      - name: Write upload keystore from secrets
+        # PLAY Task 12.3: sign sideload APKs with the same upload key as the
+        # Play AAB so sideload ↔ Play installs/upgrades stay compatible.
+        # Requires the same ANDROID_* secrets as build-aab.yml.
+        working-directory: mobile/android
+        if: env.KEYSTORE_B64 != ''
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > yantrago-upload.jks
+          test -s yantrago-upload.jks || { echo "Keystore decode failed"; exit 1; }
+          cat > key.properties <<EOF
+          storeFile=yantrago-upload.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
 
-      - name: Analyze code (non-blocking)
+      - name: Analyze code (blocking)
+        # SEC-12: flutter analyze failures must block release builds.
         working-directory: mobile
-        run: flutter analyze --no-fatal-infos || true
+        run: flutter analyze --no-fatal-infos
 
       - name: Build APK
         working-directory: mobile
@@ -87,7 +110,8 @@ jobs:
              build/app/outputs/flutter-apk/yantrago-android-x64.apk
 
       - name: Create GitHub Release with APK
-        uses: softprops/action-gh-release@v1
+        # SEC-12: Pinned to immutable commit SHA (not @v1 tag).
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
         with:
           tag_name: android-apk-${{ github.run_number }}
           name: YantraGO Android APK (Build #${{ github.run_number }})
@@ -100,10 +124,6 @@ jobs:
             - **yantrago-android-x64.apk** — x86_64 (emulators, ~20MB)
 
             Not sure which one? Install [Droid Hardware Info](https://play.google.com/store/apps/details?id=com.droidhardinfo) and check the "Architecture" field, or try the arm64 version first.
-
-            ### Login
-            - **Super Admin:** superadmin@yantrago.com / password
-            - **Customer:** phone number / yantrago
 
             ### Server
             Connects to: https://yantrago.com
@@ -127,3 +147,8 @@ jobs:
             mobile/build/app/outputs/flutter-apk/app-x86_64-release.apk
           retention-days: 30
           compression-level: 0
+
+      - name: Scrub signing material
+        if: always()
+        run: |
+          rm -f mobile/android/yantrago-upload.jks mobile/android/key.properties

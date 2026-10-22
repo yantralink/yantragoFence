@@ -30,6 +30,9 @@ on:
         default: '300'
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   load-test:
     name: Run Device Simulator

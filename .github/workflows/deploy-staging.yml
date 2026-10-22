@@ -15,6 +15,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Deploy to Staging
@@ -50,7 +53,8 @@ jobs:
           ls -la deploy/backend deploy/gateway
 
       - name: Upload backend JAR
-        uses: appleboy/scp-action@v0.1.7
+        # SEC-12: Pinned to immutable commit SHA (not @v0.1.7 tag).
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
@@ -60,7 +64,8 @@ jobs:
           strip_components: 2
 
       - name: Upload gateway JAR
-        uses: appleboy/scp-action@v0.1.7
+        # SEC-12: Pinned to immutable commit SHA (not @v0.1.7 tag).
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
@@ -70,7 +75,8 @@ jobs:
           strip_components: 2
 
       - name: Restart services and verify
-        uses: appleboy/ssh-action@v1.0.3
+        # SEC-12: Pinned to immutable commit SHA (not @v1.0.3 tag).
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}

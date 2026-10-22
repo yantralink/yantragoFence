@@ -11,6 +11,9 @@ on:
       - 'settings.gradle.kts'
       - '.github/workflows/gateway-ci.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     name: Build & Test Gateway

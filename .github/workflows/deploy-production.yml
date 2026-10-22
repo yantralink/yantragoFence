@@ -5,6 +5,10 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   deploy:
     name: Build & Deploy to Production
@@ -67,7 +71,8 @@ jobs:
             ${{ secrets.DOCKER_REGISTRY }}/yantrago-gateway:${{ steps.version.outputs.VERSION }}
 
       - name: Deploy to production server
-        uses: appleboy/ssh-action@v1.0.3
+        # SEC-12: Pinned to immutable commit SHA (not @v1.0.3 tag).
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}

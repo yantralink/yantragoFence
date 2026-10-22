@@ -1,4 +1,10 @@
 # Security Scan — run Trivy on dependencies and Docker images
+#
+# SEC-12: Hardened CI security gates.
+# - Pinned trivy-action to an immutable commit SHA (not @master).
+# - Expanded triggers to cover root Gradle, lockfiles, mobile, and workflows.
+# - Explicit failure on CRITICAL/HIGH vulnerabilities.
+# - Least-privilege permissions.
 name: Security Scan
 
 on:
@@ -7,13 +13,36 @@ on:
   pull_request:
     branches: [main]
     paths:
+      # Root Gradle files
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      # Backend and gateway Gradle files
       - 'backend/build.gradle.kts'
       - 'device-gateway/build.gradle.kts'
       - 'simulator/build.gradle.kts'
+      - 'shared/build.gradle.kts'
+      # Lockfiles
+      - 'admin-web/package-lock.json'
+      - 'mobile/pubspec.lock'
+      # Admin web and mobile manifests
       - 'admin-web/package.json'
+      - 'mobile/pubspec.yaml'
+      - 'mobile/android/app/build.gradle'
+      - 'mobile/android/app/src/main/AndroidManifest.xml'
+      # Infrastructure
       - 'infra/docker/**'
+      - 'infra/vultr/**'
+      # Workflows
       - '.github/workflows/security-scan.yml'
+      - '.github/workflows/build-apk.yml'
+      - '.github/workflows/deploy-production.yml'
+      - '.github/workflows/deploy-staging.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write  # Required for SARIF upload
 
 jobs:
   trivy-scan:
@@ -25,7 +54,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Trivy on repository
-        uses: aquasecurity/trivy-action@master
+        # SEC-12: Pinned to immutable commit SHA (not @master, not a tag).
+        # Tags are mutable — force-pushed tags compromised trivy-action.
+        # SHA 57a97c7e7821a5776cebc9bb87c984fa69cba8f1 = v0.35.0 (safe).
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -33,11 +65,15 @@ jobs:
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
+          # SEC-12: Exit code 1 on CRITICAL/HIGH so the job fails.
+          exit-code: '1'
+          scanners: 'vuln,secret,misconfig'
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
+        if: always()
 
   docker-scan:
     name: Docker Image Scan
@@ -59,14 +95,20 @@ jobs:
           load: true
 
       - name: Run Trivy on backend image
-        uses: aquasecurity/trivy-action@master
+        # SEC-12: Pinned to immutable commit SHA (not @master, not a tag).
+        # Tags are mutable — force-pushed tags compromised trivy-action.
+        # SHA 57a97c7e7821a5776cebc9bb87c984fa69cba8f1 = v0.35.0 (safe).
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
         with:
           image-ref: 'yantrago-backend:scan'
           format: 'sarif'
           output: 'trivy-docker-results.sarif'
           severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          scanners: 'vuln,secret,misconfig'
 
       - name: Upload Docker scan results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-docker-results.sarif'
+        if: always()
