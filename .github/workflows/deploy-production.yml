@@ -81,4 +81,14 @@ jobs:
             cd /opt/yantrago
             docker compose -f infra/docker/docker-compose.staging.yml pull
             docker compose -f infra/docker/docker-compose.staging.yml up -d
+            # Public static pages (privacy policy) — required for Play listing.
+            # Repo may live at /opt/yantrago/repo or /opt/yantrago itself.
+            for SRC in /opt/yantrago/repo/infra/vultr/public-site /opt/yantrago/infra/vultr/public-site; do
+              if [ -d "$SRC" ]; then
+                mkdir -p /var/www/yantrago-public
+                cp -r "$SRC"/. /var/www/yantrago-public/
+                chown -R www-data:www-data /var/www/yantrago-public
+                break
+              fi
+            done
             docker image prune -f
