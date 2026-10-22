@@ -24,8 +24,20 @@ public class JT808TcpServer {
     @Value("${jt808.tcp.port:5001}")
     private int port;
 
+    // SEC-11: Bounded thread pool to prevent resource exhaustion
+    @Value("${jt808.tcp.max-connections:100}")
+    private int maxConnections;
+
+    // SEC-11: Pre-authentication deadline
+    @Value("${jt808.tcp.login-timeout-ms:30000}")
+    private int loginTimeoutMs;
+
+    // SEC-11: Max idle lifetime
+    @Value("${jt808.tcp.max-idle-timeout-ms:600000}")
+    private int maxIdleTimeoutMs;
+
     private ServerSocket serverSocket;
-    private final ExecutorService clientExecutor = Executors.newCachedThreadPool();
+    private ExecutorService clientExecutor;
     private volatile boolean running = false;
 
     private final JT808FrameParser frameParser;
@@ -43,8 +55,10 @@ public class JT808TcpServer {
     @PostConstruct
     public void start() {
         running = true;
+        // SEC-11: Bounded thread pool.
+        clientExecutor = Executors.newFixedThreadPool(maxConnections);
         new Thread(this::acceptConnections, "JT808-TCP-Server").start();
-        log.info("[JT808] TCP server starting on port {}", port);
+        log.info("[JT808] TCP server starting on port {} (maxConnections={})", port, maxConnections);
     }
 
     @PreDestroy
@@ -57,7 +71,7 @@ public class JT808TcpServer {
         } catch (IOException e) {
             log.error("[JT808] Error closing server socket", e);
         }
-        clientExecutor.shutdown();
+        clientExecutor.shutdownNow();
     }
 
     private void acceptConnections() {
@@ -68,6 +82,17 @@ public class JT808TcpServer {
             while (running) {
                 try {
                     Socket clientSocket = serverSocket.accept();
+                    // SEC-11: Reject connections beyond the max limit.
+                    if (activeConnections.get() >= maxConnections) {
+                        log.warn("SEC-11: [JT808] Connection rejected: max connections ({}) reached from {}",
+                                maxConnections, clientSocket.getInetAddress());
+                        try {
+                            clientSocket.close();
+                        } catch (IOException e) {
+                            log.debug("[JT808] Error closing rejected connection: {}", e.getMessage());
+                        }
+                        continue;
+                    }
                     log.info("[JT808] T98 connected: {}", clientSocket.getInetAddress());
                     clientExecutor.submit(() -> handleClient(clientSocket));
                 } catch (SocketException e) {
@@ -83,6 +108,8 @@ public class JT808TcpServer {
         String clientId = socket.getInetAddress() + ":" + socket.getPort();
         boolean registered = false;
         activeConnections.incrementAndGet();
+        long connectionStartTime = System.currentTimeMillis();
+        long lastActivityTime = connectionStartTime;
         try (InputStream in = socket.getInputStream();
              OutputStream out = socket.getOutputStream()) {
 
@@ -96,12 +123,26 @@ public class JT808TcpServer {
                 try {
                     bytesRead = in.read(buffer);
                 } catch (SocketTimeoutException ste) {
+                    long now = System.currentTimeMillis();
+                    // SEC-11: Pre-authentication deadline.
+                    if (!registered && (now - connectionStartTime) > loginTimeoutMs) {
+                        log.warn("SEC-11: [JT808] Closing unauthenticated connection from {} (no login within {}ms)",
+                                clientId, loginTimeoutMs);
+                        break;
+                    }
+                    // SEC-11: Max idle lifetime.
+                    if (registered && (now - lastActivityTime) > maxIdleTimeoutMs) {
+                        log.warn("SEC-11: [JT808] Closing idle connection from {} (idle > {}ms)",
+                                clientId, maxIdleTimeoutMs);
+                        break;
+                    }
                     log.debug("[JT808] Read timeout from {} (idle between packets)", clientId);
                     continue;
                 }
                 if (bytesRead == -1) {
                     break;
                 }
+                lastActivityTime = System.currentTimeMillis();
                 byte[] data = new byte[bytesRead];
                 System.arraycopy(buffer, 0, data, 0, bytesRead);
 

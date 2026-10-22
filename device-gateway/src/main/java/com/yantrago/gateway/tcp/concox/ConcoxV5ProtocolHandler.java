@@ -4,6 +4,7 @@ import com.yantrago.gateway.tcp.DeviceConnectionRegistry;
 import com.yantrago.gateway.tcp.ProtocolHandler;
 import com.yantrago.gateway.model.GpsIngestRequest;
 import com.yantrago.gateway.queue.DeviceEventProducer;
+import com.yantrago.gateway.service.DeviceAuthService;
 import com.yantrago.gateway.service.DeviceHeartbeatService;
 import com.yantrago.gateway.service.DeviceMappingCacheService;
 import com.yantrago.gateway.service.GpsIngestService;
@@ -34,6 +35,7 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
     private final DeviceMappingCacheService deviceMappingCacheService;
     private final DeviceEventProducer deviceEventProducer;
     private final DeviceHeartbeatService deviceHeartbeatService;
+    private final DeviceAuthService deviceAuthService;
     private final AtomicInteger serialCounter = new AtomicInteger(1);
 
     public ConcoxV5ProtocolHandler(
@@ -42,7 +44,8 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
             @Lazy GpsIngestService gpsIngestService,
             DeviceMappingCacheService deviceMappingCacheService,
             DeviceEventProducer deviceEventProducer,
-            DeviceHeartbeatService deviceHeartbeatService
+            DeviceHeartbeatService deviceHeartbeatService,
+            DeviceAuthService deviceAuthService
     ) {
         this.connectionRegistry = connectionRegistry;
         this.vehicleCommandService = vehicleCommandService;
@@ -50,6 +53,7 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
         this.deviceMappingCacheService = deviceMappingCacheService;
         this.deviceEventProducer = deviceEventProducer;
         this.deviceHeartbeatService = deviceHeartbeatService;
+        this.deviceAuthService = deviceAuthService;
         log.info("[V5] Protocol handler initialized with DB-backed device mapping cache");
     }
 
@@ -76,8 +80,13 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
     public void removeClient(String clientId) {
         String imei = clientImeiMap.remove(clientId);
         if (imei != null) {
-            deviceHeartbeatService.markOffline(imei);
-            publishDeviceEvent(imei, DeviceEventMessage.EVENT_DISCONNECT);
+            // SEC-10: Only mark offline if no other connection is active for
+            // this IMEI. A stale disconnect must not mark the device offline
+            // while a newer connection is still active.
+            if (!connectionRegistry.isDeviceOnline(imei)) {
+                deviceHeartbeatService.markOffline(imei);
+                publishDeviceEvent(imei, DeviceEventMessage.EVENT_DISCONNECT);
+            }
         }
     }
 
@@ -122,7 +131,19 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
         }
         // Format: 0x08 0x67 0x01 0x00 0x70 0x11 0x34 0x52 -> 867010070113452
         String imeiNumber = convertBcdToImei(imei.toString());
-        log.info("[V5] Login from IMEI: {}", imeiNumber);
+
+        // SEC-10: Authenticate the device — only active, registered devices
+        // may establish routable sessions.
+        UUID deviceId = deviceAuthService.authenticateByImei(imeiNumber);
+        if (deviceId == null) {
+            log.warn("SEC-10: [V5] Login rejected: unknown or inactive IMEI={} from client={}",
+                    imeiNumber, clientId);
+            // Return login response so the device doesn't keep retrying,
+            // but do NOT register the session.
+            return buildResponse(packet, (byte) 0x01);
+        }
+
+        log.info("[V5] Login from IMEI: {} (deviceId={})", imeiNumber, deviceId);
         clientImeiMap.put(clientId, imeiNumber);
 
         // Record heartbeat and publish LOGIN event to backend

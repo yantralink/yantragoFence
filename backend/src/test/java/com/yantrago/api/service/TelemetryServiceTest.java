@@ -4,6 +4,7 @@ import com.yantrago.api.dto.telemetry.TelemetryDto;
 import com.yantrago.api.model.Machine;
 import com.yantrago.api.repository.MachineRepository;
 import com.yantrago.api.repository.TelemetryRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.TenantGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +30,7 @@ class TelemetryServiceTest {
     private MachineRepository machineRepository;
     private OwnerContextService ownerContextService;
     private TenantGuard tenantGuard;
+    private MachineAccessPolicy machineAccessPolicy;
     private TelemetryService telemetryService;
 
     private final UUID orgId = UUID.randomUUID();
@@ -40,8 +42,10 @@ class TelemetryServiceTest {
         machineRepository = mock(MachineRepository.class);
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = mock(TenantGuard.class);
+        machineAccessPolicy = mock(MachineAccessPolicy.class);
         telemetryService = new TelemetryService(
-                telemetryRepository, machineRepository, ownerContextService, tenantGuard
+                telemetryRepository, machineRepository, ownerContextService, tenantGuard,
+                machineAccessPolicy
         );
     }
 
@@ -52,6 +56,7 @@ class TelemetryServiceTest {
         Machine machine = new Machine();
         machine.setId(machineId);
         machine.setOrganizationId(orgId);
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
         when(telemetryRepository.findVoltageByMachineId(eq(orgId), eq(machineId), any(), any()))
                 .thenReturn(List.of());
@@ -64,14 +69,16 @@ class TelemetryServiceTest {
         LocalDateTime to = LocalDateTime.now();
         telemetryService.getTelemetry(machineId, from, to);
 
-        verify(tenantGuard).validateTenantAccess(orgId);
+        verify(machineAccessPolicy).loadAndValidate(machineId);
     }
 
     @Test
     @DisplayName("getTelemetry should throw when machine not found")
     void getTelemetry_shouldThrowWhenMachineNotFound() {
         when(ownerContextService.getOrganizationId()).thenReturn(orgId);
-        when(machineRepository.findById(machineId)).thenReturn(Optional.empty());
+        // SEC-02: MachineAccessPolicy throws IllegalArgumentException when machine not found
+        when(machineAccessPolicy.loadAndValidate(machineId))
+                .thenThrow(new IllegalArgumentException("Machine not found: " + machineId));
 
         assertThrows(IllegalArgumentException.class,
                 () -> telemetryService.getTelemetry(machineId, LocalDateTime.now().minusHours(1), LocalDateTime.now()));
@@ -84,6 +91,7 @@ class TelemetryServiceTest {
         Machine machine = new Machine();
         machine.setId(machineId);
         machine.setOrganizationId(orgId);
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
 
         Map<String, Object> voltageRow = new HashMap<>();
@@ -151,12 +159,9 @@ class TelemetryServiceTest {
     @DisplayName("getTelemetry should throw when tenant guard denies access")
     void getTelemetry_shouldThrowWhenTenantGuardDenies() {
         when(ownerContextService.getOrganizationId()).thenReturn(orgId);
-        Machine machine = new Machine();
-        machine.setId(machineId);
-        machine.setOrganizationId(UUID.randomUUID()); // Different org
-        when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
-        doThrow(new SecurityException("Cross-tenant access denied"))
-                .when(tenantGuard).validateTenantAccess(machine.getOrganizationId());
+        // SEC-02: MachineAccessPolicy throws SecurityException for cross-tenant access
+        when(machineAccessPolicy.loadAndValidate(machineId))
+                .thenThrow(new SecurityException("Cross-tenant access denied"));
 
         assertThrows(SecurityException.class,
                 () -> telemetryService.getTelemetry(machineId, LocalDateTime.now().minusHours(1), LocalDateTime.now()));

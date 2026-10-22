@@ -8,6 +8,7 @@ import com.yantrago.api.model.Machine;
 import com.yantrago.api.repository.CustomerRepository;
 import com.yantrago.api.repository.GeofenceRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.PermissionEvaluator;
 import com.yantrago.api.security.TenantGuard;
 import org.junit.jupiter.api.AfterEach;
@@ -45,6 +46,7 @@ class GeofenceServiceTest {
     private GeofenceRepository geofenceRepository;
     private OwnerContextService ownerContextService;
     private TenantGuard tenantGuard;
+    private MachineAccessPolicy machineAccessPolicy;
     private PermissionEvaluator permissionEvaluator;
     private CustomerRepository customerRepository;
     private MachineRepository machineRepository;
@@ -63,14 +65,15 @@ class GeofenceServiceTest {
         geofenceRepository = mock(GeofenceRepository.class);
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = mock(TenantGuard.class);
+        machineAccessPolicy = mock(MachineAccessPolicy.class);
         permissionEvaluator = mock(PermissionEvaluator.class);
         customerRepository = mock(CustomerRepository.class);
         machineRepository = mock(MachineRepository.class);
         jdbcTemplate = mock(JdbcTemplate.class);
 
         service = new GeofenceService(geofenceRepository, ownerContextService,
-                tenantGuard, permissionEvaluator, customerRepository, machineRepository,
-                jdbcTemplate);
+                tenantGuard, machineAccessPolicy, permissionEvaluator, customerRepository,
+                machineRepository, jdbcTemplate);
 
         when(ownerContextService.getOrganizationId()).thenReturn(orgId);
     }
@@ -120,14 +123,9 @@ class GeofenceServiceTest {
         setCustomerAuth();
         GeofenceRequest request = makeRequest(machineId);
 
-        Customer customer = mock(Customer.class);
-        when(customer.getId()).thenReturn(customerId);
-        when(customerRepository.findByUserId(customerUserId)).thenReturn(Optional.of(customer));
-
-        UUID otherCustomerId = UUID.randomUUID();
-        Machine machine = mock(Machine.class);
-        when(machine.getCustomerId()).thenReturn(otherCustomerId);
-        when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
+        // SEC-02: MachineAccessPolicy denies access for another customer's machine
+        when(machineAccessPolicy.loadAndValidate(machineId))
+                .thenThrow(new SecurityException("Access denied: this machine is not assigned to you"));
 
         assertThrows(SecurityException.class, () -> service.createGeofence(request));
         verify(geofenceRepository, never()).save(any());
@@ -139,13 +137,11 @@ class GeofenceServiceTest {
         setCustomerAuth();
         GeofenceRequest request = makeRequest(machineId);
 
-        Customer customer = mock(Customer.class);
-        when(customer.getId()).thenReturn(customerId);
-        when(customerRepository.findByUserId(customerUserId)).thenReturn(Optional.of(customer));
-
-        Machine machine = mock(Machine.class);
-        when(machine.getCustomerId()).thenReturn(customerId);
-        when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
+        Machine machine = new Machine();
+        machine.setId(machineId);
+        machine.setOrganizationId(orgId);
+        machine.setCustomerId(customerId);
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
 
         when(geofenceRepository.findActiveByMachineId(orgId, machineId)).thenReturn(Optional.empty());
         when(geofenceRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -162,6 +158,11 @@ class GeofenceServiceTest {
         setAdminAuth();
         GeofenceRequest request = makeRequest(machineId);
 
+        Machine machine = new Machine();
+        machine.setId(machineId);
+        machine.setOrganizationId(orgId);
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
+
         when(geofenceRepository.findActiveByMachineId(orgId, machineId)).thenReturn(Optional.empty());
         when(geofenceRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -169,7 +170,6 @@ class GeofenceServiceTest {
 
         assertNotNull(result);
         verify(geofenceRepository).save(any());
-        verify(machineRepository, never()).findById(any());
     }
 
     // --- Helpers ---

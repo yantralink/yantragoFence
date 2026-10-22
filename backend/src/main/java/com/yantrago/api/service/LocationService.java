@@ -6,6 +6,7 @@ import com.yantrago.api.model.Machine;
 import com.yantrago.api.repository.DeviceRepository;
 import com.yantrago.api.repository.LocationRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.TenantGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,19 +37,22 @@ public class LocationService {
     private final DeviceRepository deviceRepository;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
+    private final MachineAccessPolicy machineAccessPolicy;
 
     public LocationService(LocationRepository locationRepository,
                            LocationPersistenceService locationPersistenceService,
                            MachineRepository machineRepository,
                            DeviceRepository deviceRepository,
                            OwnerContextService ownerContextService,
-                           TenantGuard tenantGuard) {
+                           TenantGuard tenantGuard,
+                           MachineAccessPolicy machineAccessPolicy) {
         this.locationRepository = locationRepository;
         this.locationPersistenceService = locationPersistenceService;
         this.machineRepository = machineRepository;
         this.deviceRepository = deviceRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
+        this.machineAccessPolicy = machineAccessPolicy;
     }
 
     /**
@@ -91,10 +95,8 @@ public class LocationService {
     public LocationDto getCurrentLocation(UUID machineId) {
         UUID orgId = ownerContextService.getOrganizationId();
 
-        // Validate machine belongs to tenant
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
+        // SEC-02: validate machine access — org + customer assignment
+        Machine machine = machineAccessPolicy.loadAndValidate(machineId);
 
         // Find device bound to this machine
         Device device = deviceRepository.findByMachineId(machineId).orElse(null);
@@ -119,10 +121,8 @@ public class LocationService {
     public List<LocationDto> getLocationHistory(UUID machineId, LocalDateTime from, LocalDateTime to) {
         UUID orgId = ownerContextService.getOrganizationId();
 
-        // Validate machine belongs to tenant
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
+        // SEC-02: validate machine access — org + customer assignment
+        machineAccessPolicy.loadAndValidate(machineId);
 
         List<Map<String, Object>> rows = locationRepository.findLocationHistory(orgId, machineId, from, to);
 

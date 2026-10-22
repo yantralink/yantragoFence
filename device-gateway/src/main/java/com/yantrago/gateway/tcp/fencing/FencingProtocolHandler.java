@@ -1,6 +1,7 @@
 package com.yantrago.gateway.tcp.fencing;
 
 import com.yantrago.gateway.queue.DeviceEventProducer;
+import com.yantrago.gateway.service.DeviceAuthService;
 import com.yantrago.gateway.service.DeviceHeartbeatService;
 import com.yantrago.gateway.service.DeviceMappingCacheService;
 import com.yantrago.gateway.service.DeviceStateService;
@@ -48,6 +49,7 @@ public class FencingProtocolHandler implements ProtocolHandler {
     private final DeviceEventProducer deviceEventProducer;
     private final DeviceHeartbeatService deviceHeartbeatService;
     private final DeviceStateService deviceStateService;
+    private final DeviceAuthService deviceAuthService;
 
     public FencingProtocolHandler(
             FencingParser parser,
@@ -58,7 +60,8 @@ public class FencingProtocolHandler implements ProtocolHandler {
             @Lazy VehicleCommandService vehicleCommandService,
             DeviceEventProducer deviceEventProducer,
             DeviceHeartbeatService deviceHeartbeatService,
-            DeviceStateService deviceStateService
+            DeviceStateService deviceStateService,
+            DeviceAuthService deviceAuthService
     ) {
         this.parser = parser;
         this.encoder = encoder;
@@ -69,6 +72,7 @@ public class FencingProtocolHandler implements ProtocolHandler {
         this.deviceEventProducer = deviceEventProducer;
         this.deviceHeartbeatService = deviceHeartbeatService;
         this.deviceStateService = deviceStateService;
+        this.deviceAuthService = deviceAuthService;
         log.info("[Fencing] Protocol handler initialized");
     }
 
@@ -95,9 +99,14 @@ public class FencingProtocolHandler implements ProtocolHandler {
     public void removeClient(String clientId) {
         String imei = clientImeiMap.remove(clientId);
         if (imei != null) {
-            deviceHeartbeatService.markOffline(imei);
-            deviceStateService.clearState(imei);
-            publishDeviceEvent(imei, DeviceEventMessage.EVENT_DISCONNECT);
+            // SEC-10: Only mark offline if no other connection is active for
+            // this IMEI. A stale disconnect must not mark the device offline
+            // while a newer connection is still active.
+            if (!connectionRegistry.isDeviceOnline(imei)) {
+                deviceHeartbeatService.markOffline(imei);
+                deviceStateService.clearState(imei);
+                publishDeviceEvent(imei, DeviceEventMessage.EVENT_DISCONNECT);
+            }
         }
     }
 
@@ -158,7 +167,20 @@ public class FencingProtocolHandler implements ProtocolHandler {
             return encoder.buildAck(FencingConstants.OP_LOGIN);
         }
 
-        log.info("[Fencing] Login from IMEI: {}", imei);
+        // SEC-10: Authenticate the device — only active, registered devices
+        // may establish routable sessions. IMEI existence alone is not
+        // authentication; this is an admission control check, not
+        // cryptographic authentication.
+        UUID deviceId = deviceAuthService.authenticateByImei(imei);
+        if (deviceId == null) {
+            log.warn("SEC-10: [Fencing] Login rejected: unknown or inactive IMEI={} from client={}",
+                    imei, clientId);
+            // Return ACK so the device doesn't keep retrying, but do NOT
+            // register the session — telemetry/commands are not routed.
+            return encoder.buildAck(FencingConstants.OP_LOGIN);
+        }
+
+        log.info("[Fencing] Login from IMEI: {} (deviceId={})", imei, deviceId);
         clientImeiMap.put(clientId, imei);
 
         deviceHeartbeatService.recordHeartbeat(imei);

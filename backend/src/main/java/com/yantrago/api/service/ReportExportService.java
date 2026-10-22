@@ -99,6 +99,66 @@ public class ReportExportService {
     }
 
     /**
+     * Returns true if the string starts with a formula trigger character
+     * that spreadsheet applications (Excel, LibreOffice) would interpret
+     * as a formula.
+     *
+     * Covers: = + - @ and control characters (tab \t, CR \r, LF \n)
+     * that can precede the formula trigger.
+     *
+     * Numeric-looking strings (e.g. "-123", "+45.67", "-1.5e3") are
+     * excluded — they are treated as numbers by the CSV consumer, not formulas.
+     */
+    private boolean isFormulaLike(String s) {
+        if (s == null || s.isEmpty()) {
+            return false;
+        }
+
+        // Check for control characters at the start
+        char first = s.charAt(0);
+        if (first == '\t' || first == '\r' || first == '\n' || first == 0x0B || first == 0x0C) {
+            return true;
+        }
+
+        // Direct formula triggers: = @
+        if (first == '=' || first == '@') {
+            return true;
+        }
+
+        // + and - are ambiguous: could be a number or a formula.
+        // If the remainder looks like a number, it's numeric — not a formula.
+        if (first == '+' || first == '-') {
+            String rest = s.substring(1);
+            return !isNumeric(rest);
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true if the string consists only of characters that could
+     * form a valid number (digits, decimal point, exponent, sign).
+     */
+    private boolean isNumeric(String s) {
+        if (s == null || s.isEmpty()) {
+            return false;
+        }
+        int len = s.length();
+        boolean hasDigit = false;
+        for (int i = 0; i < len; i++) {
+            char c = s.charAt(i);
+            if (Character.isDigit(c)) {
+                hasDigit = true;
+            } else if (c == '.' || c == '+' || c == '-' || c == 'e' || c == 'E') {
+                // allowed in numeric strings
+            } else {
+                return false;
+            }
+        }
+        return hasDigit;
+    }
+
+    /**
      * Exports report data to CSV format.
      *
      * @param reportData the report data map (must contain "data" as List<Map<String, Object>>)
@@ -121,7 +181,13 @@ public class ReportExportService {
                 csv.append(String.join(",", row.values().stream()
                         .map(v -> {
                             if (v == null) return "";
+                            // SEC-18: neutralize spreadsheet formula injection.
+                            // Only String values are checked — actual Number types
+                            // are real numeric values and don't need protection.
                             String s = v.toString();
+                            if (v instanceof String str && isFormulaLike(str)) {
+                                s = "'" + str;
+                            }
                             // Escape CSV values containing commas or quotes
                             if (s.contains(",") || s.contains("\"") || s.contains("\n")) {
                                 return "\"" + s.replace("\"", "\"\"") + "\"";

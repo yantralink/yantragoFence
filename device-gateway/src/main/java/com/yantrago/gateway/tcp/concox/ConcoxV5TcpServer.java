@@ -25,8 +25,20 @@ public class ConcoxV5TcpServer {
     @Value("${tcp.server.port:5000}")
     private int port;
 
+    // SEC-11: Bounded thread pool to prevent resource exhaustion
+    @Value("${tcp.server.max-connections:200}")
+    private int maxConnections;
+
+    // SEC-11: Pre-authentication deadline
+    @Value("${tcp.server.login-timeout-ms:30000}")
+    private int loginTimeoutMs;
+
+    // SEC-11: Max idle lifetime
+    @Value("${tcp.server.max-idle-timeout-ms:600000}")
+    private int maxIdleTimeoutMs;
+
     private ServerSocket serverSocket;
-    private final ExecutorService clientExecutor = Executors.newCachedThreadPool();
+    private ExecutorService clientExecutor;
     private volatile boolean running = false;
 
     private final ProtocolRouter protocolRouter;
@@ -34,6 +46,7 @@ public class ConcoxV5TcpServer {
     private final MeterRegistry meterRegistry;
     private final AtomicInteger activeConnections = new AtomicInteger(0);
     private Counter packetsProcessedCounter;
+    private Counter rejectedConnectionsCounter;
 
     public ConcoxV5TcpServer(ProtocolRouter protocolRouter,
                               DeviceConnectionRegistry connectionRegistry,
@@ -46,12 +59,17 @@ public class ConcoxV5TcpServer {
     @PostConstruct
     public void start() {
         running = true;
+        // SEC-11: Bounded thread pool.
+        clientExecutor = Executors.newFixedThreadPool(maxConnections);
         packetsProcessedCounter = Counter.builder("tcp.packets.processed")
                 .description("Total TCP packets processed")
                 .register(meterRegistry);
+        rejectedConnectionsCounter = Counter.builder("tcp.connections.rejected")
+                .description("Connections rejected due to max connection limit")
+                .register(meterRegistry);
         meterRegistry.gauge("tcp.active.connections", activeConnections);
         new Thread(this::acceptConnections, "TCP-Server").start();
-        log.info("[TCP] Concox V5 server starting on port {}", port);
+        log.info("[TCP] Concox V5 server starting on port {} (maxConnections={})", port, maxConnections);
     }
 
     @PreDestroy
@@ -64,7 +82,7 @@ public class ConcoxV5TcpServer {
         } catch (IOException e) {
             log.error("[TCP] Error closing server socket", e);
         }
-        clientExecutor.shutdown();
+        clientExecutor.shutdownNow();
     }
 
     private void acceptConnections() {
@@ -75,6 +93,18 @@ public class ConcoxV5TcpServer {
             while (running) {
                 try {
                     Socket clientSocket = serverSocket.accept();
+                    // SEC-11: Reject connections beyond the max limit.
+                    if (activeConnections.get() >= maxConnections) {
+                        rejectedConnectionsCounter.increment();
+                        log.warn("SEC-11: [TCP] Connection rejected: max connections ({}) reached from {}",
+                                maxConnections, clientSocket.getInetAddress());
+                        try {
+                            clientSocket.close();
+                        } catch (IOException e) {
+                            log.debug("[TCP] Error closing rejected connection: {}", e.getMessage());
+                        }
+                        continue;
+                    }
                     log.info("[TCP] Client connected: {}", clientSocket.getInetAddress());
                     clientExecutor.submit(() -> handleClient(clientSocket));
                 } catch (SocketException e) {
@@ -91,6 +121,8 @@ public class ConcoxV5TcpServer {
         boolean registered = false;
         ProtocolHandler handler = null;
         activeConnections.incrementAndGet();
+        long connectionStartTime = System.currentTimeMillis();
+        long lastActivityTime = connectionStartTime;
         try (InputStream in = socket.getInputStream();
              OutputStream out = socket.getOutputStream()) {
 
@@ -107,6 +139,19 @@ public class ConcoxV5TcpServer {
                 try {
                     bytesRead = in.read(buffer);
                 } catch (SocketTimeoutException ste) {
+                    long now = System.currentTimeMillis();
+                    // SEC-11: Pre-authentication deadline.
+                    if (!registered && (now - connectionStartTime) > loginTimeoutMs) {
+                        log.warn("SEC-11: [TCP] Closing unauthenticated connection from {} (no login within {}ms)",
+                                clientId, loginTimeoutMs);
+                        break;
+                    }
+                    // SEC-11: Max idle lifetime.
+                    if (registered && (now - lastActivityTime) > maxIdleTimeoutMs) {
+                        log.warn("SEC-11: [TCP] Closing idle connection from {} (idle > {}ms)",
+                                clientId, maxIdleTimeoutMs);
+                        break;
+                    }
                     // Read timeout — no data arrived within the SO_TIMEOUT window.
                     // This is NOT a disconnect. The device may be idle between
                     // heartbeats or after a command reply. Continue waiting.
@@ -116,6 +161,7 @@ public class ConcoxV5TcpServer {
                 if (bytesRead == -1) {
                     break;
                 }
+                lastActivityTime = System.currentTimeMillis();
 
                 // Append new bytes to the accumulation buffer
                 accum.write(buffer, 0, bytesRead);

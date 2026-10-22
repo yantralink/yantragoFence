@@ -31,12 +31,13 @@ public class TrackingWebSocketController {
 
     /**
      * Handles subscription requests. Clients send a message to /app/subscribe
-     * with the machineId they want to track. This validates that the user
-     * has access to the machine's organization (tenant isolation).
+     * with the machineId they want to track.
      *
-     * In a full implementation, this would check that the user's organizationId
-     * (from session attributes set by WebSocketAuthInterceptor) matches the
-     * machine's organizationId.
+     * Note: Actual subscription authorization is enforced at the STOMP
+     * SUBSCRIBE frame level by {@link StompChannelInterceptor}, which calls
+     * {@link com.yantrago.api.security.MachineAccessPolicy} for machine-scoped
+     * topics. This controller endpoint is an application-level logging/audit
+     * convenience — it does not gate access.
      */
     @MessageMapping("/subscribe")
     public void handleSubscription(@Payload Map<String, String> payload,
@@ -52,9 +53,6 @@ public class TrackingWebSocketController {
 
         log.info("WebSocket subscribe: user={} orgId={} subscribing to machineId={}",
                 userId, organizationId, machineIdStr);
-
-        // In a full implementation, verify the machine belongs to the user's org
-        // via MachineRepository. For now, we log the subscription.
     }
 
     /**

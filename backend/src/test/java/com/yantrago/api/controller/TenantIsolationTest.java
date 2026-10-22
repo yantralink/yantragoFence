@@ -5,10 +5,16 @@ import com.yantrago.api.model.Machine;
 import com.yantrago.api.model.MachineCommand;
 import com.yantrago.api.security.TenantGuard;
 import com.yantrago.api.service.OwnerContextService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,6 +26,9 @@ import static org.mockito.Mockito.when;
  *
  * Per AGENTS.md rule 7: all APIs must enforce tenant isolation (organization_id from JWT).
  * Per AGENTS.md rule 8: never trust tenant_id/organization_id supplied by the frontend.
+ *
+ * SEC-07: null tenant context no longer bypasses the check by default.
+ * The bypass is now gated on an explicit ROLE_super_admin authority.
  */
 class TenantIsolationTest {
 
@@ -33,6 +42,11 @@ class TenantIsolationTest {
     void setUp() {
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = new TenantGuard(ownerContextService);
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -65,11 +79,23 @@ class TenantIsolationTest {
     }
 
     @Test
-    @DisplayName("super_admin (null tenant context) should bypass tenant check")
+    @DisplayName("super_admin (ROLE_super_admin in SecurityContext, null tenant context) should bypass tenant check")
     void validateTenantAccess_shouldBypassForSuperAdmin() {
+        setSuperAdminAuth();
         when(ownerContextService.getOrganizationIdOrNull()).thenReturn(null);
 
         assertDoesNotThrow(() -> tenantGuard.validateTenantAccess(orgB));
+    }
+
+    @Test
+    @DisplayName("SEC-07: null tenant context WITHOUT ROLE_super_admin should fail closed")
+    void validateTenantAccess_shouldFailClosedForNullContextWithoutSuperAdmin() {
+        setNonSuperAdminAuth();
+        when(ownerContextService.getOrganizationIdOrNull()).thenReturn(null);
+
+        SecurityException ex = assertThrows(SecurityException.class,
+                () -> tenantGuard.validateTenantAccess(orgB));
+        assertTrue(ex.getMessage().contains("no organization context and user is not super_admin"));
     }
 
     @Test
@@ -89,11 +115,21 @@ class TenantIsolationTest {
     }
 
     @Test
-    @DisplayName("canAccess should return true for super_admin")
+    @DisplayName("canAccess should return true for super_admin (ROLE_super_admin in SecurityContext)")
     void canAccess_shouldReturnTrueForSuperAdmin() {
+        setSuperAdminAuth();
         when(ownerContextService.getOrganizationIdOrNull()).thenReturn(null);
 
         assertTrue(tenantGuard.canAccess(orgB));
+    }
+
+    @Test
+    @DisplayName("SEC-07: canAccess should return false for null context without ROLE_super_admin")
+    void canAccess_shouldReturnFalseForNullContextWithoutSuperAdmin() {
+        setNonSuperAdminAuth();
+        when(ownerContextService.getOrganizationIdOrNull()).thenReturn(null);
+
+        assertFalse(tenantGuard.canAccess(orgB));
     }
 
     @Test
@@ -138,5 +174,21 @@ class TenantIsolationTest {
 
         assertThrows(SecurityException.class,
                 () -> tenantGuard.validateTenantAccess(alert.getOrganizationId()));
+    }
+
+    // --- Helpers ---
+
+    private void setSuperAdminAuth() {
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                UUID.randomUUID(), null,
+                List.of(new SimpleGrantedAuthority("ROLE_super_admin")));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    private void setNonSuperAdminAuth() {
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                UUID.randomUUID(), null,
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 }

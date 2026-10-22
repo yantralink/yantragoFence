@@ -31,6 +31,11 @@ spring:
     locations: classpath:db/migration
     clean-disabled: false   # allow flyway clean in dev
 
+# Dev CORS — allow local admin-web
+security:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001
+
 # Dev JWT secrets — NOT for production (AGENTS.md rule 20)
 jwt:
   access:
@@ -50,8 +55,10 @@ logging:
     org.hibernate.SQL: DEBUG
     org.flywaydb: DEBUG
 
-# Swagger always enabled in dev
+# Swagger enabled in dev (disabled by default — SEC-13)
 springdoc:
+  api-docs:
+    enabled: true
   swagger-ui:
     enabled: true
 

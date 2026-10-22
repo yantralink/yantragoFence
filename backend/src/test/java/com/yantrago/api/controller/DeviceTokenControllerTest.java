@@ -8,7 +8,9 @@ import com.yantrago.api.dto.push.DeviceTokenRequest;
 import com.yantrago.api.security.AuditLogInterceptor;
 import com.yantrago.api.security.JwtAuthFilter;
 import com.yantrago.api.security.PermissionEvaluator;
+import com.yantrago.api.security.PostAuthRateLimitFilter;
 import com.yantrago.api.security.RateLimitFilter;
+import com.yantrago.api.security.TrustedProxyResolver;
 import com.yantrago.api.security.TenantContextFilter;
 import com.yantrago.api.security.TenantGuard;
 import com.yantrago.api.service.DeviceTokenService;
@@ -46,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = DeviceTokenController.class)
 @Import({SecurityConfig.class, WebMvcConfig.class, JwtAuthFilter.class, TenantContextFilter.class,
-         RateLimitFilter.class, AuditLogInterceptor.class, JwtService.class,
+         RateLimitFilter.class, PostAuthRateLimitFilter.class, TrustedProxyResolver.class, AuditLogInterceptor.class, JwtService.class,
          OwnerContextService.class, TenantGuard.class, PermissionEvaluator.class})
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {

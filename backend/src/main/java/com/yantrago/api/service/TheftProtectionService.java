@@ -9,6 +9,7 @@ import com.yantrago.api.repository.AlertRuleRepository;
 import com.yantrago.api.repository.CustomerRepository;
 import com.yantrago.api.repository.GeofenceRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.TenantGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,7 @@ public class TheftProtectionService {
     private final CustomerSettingsService customerSettingsService;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
+    private final MachineAccessPolicy machineAccessPolicy;
     private final JdbcTemplate jdbcTemplate;
 
     public TheftProtectionService(MachineRepository machineRepository,
@@ -61,6 +63,7 @@ public class TheftProtectionService {
                                     CustomerSettingsService customerSettingsService,
                                     OwnerContextService ownerContextService,
                                     TenantGuard tenantGuard,
+                                    MachineAccessPolicy machineAccessPolicy,
                                     JdbcTemplate jdbcTemplate) {
         this.machineRepository = machineRepository;
         this.geofenceRepository = geofenceRepository;
@@ -69,6 +72,7 @@ public class TheftProtectionService {
         this.customerSettingsService = customerSettingsService;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
+        this.machineAccessPolicy = machineAccessPolicy;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -83,10 +87,8 @@ public class TheftProtectionService {
     @Transactional
     public TheftProtectionStatusDto enable(UUID machineId) {
         UUID orgId = ownerContextService.getOrganizationId();
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
-        validateCustomerOwnership(machine);
+        // SEC-02: centralized policy — org + customer assignment (fail-closed)
+        Machine machine = machineAccessPolicy.loadAndValidate(machineId);
 
         // Get the machine's current GPS location
         double[] gps = getLatestGps(machineId);
@@ -187,10 +189,8 @@ public class TheftProtectionService {
      */
     @Transactional
     public TheftProtectionStatusDto disable(UUID machineId) {
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
-        validateCustomerOwnership(machine);
+        // SEC-02: centralized policy — org + customer assignment (fail-closed)
+        Machine machine = machineAccessPolicy.loadAndValidate(machineId);
         UUID orgId = machine.getOrganizationId();
 
         // Deactivate geofence (use machineId-only lookup — geofence may have
@@ -222,10 +222,8 @@ public class TheftProtectionService {
      */
     @Transactional(readOnly = true)
     public TheftProtectionStatusDto getStatus(UUID machineId) {
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
-        validateCustomerOwnership(machine);
+        // SEC-02: centralized policy — org + customer assignment (fail-closed)
+        Machine machine = machineAccessPolicy.loadAndValidate(machineId);
         UUID orgId = machine.getOrganizationId();
 
         // Check if geofence is active (use machineId-only lookup — geofence
@@ -279,22 +277,9 @@ public class TheftProtectionService {
     }
 
     /**
-     * Validates that the current customer owns the specified machine.
-     * Admin/org_admin roles bypass this check.
-     */
-    private void validateCustomerOwnership(Machine machine) {
-        UUID customerId = getCustomerIdIfCustomer();
-        if (customerId == null) {
-            return; // admin role — org-wide access
-        }
-        if (!customerId.equals(machine.getCustomerId())) {
-            throw new SecurityException(
-                    "Access denied: machine " + machine.getId() + " is not assigned to you");
-        }
-    }
-
-    /**
      * Returns the customer ID if the current user has the 'customer' role.
+     * Used for customer settings defaults lookup (not authorization — that
+     * is handled by MachineAccessPolicy).
      */
     private UUID getCustomerIdIfCustomer() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

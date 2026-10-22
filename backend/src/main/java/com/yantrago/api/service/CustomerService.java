@@ -44,6 +44,9 @@ public class CustomerService {
     private final TenantGuard tenantGuard;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
+    private final SessionRevocationService sessionRevocationService;
+    private final UserErasureService userErasureService;
+    private final AuditLogService auditLogService;
 
     public CustomerService(CustomerRepository customerRepository,
                            MachineRepository machineRepository,
@@ -52,7 +55,10 @@ public class CustomerService {
                            OwnerContextService ownerContextService,
                            TenantGuard tenantGuard,
                            PasswordEncoder passwordEncoder,
-                           JdbcTemplate jdbcTemplate) {
+                           JdbcTemplate jdbcTemplate,
+                           SessionRevocationService sessionRevocationService,
+                           UserErasureService userErasureService,
+                           AuditLogService auditLogService) {
         this.customerRepository = customerRepository;
         this.machineRepository = machineRepository;
         this.userRepository = userRepository;
@@ -61,6 +67,9 @@ public class CustomerService {
         this.tenantGuard = tenantGuard;
         this.passwordEncoder = passwordEncoder;
         this.jdbcTemplate = jdbcTemplate;
+        this.sessionRevocationService = sessionRevocationService;
+        this.userErasureService = userErasureService;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -155,8 +164,15 @@ public class CustomerService {
         // Sync user active status
         if (request.getIsActive() != null && customer.getUserId() != null) {
             userRepository.findById(customer.getUserId()).ifPresent(u -> {
+                Boolean prevActive = u.getIsActive();
                 u.setIsActive(request.getIsActive());
                 userRepository.save(u);
+                // SEC-04: revoke sessions when the linked user is deactivated
+                // (or reactivated after being deactivated).
+                if (prevActive != null && !prevActive.equals(request.getIsActive())) {
+                    sessionRevocationService.revokeAllSessions(u.getId());
+                    log.info("SEC-04: revoked sessions for user={} (customer activeChanged)", u.getId());
+                }
             });
         }
 
@@ -178,6 +194,13 @@ public class CustomerService {
         return toDto(customer);
     }
 
+    /**
+     * PLAY-06: real erasure — the customer record is deleted and the
+     * linked user account's personal data is physically removed
+     * (name/email/phone/credentials/sessions/push tokens/notifications/
+     * login metadata). Only pseudonymous audit and command records are
+     * retained, per the documented retention policy.
+     */
     @Transactional
     public void deleteCustomer(UUID id) {
         Customer customer = customerRepository.findById(id)
@@ -187,16 +210,16 @@ public class CustomerService {
         // Unassign any linked machines
         unassignCurrentMachine(customer.getId());
 
-        // Deactivate (not delete) the linked user account
+        // Erase the linked user's personal data (tombstones the account;
+        // sessions are revoked inside eraseUserPersonalData).
         if (customer.getUserId() != null) {
-            userRepository.findById(customer.getUserId()).ifPresent(u -> {
-                u.setIsActive(false);
-                userRepository.save(u);
-            });
+            userErasureService.eraseUserPersonalData(customer.getUserId());
         }
 
         customerRepository.delete(customer);
-        log.info("Deleted customer id={}", id);
+        auditLogService.recordAuditLog("ACCOUNT_ERASED", "CUSTOMER", id, null, null,
+                "{\"reason\":\"admin-initiated deletion\"}");
+        log.info("PLAY-06: deleted customer id={} and erased linked user data", id);
     }
 
     @Transactional
@@ -233,6 +256,8 @@ public class CustomerService {
                 u.setIsActive(false);
                 userRepository.save(u);
             });
+            // SEC-04: revoke all sessions for the deactivated customer's user.
+            sessionRevocationService.revokeAllSessions(customer.getUserId());
         }
 
         log.info("Deactivated customer id={}", id);
@@ -250,6 +275,8 @@ public class CustomerService {
                 u.setPasswordHash(passwordEncoder.encode(DEFAULT_CUSTOMER_PASSWORD));
                 userRepository.save(u);
             });
+            // SEC-04: a password reset must invalidate existing sessions.
+            sessionRevocationService.revokeAllSessions(customer.getUserId());
         }
 
         log.info("Reset password for customer id={}", id);

@@ -58,6 +58,22 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * SEC-04: revokes all outstanding refresh tokens for the authenticated
+     * user ("logout all devices"). The caller is identified from the JWT
+     * principal — never from the request body. Access tokens remain valid
+     * until they expire (bounded by the access-token TTL, default 15 min).
+     */
+    @PostMapping("/logout-all")
+    public ResponseEntity<Void> logoutAll(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        UUID userId = (UUID) authentication.getPrincipal();
+        authService.logoutAll(userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/me")
     public ResponseEntity<UserInfoResponse> me(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {

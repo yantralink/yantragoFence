@@ -3,6 +3,7 @@ package com.yantrago.api.service;
 import com.yantrago.api.dto.alert.AlertDto;
 import com.yantrago.api.model.Alert;
 import com.yantrago.api.repository.AlertRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.PermissionEvaluator;
 import com.yantrago.api.security.TenantGuard;
 import org.slf4j.Logger;
@@ -27,17 +28,20 @@ public class AlertService {
     private final AlertRepository alertRepository;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
+    private final MachineAccessPolicy machineAccessPolicy;
     private final PermissionEvaluator permissionEvaluator;
     private final RecipientResolutionService recipientResolutionService;
 
     public AlertService(AlertRepository alertRepository,
                         OwnerContextService ownerContextService,
                         TenantGuard tenantGuard,
+                        MachineAccessPolicy machineAccessPolicy,
                         PermissionEvaluator permissionEvaluator,
                         RecipientResolutionService recipientResolutionService) {
         this.alertRepository = alertRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
+        this.machineAccessPolicy = machineAccessPolicy;
         this.permissionEvaluator = permissionEvaluator;
         this.recipientResolutionService = recipientResolutionService;
     }
@@ -56,6 +60,8 @@ public class AlertService {
 
     @Transactional(readOnly = true)
     public Page<AlertDto> listAlertsByMachine(UUID machineId, Pageable pageable) {
+        // SEC-02: validate customer assignment before listing alerts
+        machineAccessPolicy.loadAndValidate(machineId);
         UUID orgId = ownerContextService.getOrganizationId();
         return alertRepository.findByOrganizationIdAndMachineId(orgId, machineId, pageable).map(this::toDto);
     }

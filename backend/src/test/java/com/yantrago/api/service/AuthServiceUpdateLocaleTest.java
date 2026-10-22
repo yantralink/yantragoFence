@@ -40,8 +40,9 @@ class AuthServiceUpdateLocaleTest {
         RefreshTokenRepository refreshTokenRepository = mock(RefreshTokenRepository.class);
         JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
         JwtService jwtService = mock(JwtService.class);
+        SessionRevocationService sessionRevocationService = mock(SessionRevocationService.class);
         authService = new AuthService(userRepository, organizationRepository,
-                refreshTokenRepository, jwtService, jdbcTemplate);
+                refreshTokenRepository, jwtService, sessionRevocationService, jdbcTemplate);
     }
 
     private User userWithLocale(String preferredLocale) {

@@ -12,6 +12,7 @@ import com.yantrago.api.repository.CommandAttemptRepository;
 import com.yantrago.api.repository.CommandRepository;
 import com.yantrago.api.repository.DeviceRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.PermissionEvaluator;
 import com.yantrago.api.security.TenantGuard;
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ public class CommandService {
     private final CommandStateMachine stateMachine;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
+    private final MachineAccessPolicy machineAccessPolicy;
     private final PermissionEvaluator permissionEvaluator;
     private final CommandProducer commandProducer;
 
@@ -57,6 +59,7 @@ public class CommandService {
                           CommandStateMachine stateMachine,
                           OwnerContextService ownerContextService,
                           TenantGuard tenantGuard,
+                          MachineAccessPolicy machineAccessPolicy,
                           PermissionEvaluator permissionEvaluator,
                           CommandProducer commandProducer) {
         this.commandRepository = commandRepository;
@@ -66,6 +69,7 @@ public class CommandService {
         this.stateMachine = stateMachine;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
+        this.machineAccessPolicy = machineAccessPolicy;
         this.permissionEvaluator = permissionEvaluator;
         this.commandProducer = commandProducer;
     }
@@ -75,10 +79,10 @@ public class CommandService {
         UUID orgId = ownerContextService.getOrganizationId();
         UUID issuedBy = permissionEvaluator.getCurrentUserId();
 
-        // Validate machine exists and belongs to tenant
-        Machine machine = machineRepository.findById(request.getMachineId())
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + request.getMachineId()));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
+        // SEC-02: validate machine access — org + customer assignment.
+        // Previously only checked org membership, so a customer could send
+        // commands to any machine in their organization.
+        Machine machine = machineAccessPolicy.loadAndValidate(request.getMachineId());
 
         // Normalize command type: FENCING_ON -> ON, FENCING_OFF -> OFF
         String commandType = request.getCommandType();
@@ -135,6 +139,10 @@ public class CommandService {
         MachineCommand command = commandRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Command not found: " + id));
         tenantGuard.validateTenantAccess(command.getOrganizationId());
+        // SEC-02: validate customer assignment for the command's machine
+        if (command.getMachineId() != null) {
+            machineAccessPolicy.loadAndValidate(command.getMachineId());
+        }
         return toResponse(command);
     }
 
@@ -143,6 +151,10 @@ public class CommandService {
         MachineCommand command = commandRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Command not found: " + id));
         tenantGuard.validateTenantAccess(command.getOrganizationId());
+        // SEC-02: validate customer assignment for the command's machine
+        if (command.getMachineId() != null) {
+            machineAccessPolicy.loadAndValidate(command.getMachineId());
+        }
         return new CommandStatusDto(
                 command.getId(),
                 command.getStatus(),
@@ -161,6 +173,8 @@ public class CommandService {
 
     @Transactional(readOnly = true)
     public Page<CommandResponse> listCommandsByMachine(UUID machineId, Pageable pageable) {
+        // SEC-02: validate customer assignment before listing commands
+        machineAccessPolicy.loadAndValidate(machineId);
         UUID orgId = ownerContextService.getOrganizationId();
         return commandRepository.findByOrganizationIdAndMachineId(orgId, machineId, pageable)
                 .map(this::toResponse);

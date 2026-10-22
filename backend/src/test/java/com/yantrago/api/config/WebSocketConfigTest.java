@@ -2,6 +2,7 @@ package com.yantrago.api.config;
 
 import com.yantrago.api.websocket.StompChannelInterceptor;
 import com.yantrago.api.websocket.WebSocketAuthInterceptor;
+import com.yantrago.api.websocket.WebSocketSessionRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -25,7 +26,8 @@ class WebSocketConfigTest {
     void configureMessageBroker_withHeartbeat_succeeds() {
         WebSocketConfig config = new WebSocketConfig(
                 mock(WebSocketAuthInterceptor.class),
-                mock(StompChannelInterceptor.class)
+                mock(StompChannelInterceptor.class),
+                mock(WebSocketSessionRegistry.class)
         );
 
         MessageBrokerRegistry registry = new MessageBrokerRegistry(

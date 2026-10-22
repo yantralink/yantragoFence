@@ -7,6 +7,7 @@ import com.yantrago.api.model.AlertRule;
 import com.yantrago.api.repository.AlertRuleRepository;
 import com.yantrago.api.repository.CustomerRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.PermissionEvaluator;
 import com.yantrago.api.security.TenantGuard;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,7 @@ class AlertRuleServiceTest {
     private AlertRuleRepository alertRuleRepository;
     private OwnerContextService ownerContextService;
     private TenantGuard tenantGuard;
+    private MachineAccessPolicy machineAccessPolicy;
     private PermissionEvaluator permissionEvaluator;
     private JdbcTemplate jdbcTemplate;
     private ObjectMapper objectMapper;
@@ -61,6 +63,7 @@ class AlertRuleServiceTest {
         alertRuleRepository = mock(AlertRuleRepository.class);
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = mock(TenantGuard.class);
+        machineAccessPolicy = mock(MachineAccessPolicy.class);
         permissionEvaluator = mock(PermissionEvaluator.class);
         jdbcTemplate = mock(JdbcTemplate.class);
         objectMapper = new ObjectMapper();
@@ -68,8 +71,8 @@ class AlertRuleServiceTest {
         machineRepository = mock(MachineRepository.class);
 
         service = new AlertRuleService(alertRuleRepository, ownerContextService,
-                tenantGuard, permissionEvaluator, jdbcTemplate, objectMapper,
-                customerRepository, machineRepository);
+                tenantGuard, machineAccessPolicy, permissionEvaluator, jdbcTemplate,
+                objectMapper, customerRepository, machineRepository);
 
         when(ownerContextService.getOrganizationId()).thenReturn(orgId);
         when(permissionEvaluator.getCurrentUserId()).thenReturn(userId);

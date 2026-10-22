@@ -9,6 +9,7 @@ import com.yantrago.api.repository.AlertRuleRepository;
 import com.yantrago.api.repository.CustomerRepository;
 import com.yantrago.api.repository.GeofenceRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.TenantGuard;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,6 +53,7 @@ class TheftProtectionServiceTest {
     private CustomerSettingsService customerSettingsService;
     private OwnerContextService ownerContextService;
     private TenantGuard tenantGuard;
+    private MachineAccessPolicy machineAccessPolicy;
     private JdbcTemplate jdbcTemplate;
 
     private TheftProtectionService service;
@@ -69,11 +71,12 @@ class TheftProtectionServiceTest {
         customerSettingsService = mock(CustomerSettingsService.class);
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = mock(TenantGuard.class);
+        machineAccessPolicy = mock(MachineAccessPolicy.class);
         jdbcTemplate = mock(JdbcTemplate.class);
 
         service = new TheftProtectionService(machineRepository, geofenceRepository,
                 alertRuleRepository, customerRepository, customerSettingsService,
-                ownerContextService, tenantGuard, jdbcTemplate);
+                ownerContextService, tenantGuard, machineAccessPolicy, jdbcTemplate);
 
         when(ownerContextService.getOrganizationId()).thenReturn(orgId);
     }
@@ -87,8 +90,10 @@ class TheftProtectionServiceTest {
     @DisplayName("enable creates geofence and activates rule when GPS available")
     void enable_withGps_createsGeofenceAndActivatesRule() {
         Machine machine = mock(Machine.class);
+        when(machine.getId()).thenReturn(machineId);
         when(machine.getOrganizationId()).thenReturn(orgId);
         when(machine.getCustomerId()).thenReturn(customerId);
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
 
         setCustomerAuth();
@@ -96,13 +101,13 @@ class TheftProtectionServiceTest {
         when(jdbcTemplate.queryForMap(anyString(), eq(machineId)))
                 .thenReturn(Map.of("latitude", 18.6, "longitude", 73.7));
 
-        when(geofenceRepository.findActiveByMachineId(orgId, machineId))
+        when(geofenceRepository.findActiveByMachineIdOnly(machineId))
                 .thenReturn(Optional.empty());
         when(geofenceRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         AlertRule rule = mock(AlertRule.class);
         when(rule.getIsActive()).thenReturn(false);
-        when(alertRuleRepository.findAllRulesByTypeAndMachine(orgId, machineId, "MACHINE_MOVING"))
+        when(alertRuleRepository.findAllRulesByTypeAndMachineOnly(machineId, "MACHINE_MOVING"))
                 .thenReturn(List.of(rule));
 
         com.yantrago.api.model.CustomerSettings settings =
@@ -122,8 +127,10 @@ class TheftProtectionServiceTest {
     @DisplayName("enable throws IllegalStateException when no GPS available")
     void enable_noGps_throwsIllegalStateException() {
         Machine machine = mock(Machine.class);
+        when(machine.getId()).thenReturn(machineId);
         when(machine.getOrganizationId()).thenReturn(orgId);
         when(machine.getCustomerId()).thenReturn(customerId);
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
 
         setCustomerAuth();
@@ -139,8 +146,10 @@ class TheftProtectionServiceTest {
     @DisplayName("disable deactivates geofence and rule")
     void disable_deactivatesGeofenceAndRule() {
         Machine machine = mock(Machine.class);
+        when(machine.getId()).thenReturn(machineId);
         when(machine.getOrganizationId()).thenReturn(orgId);
         when(machine.getCustomerId()).thenReturn(customerId);
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
 
         setCustomerAuth();
@@ -151,7 +160,7 @@ class TheftProtectionServiceTest {
         geofence.setOrganizationId(orgId);
         geofence.setMachineId(machineId);
         geofence.setIsActive(true);
-        when(geofenceRepository.findActiveByMachineId(orgId, machineId))
+        when(geofenceRepository.findActiveByMachineIdOnly(machineId))
                 .thenReturn(Optional.of(geofence));
 
         // Use real AlertRule so setIsActive(false) actually changes state
@@ -161,7 +170,7 @@ class TheftProtectionServiceTest {
         rule.setMachineId(machineId);
         rule.setAlertType("MACHINE_MOVING");
         rule.setIsActive(true);
-        when(alertRuleRepository.findAllRulesByTypeAndMachine(orgId, machineId, "MACHINE_MOVING"))
+        when(alertRuleRepository.findAllRulesByTypeAndMachineOnly(machineId, "MACHINE_MOVING"))
                 .thenReturn(List.of(rule));
 
         TheftProtectionStatusDto result = service.disable(machineId);
@@ -177,11 +186,9 @@ class TheftProtectionServiceTest {
     @Test
     @DisplayName("customer cannot enable for another customer's machine")
     void enable_otherCustomerMachine_throwsSecurityException() {
-        Machine machine = mock(Machine.class);
-        when(machine.getOrganizationId()).thenReturn(orgId);
-        UUID otherCustomerId = UUID.randomUUID();
-        when(machine.getCustomerId()).thenReturn(otherCustomerId);
-        when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
+        // SEC-02: MachineAccessPolicy denies access for another customer's machine
+        when(machineAccessPolicy.loadAndValidate(machineId))
+                .thenThrow(new SecurityException("Access denied: this machine is not assigned to you"));
 
         setCustomerAuth();
 
@@ -193,15 +200,17 @@ class TheftProtectionServiceTest {
     @DisplayName("status returns disabled when no geofence or rule active")
     void getStatus_noProtection_returnsDisabled() {
         Machine machine = mock(Machine.class);
+        when(machine.getId()).thenReturn(machineId);
         when(machine.getOrganizationId()).thenReturn(orgId);
         when(machine.getCustomerId()).thenReturn(customerId);
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
 
         setCustomerAuth();
 
-        when(geofenceRepository.findActiveByMachineId(orgId, machineId))
+        when(geofenceRepository.findActiveByMachineIdOnly(machineId))
                 .thenReturn(Optional.empty());
-        when(alertRuleRepository.findAllRulesByTypeAndMachine(orgId, machineId, "MACHINE_MOVING"))
+        when(alertRuleRepository.findAllRulesByTypeAndMachineOnly(machineId, "MACHINE_MOVING"))
                 .thenReturn(List.of());
 
         TheftProtectionStatusDto result = service.getStatus(machineId);

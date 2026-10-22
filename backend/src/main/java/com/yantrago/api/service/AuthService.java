@@ -23,9 +23,26 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Authentication service: login, refresh-token rotation, logout.
+ * Authentication service: login, refresh-token rotation, logout, logout-all.
+ *
  * Refresh tokens are one-time-use: each refresh rotates to a new token,
  * revoking the old one and linking it to the replacement (rotation chain).
+ *
+ * SEC-04: refresh validates the current user/org state (active, not locked,
+ * org active) and uses the user's current organization — not the stale
+ * token's org. Security-state changes (password change, deactivation,
+ * locking, tenant/role changes) revoke all refresh tokens via
+ * {@link SessionRevocationService}.
+ *
+ * SEC-05: refresh rotation is atomic. The old token is consumed via a
+ * conditional UPDATE (compare-and-set on revokedAt IS NULL) so concurrent
+ * refreshes cannot both win. Replay-triggered family revocation commits in
+ * a separate transaction (REQUIRES_NEW) so it survives the rollback of the
+ * rejected refresh.
+ *
+ * Access tokens are short-lived (default 15 min) and stateless; revocation
+ * is enforced at the refresh-token level, bounding the exposure window
+ * after a security-state change to the access-token TTL.
  */
 @Service
 public class AuthService {
@@ -36,6 +53,7 @@ public class AuthService {
     private final OrganizationRepository organizationRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
+    private final SessionRevocationService sessionRevocationService;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
 
@@ -43,11 +61,13 @@ public class AuthService {
                        OrganizationRepository organizationRepository,
                        RefreshTokenRepository refreshTokenRepository,
                        JwtService jwtService,
+                       SessionRevocationService sessionRevocationService,
                        JdbcTemplate jdbcTemplate) {
         this.userRepository = userRepository;
         this.organizationRepository = organizationRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtService = jwtService;
+        this.sessionRevocationService = sessionRevocationService;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -57,6 +77,17 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
+        // SEC-06: Check password BEFORE account-state checks so that
+        // wrong-password attempts always return "Invalid email or password"
+        // regardless of account state. This prevents account enumeration
+        // (an attacker cannot distinguish "user not found" from "user
+        // exists but is deactivated/locked" without knowing the password).
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            log.warn("Failed login attempt for email={}", request.getEmail());
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+
+        // Account-state checks only revealed after password verification succeeds.
         if (!user.getIsActive()) {
             throw new IllegalStateException("Account is deactivated");
         }
@@ -73,10 +104,6 @@ public class AuthService {
             if (org != null) {
                 organizationName = org.getName();
             }
-        }
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            log.warn("Failed login attempt for email={}", request.getEmail());
-            throw new IllegalArgumentException("Invalid email or password");
         }
 
         // Update last login time
@@ -159,24 +186,36 @@ public class AuthService {
         RefreshToken stored = refreshTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new IllegalArgumentException("Refresh token not found"));
 
-        if (stored.getRevokedAt() != null) {
-            log.warn("Attempted reuse of revoked refresh token for user={}", stored.getUserId());
-            // Revoke the entire chain — possible token theft
-            refreshTokenRepository.revokeAllByUserId(stored.getUserId(), LocalDateTime.now());
+        // SEC-05: atomic consume — conditional UPDATE on revokedAt IS NULL.
+        // Returns 1 if this call revoked the token (won the race), 0 if it
+        // was already revoked (lost the race, logout, or replay).
+        int consumed = refreshTokenRepository.revokeIfNotAlready(stored.getId(), LocalDateTime.now());
+        if (consumed == 0) {
+            // Already revoked — replay or concurrent loser. Revoke the entire
+            // family in a NEW transaction so it commits even though we throw
+            // and roll back this refresh transaction (SEC-05).
+            sessionRevocationService.revokeFamilyOnReplay(stored.getUserId(), stored.getId());
             throw new IllegalStateException("Refresh token has been revoked");
         }
         if (stored.getExpiresAt().isBefore(LocalDateTime.now())) {
+            // Consumed but expired — no new token. (The consume above already
+            // marked it revoked, which is harmless for an expired token.)
             throw new IllegalArgumentException("Refresh token expired");
         }
 
         UUID userId = stored.getUserId();
-        UUID orgId = stored.getOrganizationId();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // Rotate: revoke old token, issue new one
-        stored.setRevokedAt(LocalDateTime.now());
-        refreshTokenRepository.save(stored);
+        // SEC-04: validate current account/org state on refresh — a disabled
+        // or locked user, or a user whose organization was deactivated, must
+        // not be able to obtain new access tokens via refresh.
+        validateAccountState(user);
+
+        // SEC-04: use the user's CURRENT organization for the new tokens, not
+        // the stale org captured when the refresh token was issued. If the
+        // user was moved between orgs, the new token reflects the new tenant.
+        UUID currentOrgId = user.getOrganizationId();
 
         // Fetch user roles for new access token
         String roles = jdbcTemplate.queryForList(
@@ -193,8 +232,8 @@ public class AuthService {
                 String.class, userId
         ).stream().collect(Collectors.joining(","));
 
-        String newAccessToken = jwtService.generateAccessToken(userId, user.getEmail(), orgId, roles, permissions);
-        String newRefreshToken = jwtService.generateRefreshToken(userId, user.getEmail(), orgId);
+        String newAccessToken = jwtService.generateAccessToken(userId, user.getEmail(), currentOrgId, roles, permissions);
+        String newRefreshToken = jwtService.generateRefreshToken(userId, user.getEmail(), currentOrgId);
 
         RefreshToken newStored = persistRefreshToken(newRefreshToken, user);
         // Link rotation chain
@@ -202,6 +241,26 @@ public class AuthService {
         refreshTokenRepository.save(stored);
 
         return new TokenResponse(newAccessToken, newRefreshToken, "Bearer", jwtService.getAccessTtlSeconds());
+    }
+
+    /**
+     * SEC-04: validates that the user is active, not locked, and (if they
+     * belong to an org) the org is active. Mirrors the checks performed at
+     * login so that a disabled/locked user cannot keep refreshing.
+     */
+    private void validateAccountState(User user) {
+        if (!user.getIsActive()) {
+            throw new IllegalStateException("Account is deactivated");
+        }
+        if (user.getIsLocked()) {
+            throw new IllegalStateException("Account is locked");
+        }
+        if (user.getOrganizationId() != null) {
+            Organization org = organizationRepository.findById(user.getOrganizationId()).orElse(null);
+            if (org != null && !org.getIsActive()) {
+                throw new IllegalStateException("Organization is deactivated. Contact your platform administrator.");
+            }
+        }
     }
 
     @Transactional
@@ -215,6 +274,16 @@ public class AuthService {
             refreshTokenRepository.save(token);
             log.info("User {} logged out", token.getUserId());
         });
+    }
+
+    /**
+     * SEC-04: revokes all outstanding refresh tokens for the given user
+     * ("logout all devices"). Access tokens remain valid until they expire
+     * (bounded by the access-token TTL, default 15 min).
+     */
+    public void logoutAll(UUID userId) {
+        sessionRevocationService.revokeAllSessions(userId);
+        log.info("User {} logged out of all devices", userId);
     }
 
     private RefreshToken persistRefreshToken(String rawToken, User user) {

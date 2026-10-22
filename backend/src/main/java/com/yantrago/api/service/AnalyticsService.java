@@ -11,6 +11,7 @@ import com.yantrago.api.repository.AlertRepository;
 import com.yantrago.api.repository.CommandRepository;
 import com.yantrago.api.repository.LocationRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.TenantGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,19 +59,22 @@ public class AnalyticsService {
     private final LocationRepository locationRepository;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
+    private final MachineAccessPolicy machineAccessPolicy;
 
     public AnalyticsService(MachineRepository machineRepository,
                             AlertRepository alertRepository,
                             CommandRepository commandRepository,
                             LocationRepository locationRepository,
                             OwnerContextService ownerContextService,
-                            TenantGuard tenantGuard) {
+                            TenantGuard tenantGuard,
+                            MachineAccessPolicy machineAccessPolicy) {
         this.machineRepository = machineRepository;
         this.alertRepository = alertRepository;
         this.commandRepository = commandRepository;
         this.locationRepository = locationRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
+        this.machineAccessPolicy = machineAccessPolicy;
     }
 
     /**
@@ -137,9 +141,8 @@ public class AnalyticsService {
 
     private UUID validateMachineAccess(UUID machineId) {
         UUID orgId = ownerContextService.getOrganizationId();
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
+        // SEC-02: validate machine access — org + customer assignment
+        machineAccessPolicy.loadAndValidate(machineId);
         return orgId;
     }
 

@@ -10,6 +10,7 @@ import com.yantrago.api.repository.AlertRepository;
 import com.yantrago.api.repository.CommandRepository;
 import com.yantrago.api.repository.LocationRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.TenantGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,6 +43,7 @@ class AnalyticsServiceTest {
     private LocationRepository locationRepository;
     private OwnerContextService ownerContextService;
     private TenantGuard tenantGuard;
+    private MachineAccessPolicy machineAccessPolicy;
     private AnalyticsService service;
 
     private final UUID orgId = UUID.randomUUID();
@@ -58,13 +60,15 @@ class AnalyticsServiceTest {
         locationRepository = mock(LocationRepository.class);
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = mock(TenantGuard.class);
+        machineAccessPolicy = mock(MachineAccessPolicy.class);
         service = new AnalyticsService(machineRepository, alertRepository, commandRepository,
-                locationRepository, ownerContextService, tenantGuard);
+                locationRepository, ownerContextService, tenantGuard, machineAccessPolicy);
 
         when(ownerContextService.getOrganizationId()).thenReturn(orgId);
         Machine machine = new Machine();
         machine.setId(machineId);
         machine.setOrganizationId(orgId);
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
 
         // Default: no DONE commands → sessions fall back to ignition bit.
@@ -113,7 +117,9 @@ class AnalyticsServiceTest {
     @Test
     @DisplayName("faults: unknown machine throws")
     void faults_unknownMachine_throws() {
-        when(machineRepository.findById(machineId)).thenReturn(Optional.empty());
+        // SEC-02: MachineAccessPolicy throws IllegalArgumentException when machine not found
+        when(machineAccessPolicy.loadAndValidate(machineId))
+                .thenThrow(new IllegalArgumentException("Machine not found: " + machineId));
         assertThrows(IllegalArgumentException.class,
                 () -> service.getFaultIntervals(machineId, FROM, TO));
     }
@@ -124,7 +130,8 @@ class AnalyticsServiceTest {
         when(alertRepository.findIncidentsOverlapping(any(), any(), any(), any(), any()))
                 .thenReturn(List.of());
         service.getFaultIntervals(machineId, FROM, TO);
-        verify(tenantGuard).validateTenantAccess(orgId);
+        // SEC-02: machine access is now validated via MachineAccessPolicy
+        verify(machineAccessPolicy).loadAndValidate(machineId);
     }
 
     // ---------- session derivation (pure function) ----------

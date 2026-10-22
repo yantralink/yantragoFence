@@ -5,6 +5,7 @@ import com.yantrago.api.dto.telemetry.GsmDto;
 import com.yantrago.api.dto.telemetry.TelemetryDto;
 import com.yantrago.api.dto.telemetry.VoltageDto;
 import com.yantrago.api.repository.TelemetryRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.TenantGuard;
 import com.yantrago.api.model.Machine;
 import com.yantrago.api.repository.MachineRepository;
@@ -34,15 +35,18 @@ public class TelemetryService {
     private final MachineRepository machineRepository;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
+    private final MachineAccessPolicy machineAccessPolicy;
 
     public TelemetryService(TelemetryRepository telemetryRepository,
                             MachineRepository machineRepository,
                             OwnerContextService ownerContextService,
-                            TenantGuard tenantGuard) {
+                            TenantGuard tenantGuard,
+                            MachineAccessPolicy machineAccessPolicy) {
         this.telemetryRepository = telemetryRepository;
         this.machineRepository = machineRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
+        this.machineAccessPolicy = machineAccessPolicy;
     }
 
     /**
@@ -52,10 +56,8 @@ public class TelemetryService {
     public TelemetryDto getTelemetry(UUID machineId, LocalDateTime from, LocalDateTime to) {
         UUID orgId = ownerContextService.getOrganizationId();
 
-        // Validate machine belongs to tenant
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
+        // SEC-02: validate machine access — org + customer assignment
+        machineAccessPolicy.loadAndValidate(machineId);
 
         List<Map<String, Object>> voltageRows = telemetryRepository.findVoltageByMachineId(orgId, machineId, from, to);
         List<Map<String, Object>> batteryRows = telemetryRepository.findBatteryByMachineId(orgId, machineId, from, to);

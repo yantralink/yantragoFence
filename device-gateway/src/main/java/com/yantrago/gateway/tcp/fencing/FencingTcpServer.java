@@ -25,6 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Follows the same pattern as ConcoxV5TcpServer — accepts connections,
  * reads packets, routes them through ProtocolRouter, and sends responses.
  *
+ * SEC-11: Bounded thread pool, max connections, pre-authentication deadline,
+ * and max idle lifetime to prevent resource exhaustion.
+ *
  * Per AGENTS.md rule 3: TCP protocol handling is in the gateway, not REST controllers.
  */
 @Component
@@ -36,8 +39,22 @@ public class FencingTcpServer {
     @Value("${fencing.tcp.port:5002}")
     private int port;
 
+    // SEC-11: Bounded thread pool to prevent resource exhaustion
+    @Value("${fencing.tcp.max-connections:200}")
+    private int maxConnections;
+
+    // SEC-11: Pre-authentication deadline — connections that don't send
+    // a login packet within this time are closed.
+    @Value("${fencing.tcp.login-timeout-ms:30000}")
+    private int loginTimeoutMs;
+
+    // SEC-11: Max idle lifetime — connections are closed after this
+    // many read timeouts even if keep-alive is on.
+    @Value("${fencing.tcp.max-idle-timeout-ms:600000}")
+    private int maxIdleTimeoutMs;
+
     private ServerSocket serverSocket;
-    private final ExecutorService clientExecutor = Executors.newCachedThreadPool();
+    private ExecutorService clientExecutor;
     private volatile boolean running = false;
 
     private final ProtocolRouter protocolRouter;
@@ -45,6 +62,7 @@ public class FencingTcpServer {
     private final MeterRegistry meterRegistry;
     private final AtomicInteger activeConnections = new AtomicInteger(0);
     private Counter packetsProcessedCounter;
+    private Counter rejectedConnectionsCounter;
 
     public FencingTcpServer(ProtocolRouter protocolRouter,
                              DeviceConnectionRegistry connectionRegistry,
@@ -57,12 +75,17 @@ public class FencingTcpServer {
     @PostConstruct
     public void start() {
         running = true;
+        // SEC-11: Bounded thread pool with fixed max connections.
+        clientExecutor = Executors.newFixedThreadPool(maxConnections);
         packetsProcessedCounter = Counter.builder("fencing.tcp.packets.processed")
                 .description("Total fencing TCP packets processed")
                 .register(meterRegistry);
+        rejectedConnectionsCounter = Counter.builder("fencing.tcp.connections.rejected")
+                .description("Connections rejected due to max connection limit")
+                .register(meterRegistry);
         meterRegistry.gauge("fencing.tcp.active.connections", activeConnections);
         new Thread(this::acceptConnections, "Fencing-TCP-Server").start();
-        log.info("[Fencing] TCP server starting on port {}", port);
+        log.info("[Fencing] TCP server starting on port {} (maxConnections={})", port, maxConnections);
     }
 
     @PreDestroy
@@ -75,7 +98,7 @@ public class FencingTcpServer {
         } catch (IOException e) {
             log.error("[Fencing] Error closing server socket", e);
         }
-        clientExecutor.shutdown();
+        clientExecutor.shutdownNow();
     }
 
     private void acceptConnections() {
@@ -86,6 +109,18 @@ public class FencingTcpServer {
             while (running) {
                 try {
                     Socket clientSocket = serverSocket.accept();
+                    // SEC-11: Reject connections beyond the max limit.
+                    if (activeConnections.get() >= maxConnections) {
+                        rejectedConnectionsCounter.increment();
+                        log.warn("SEC-11: [Fencing] Connection rejected: max connections ({}) reached from {}",
+                                maxConnections, clientSocket.getInetAddress());
+                        try {
+                            clientSocket.close();
+                        } catch (IOException e) {
+                            log.debug("[Fencing] Error closing rejected connection: {}", e.getMessage());
+                        }
+                        continue;
+                    }
                     log.info("[Fencing] Device connected: {}", clientSocket.getInetAddress());
                     clientExecutor.submit(() -> handleClient(clientSocket));
                 } catch (SocketException e) {
@@ -102,6 +137,8 @@ public class FencingTcpServer {
         boolean registered = false;
         ProtocolHandler handler = null;
         activeConnections.incrementAndGet();
+        long connectionStartTime = System.currentTimeMillis();
+        long lastActivityTime = connectionStartTime;
 
         try (InputStream in = socket.getInputStream();
              OutputStream out = socket.getOutputStream()) {
@@ -116,6 +153,21 @@ public class FencingTcpServer {
                 try {
                     bytesRead = in.read(buffer);
                 } catch (SocketTimeoutException ste) {
+                    long now = System.currentTimeMillis();
+                    // SEC-11: Pre-authentication deadline — close connections
+                    // that haven't logged in within the login timeout.
+                    if (!registered && (now - connectionStartTime) > loginTimeoutMs) {
+                        log.warn("SEC-11: [Fencing] Closing unauthenticated connection from {} (no login within {}ms)",
+                                clientId, loginTimeoutMs);
+                        break;
+                    }
+                    // SEC-11: Max idle lifetime — close connections that have
+                    // been idle too long even after authentication.
+                    if (registered && (now - lastActivityTime) > maxIdleTimeoutMs) {
+                        log.warn("SEC-11: [Fencing] Closing idle connection from {} (idle > {}ms)",
+                                clientId, maxIdleTimeoutMs);
+                        break;
+                    }
                     // Read timeout — no data arrived within the SO_TIMEOUT window.
                     // This is NOT a disconnect. The device may be idle between
                     // heartbeats or after a command reply. Continue waiting.
@@ -125,6 +177,7 @@ public class FencingTcpServer {
                 if (bytesRead == -1) {
                     break;
                 }
+                lastActivityTime = System.currentTimeMillis();
                 byte[] data = new byte[bytesRead];
                 System.arraycopy(buffer, 0, data, 0, bytesRead);
 

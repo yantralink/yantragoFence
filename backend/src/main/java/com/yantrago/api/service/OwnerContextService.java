@@ -1,5 +1,8 @@
 package com.yantrago.api.service;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -9,9 +12,16 @@ import java.util.UUID;
  * Set by TenantContextFilter on each request, cleared after the request completes.
  * All tenant-scoped service queries must use getOrganizationId() — never trust
  * a tenant_id supplied by the frontend (AGENTS.md rule 8).
+ *
+ * Audit SEC-07: isSuperAdmin() previously returned true whenever the ThreadLocal
+ * was null, which conflated "platform-level user" with "context propagation
+ * failed". Now it checks the SecurityContext for the explicit ROLE_super_admin
+ * authority.
  */
 @Service
 public class OwnerContextService {
+
+    private static final String ROLE_SUPER_ADMIN = "ROLE_super_admin";
 
     private static final ThreadLocal<UUID> TENANT_CONTEXT = new ThreadLocal<>();
 
@@ -35,8 +45,22 @@ public class OwnerContextService {
         return TENANT_CONTEXT.get();
     }
 
+    /**
+     * Returns true if the current user has the ROLE_super_admin authority.
+     *
+     * Audit SEC-07: previously this returned true whenever the ThreadLocal
+     * tenant context was null. That conflated "platform-level user" with
+     * "context propagation failed or claim missing". Now it checks the
+     * SecurityContext explicitly.
+     */
     public boolean isSuperAdmin() {
-        return TENANT_CONTEXT.get() == null;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return false;
+        }
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(ROLE_SUPER_ADMIN::equals);
     }
 
     public void clear() {

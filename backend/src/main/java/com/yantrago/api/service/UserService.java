@@ -36,19 +36,28 @@ public class UserService {
     private final TenantGuard tenantGuard;
     private final PasswordEncoder passwordEncoder;
     private final JdbcTemplate jdbcTemplate;
+    private final SessionRevocationService sessionRevocationService;
+    private final UserErasureService userErasureService;
+    private final AuditLogService auditLogService;
 
     public UserService(UserRepository userRepository,
                        RoleRepository roleRepository,
                        OwnerContextService ownerContextService,
                        TenantGuard tenantGuard,
                        PasswordEncoder passwordEncoder,
-                       JdbcTemplate jdbcTemplate) {
+                       JdbcTemplate jdbcTemplate,
+                       SessionRevocationService sessionRevocationService,
+                       UserErasureService userErasureService,
+                       AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
         this.passwordEncoder = passwordEncoder;
         this.jdbcTemplate = jdbcTemplate;
+        this.sessionRevocationService = sessionRevocationService;
+        this.userErasureService = userErasureService;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional(readOnly = true)
@@ -139,6 +148,12 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
         tenantGuard.validateTenantAccess(user.getOrganizationId());
 
+        // SEC-04: capture whether a security-relevant field changes so we can
+        // revoke outstanding refresh tokens after the save.
+        boolean passwordChanged = request.getPassword() != null;
+        Boolean prevActive = user.getIsActive();
+        Boolean prevLocked = user.getIsLocked();
+
         if (request.getEmail() != null) user.setEmail(request.getEmail());
         if (request.getPassword() != null) user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         if (request.getFullName() != null) user.setFullName(request.getFullName());
@@ -149,16 +164,51 @@ public class UserService {
 
         user = userRepository.save(user);
         log.info("Updated user id={}", user.getId());
+
+        // SEC-04: revoke all sessions on password change, deactivation, or
+        // locking. Access tokens are short-lived; revoking refresh tokens
+        // prevents obtaining new access tokens after the state change.
+        boolean activeChanged = request.getIsActive() != null && !request.getIsActive().equals(prevActive);
+        boolean lockedChanged = request.getIsLocked() != null && !request.getIsLocked().equals(prevLocked);
+        if (passwordChanged || activeChanged || lockedChanged) {
+            sessionRevocationService.revokeAllSessions(user.getId());
+            log.info("SEC-04: revoked sessions for user={} (passwordChanged={} activeChanged={} lockedChanged={})",
+                    user.getId(), passwordChanged, activeChanged, lockedChanged);
+        }
+
         return toDto(user);
     }
 
+    /**
+     * PLAY-06: erases the user's personal data (tombstones the row) rather
+     * than physically deleting it. Audit/command records keep their
+     * user_id linkage without retaining PII, and FK references lacking an
+     * ON DELETE rule (e.g. notification_dlq_replay_audit.replayed_by)
+     * cannot break. Any linked customer record is anonymized (name/
+     * email/phone/address stripped) and deactivated — the person's PII
+     * must not survive in the customers table after their user account
+     * is erased.
+     */
     @Transactional
     public void deleteUser(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
         tenantGuard.validateTenantAccess(user.getOrganizationId());
-        userRepository.delete(user);
-        log.info("Deleted user id={}", id);
+
+        userErasureService.eraseUserPersonalData(user.getId());
+
+        // Strip PII from any linked customer record (name/email/phone/
+        // address all describe the same person). The row is kept as an
+        // anonymized business record so machine/CRM linkage survives;
+        // full customer deletion goes through CustomerService.deleteCustomer.
+        jdbcTemplate.update(
+                "UPDATE customers SET name = 'Deleted Customer', email = NULL,"
+                + " phone = NULL, address = NULL, is_active = FALSE"
+                + " WHERE user_id = ?", id);
+
+        auditLogService.recordAuditLog("ACCOUNT_ERASED", "USER", id, null, null,
+                "{\"reason\":\"admin-initiated deletion\"}");
+        log.info("PLAY-06: erased user id={}", id);
     }
 
     @Transactional
@@ -177,7 +227,9 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
         user.setIsActive(false);
         user = userRepository.save(user);
-        log.info("Deactivated user id={}", id);
+        // SEC-04: a deactivated user must not be able to refresh.
+        sessionRevocationService.revokeAllSessions(user.getId());
+        log.info("Deactivated user id={} and revoked all sessions", id);
         return toDto(user);
     }
 

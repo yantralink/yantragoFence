@@ -2,6 +2,7 @@ package com.yantrago.gateway.tcp.jt808;
 
 import com.yantrago.gateway.model.Dashcam;
 import com.yantrago.gateway.repository.DashcamRepository;
+import com.yantrago.gateway.tcp.DashcamConnectionRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -21,14 +22,17 @@ public class JT808ProtocolHandler {
     private final JT808FrameParser frameParser;
     private final JT808MessageEncoder encoder;
     private final DashcamRepository dashcamRepository;
+    private final DashcamConnectionRegistry dashcamConnectionRegistry;
     private final AtomicInteger authCodeCounter = new AtomicInteger(1000);
 
     public JT808ProtocolHandler(JT808FrameParser frameParser,
                                  JT808MessageEncoder encoder,
-                                 DashcamRepository dashcamRepository) {
+                                 DashcamRepository dashcamRepository,
+                                 DashcamConnectionRegistry dashcamConnectionRegistry) {
         this.frameParser = frameParser;
         this.encoder = encoder;
         this.dashcamRepository = dashcamRepository;
+        this.dashcamConnectionRegistry = dashcamConnectionRegistry;
     }
 
     public String getSimPhoneForClient(String clientId) {
@@ -38,8 +42,13 @@ public class JT808ProtocolHandler {
     public void removeClient(String clientId) {
         String sim = clientSimMap.remove(clientId);
         if (sim != null) {
-            dashcamRepository.markOffline(sim);
-            log.info("[JT808] Marked dashcam offline: sim={}", sim);
+            // SEC-10: Only mark offline if no other connection is active for
+            // this SIM phone. A stale disconnect must not mark the device
+            // offline while a newer connection is still active.
+            if (!dashcamConnectionRegistry.isDeviceOnline(sim)) {
+                dashcamRepository.markOffline(sim);
+                log.info("[JT808] Marked dashcam offline: sim={}", sim);
+            }
         }
     }
 

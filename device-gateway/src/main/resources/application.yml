@@ -20,6 +20,8 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+    # SEC-17: isolated vhost — set RABBITMQ_VHOST in staging/production.
+    virtual-host: ${RABBITMQ_VHOST:/}
     listener:
       simple:
         default-requeue-rejected: false   # rejected messages are dead-lettered (not requeued forever)

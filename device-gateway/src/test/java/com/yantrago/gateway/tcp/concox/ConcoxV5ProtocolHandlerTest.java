@@ -2,6 +2,7 @@ package com.yantrago.gateway.tcp.concox;
 
 import com.yantrago.gateway.queue.DeviceEventProducer;
 import com.yantrago.gateway.model.GpsIngestRequest;
+import com.yantrago.gateway.service.DeviceAuthService;
 import com.yantrago.gateway.service.DeviceHeartbeatService;
 import com.yantrago.gateway.service.DeviceMappingCacheService;
 import com.yantrago.gateway.service.GpsIngestService;
@@ -34,6 +35,7 @@ class ConcoxV5ProtocolHandlerTest {
     private DeviceMappingCacheService deviceMappingCacheService;
     private DeviceEventProducer deviceEventProducer;
     private DeviceHeartbeatService deviceHeartbeatService;
+    private DeviceAuthService deviceAuthService;
     private ConcoxV5ProtocolHandler handler;
 
     @BeforeEach
@@ -44,10 +46,15 @@ class ConcoxV5ProtocolHandlerTest {
         deviceMappingCacheService = mock(DeviceMappingCacheService.class);
         deviceEventProducer = mock(DeviceEventProducer.class);
         deviceHeartbeatService = mock(DeviceHeartbeatService.class);
+        deviceAuthService = mock(DeviceAuthService.class);
+        // SEC-10: By default, allow all devices to authenticate. Tests that
+        // need to verify rejection can override this stub.
+        when(deviceAuthService.authenticateByImei(anyString())).thenReturn(UUID.randomUUID());
 
         handler = new ConcoxV5ProtocolHandler(
                 connectionRegistry, vehicleCommandService, gpsIngestService,
-                deviceMappingCacheService, deviceEventProducer, deviceHeartbeatService
+                deviceMappingCacheService, deviceEventProducer, deviceHeartbeatService,
+                deviceAuthService
         );
     }
 

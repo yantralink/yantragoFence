@@ -19,11 +19,23 @@ import java.util.UUID;
 /**
  * Audit log service — records and queries audit logs.
  *
- * Audit logs are written by AuditLogInterceptor (Phase 5) for every sensitive API call.
- * This service provides query capabilities and a programmatic API for writing audit entries.
+ * Audit logs are written by AuditLogInterceptor for every sensitive API call
+ * and by SecurityConfig for filter-layer denials. This service provides query
+ * capabilities and a programmatic API for writing audit entries.
  *
  * All queries filter by organization_id from OwnerContextService (tenant isolation).
  * Super_admin can view all audit logs.
+ *
+ * RETENTION POLICY (SEC-14):
+ * - audit_logs is range-partitioned by quarter (see V11__create_audit_logs.sql).
+ * - Retain at least 5 quarters of audit history online (matches existing
+ *   partition coverage). Security-relevant entries (LOGIN, COMMAND_ISSUE,
+ *   SECURITY_DENIAL) must be retained a minimum of 12 months.
+ * - Older quarters are detached and archived to cold storage by the
+ *   operator (e.g. `pg_dump` of the partition, then DROP the partition).
+ *   Retention/archival is an ops task — no automatic deletion in code.
+ * - A rolling future partition must be created before each new quarter;
+ *   the DEFAULT partition catches overflow rows.
  */
 @Service
 public class AuditLogService {
@@ -101,15 +113,39 @@ public class AuditLogService {
     /**
      * Programmatically records an audit log entry.
      * Called by AuditLogInterceptor and other services that need to log actions.
+     *
+     * This overload resolves user/org from the SecurityContext/ThreadLocal.
+     * The interceptor calls it in preHandle (before TenantContextFilter clears
+     * the context) and stores the results as request attributes for afterCompletion.
      */
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void recordAuditLog(String action, String resourceType, UUID resourceId,
                                String ipAddress, String userAgent, String details) {
         UUID orgId = ownerContextService.getOrganizationIdOrNull();
         UUID userId = permissionEvaluator.getCurrentUserId();
+        persistAuditLog(action, resourceType, resourceId, orgId, userId, ipAddress, userAgent, details);
+    }
 
+    /**
+     * SEC-14: Records an audit log with explicit user/org context.
+     * Used by AuditLogInterceptor which captures the context in preHandle
+     * before TenantContextFilter clears it, then calls this in afterCompletion.
+     *
+     * REQUIRES_NEW ensures the audit record is persisted in its own transaction
+     * even if the outer request transaction is rolled back.
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void recordAuditLog(String action, String resourceType, UUID resourceId,
+                               UUID organizationId, UUID userId,
+                               String ipAddress, String userAgent, String details) {
+        persistAuditLog(action, resourceType, resourceId, organizationId, userId, ipAddress, userAgent, details);
+    }
+
+    private void persistAuditLog(String action, String resourceType, UUID resourceId,
+                                 UUID organizationId, UUID userId,
+                                 String ipAddress, String userAgent, String details) {
         AuditLog auditLog = new AuditLog();
-        auditLog.setOrganizationId(orgId);
+        auditLog.setOrganizationId(organizationId);
         auditLog.setUserId(userId);
         auditLog.setAction(action);
         auditLog.setResourceType(resourceType);

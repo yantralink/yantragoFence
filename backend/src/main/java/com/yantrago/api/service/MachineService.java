@@ -15,6 +15,7 @@ import com.yantrago.api.repository.CustomerRepository;
 import com.yantrago.api.repository.DeviceRepository;
 import com.yantrago.api.repository.MachineAssignmentRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.TenantGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ public class MachineService {
     private final MachineAssignmentRepository machineAssignmentRepository;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
+    private final MachineAccessPolicy machineAccessPolicy;
     private final AlertRuleRepository alertRuleRepository;
 
     public MachineService(MachineRepository machineRepository,
@@ -57,6 +59,7 @@ public class MachineService {
                           MachineAssignmentRepository machineAssignmentRepository,
                           OwnerContextService ownerContextService,
                           TenantGuard tenantGuard,
+                          MachineAccessPolicy machineAccessPolicy,
                           AlertRuleRepository alertRuleRepository) {
         this.machineRepository = machineRepository;
         this.deviceRepository = deviceRepository;
@@ -64,6 +67,7 @@ public class MachineService {
         this.machineAssignmentRepository = machineAssignmentRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
+        this.machineAccessPolicy = machineAccessPolicy;
         this.alertRuleRepository = alertRuleRepository;
     }
 
@@ -97,28 +101,18 @@ public class MachineService {
 
     @Transactional(readOnly = true)
     public MachineDto getMachine(UUID id) {
-        Machine machine = machineRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + id));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
-
-        // Customer-role users: can only view machines assigned to them
-        UUID customerUserId = getCurrentUserIdIfCustomer();
-        if (customerUserId != null) {
-            customerRepository.findByUserId(customerUserId).ifPresent(customer -> {
-                if (!customer.getId().equals(machine.getCustomerId())) {
-                    throw new SecurityException("Access denied: this machine is not assigned to you");
-                }
-            });
-        }
-
+        // SEC-02: centralized machine-access policy — org + customer assignment.
+        // Replaces the previous ifPresent pattern that failed open when the
+        // customer record was absent.
+        Machine machine = machineAccessPolicy.loadAndValidate(id);
         return toDto(machine);
     }
 
     @Transactional(readOnly = true)
     public MachineStatusDto getMachineStatus(UUID id) {
-        Machine machine = machineRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + id));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
+        // SEC-02: customer-level authorization was missing here — a customer
+        // could read status for any machine in their org.
+        Machine machine = machineAccessPolicy.loadAndValidate(id);
         return new MachineStatusDto(machine.getId(), machine.getStatus(), machine.getIsOnline(), machine.getLastSeenAt());
     }
 
@@ -131,9 +125,9 @@ public class MachineService {
      */
     @Transactional(readOnly = true)
     public TelemetryLatestDto getLatestTelemetry(UUID machineId) {
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
-        tenantGuard.validateTenantAccess(machine.getOrganizationId());
+        // SEC-02: customer-level authorization was missing here — a customer
+        // could read telemetry for any machine in their org.
+        Machine machine = machineAccessPolicy.loadAndValidate(machineId);
 
         return deviceRepository.findByMachineId(machineId)
                 .map(device -> new TelemetryLatestDto(

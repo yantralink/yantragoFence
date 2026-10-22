@@ -11,6 +11,7 @@ import com.yantrago.api.repository.CommandAttemptRepository;
 import com.yantrago.api.repository.CommandRepository;
 import com.yantrago.api.repository.DeviceRepository;
 import com.yantrago.api.repository.MachineRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.PermissionEvaluator;
 import com.yantrago.api.security.TenantGuard;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +43,7 @@ class CommandServiceTest {
     private CommandStateMachine stateMachine;
     private OwnerContextService ownerContextService;
     private TenantGuard tenantGuard;
+    private MachineAccessPolicy machineAccessPolicy;
     private PermissionEvaluator permissionEvaluator;
     private CommandProducer commandProducer;
     private CommandService commandService;
@@ -60,12 +62,13 @@ class CommandServiceTest {
         stateMachine = new CommandStateMachine();
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = mock(TenantGuard.class);
+        machineAccessPolicy = mock(MachineAccessPolicy.class);
         permissionEvaluator = mock(PermissionEvaluator.class);
         commandProducer = mock(CommandProducer.class);
 
         commandService = new CommandService(
                 commandRepository, commandAttemptRepository, machineRepository, deviceRepository,
-                stateMachine, ownerContextService, tenantGuard,
+                stateMachine, ownerContextService, tenantGuard, machineAccessPolicy,
                 permissionEvaluator, commandProducer
         );
     }
@@ -80,6 +83,7 @@ class CommandServiceTest {
         machine.setId(machineId);
         machine.setOrganizationId(orgId);
         machine.setSerialNumber("IMEI123456");
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
         com.yantrago.api.model.Device device = new com.yantrago.api.model.Device();
         device.setId(UUID.randomUUID());
@@ -121,7 +125,9 @@ class CommandServiceTest {
     void createCommand_shouldThrowWhenMachineNotFound() {
         when(ownerContextService.getOrganizationId()).thenReturn(orgId);
         when(permissionEvaluator.getCurrentUserId()).thenReturn(userId);
-        when(machineRepository.findById(machineId)).thenReturn(Optional.empty());
+        // SEC-02: MachineAccessPolicy throws IllegalArgumentException when machine not found
+        when(machineAccessPolicy.loadAndValidate(machineId))
+                .thenThrow(new IllegalArgumentException("Machine not found: " + machineId));
 
         CommandRequest request = new CommandRequest();
         request.setMachineId(machineId);
@@ -141,6 +147,7 @@ class CommandServiceTest {
         machine.setId(machineId);
         machine.setOrganizationId(orgId);
         machine.setSerialNumber("IMEI123");
+        when(machineAccessPolicy.loadAndValidate(machineId)).thenReturn(machine);
         when(machineRepository.findById(machineId)).thenReturn(Optional.of(machine));
         com.yantrago.api.model.Device device2 = new com.yantrago.api.model.Device();
         device2.setId(UUID.randomUUID());
@@ -167,8 +174,8 @@ class CommandServiceTest {
 
         commandService.createCommand(request);
 
-        // Verify tenant guard was called with the machine's orgId
-        verify(tenantGuard).validateTenantAccess(orgId);
+        // SEC-02: machine access is now validated via MachineAccessPolicy
+        verify(machineAccessPolicy).loadAndValidate(machineId);
     }
 
     @Test

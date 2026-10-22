@@ -3,6 +3,7 @@ package com.yantrago.api.service;
 import com.yantrago.api.dto.alert.AlertDto;
 import com.yantrago.api.model.Alert;
 import com.yantrago.api.repository.AlertRepository;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.PermissionEvaluator;
 import com.yantrago.api.security.TenantGuard;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ class AlertServiceTest {
     private AlertRepository alertRepository;
     private OwnerContextService ownerContextService;
     private TenantGuard tenantGuard;
+    private MachineAccessPolicy machineAccessPolicy;
     private PermissionEvaluator permissionEvaluator;
     private RecipientResolutionService recipientResolutionService;
     private AlertService alertService;
@@ -47,10 +49,11 @@ class AlertServiceTest {
         alertRepository = mock(AlertRepository.class);
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = mock(TenantGuard.class);
+        machineAccessPolicy = mock(MachineAccessPolicy.class);
         permissionEvaluator = mock(PermissionEvaluator.class);
         recipientResolutionService = mock(RecipientResolutionService.class);
         alertService = new AlertService(alertRepository, ownerContextService, tenantGuard,
-                permissionEvaluator, recipientResolutionService);
+                machineAccessPolicy, permissionEvaluator, recipientResolutionService);
     }
 
     private Alert createAlert(UUID org, boolean acknowledged) {

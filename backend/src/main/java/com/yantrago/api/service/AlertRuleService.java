@@ -11,6 +11,7 @@ import com.yantrago.api.repository.AlertRuleRepository;
 import com.yantrago.api.repository.CustomerRepository;
 import com.yantrago.api.repository.MachineRepository;
 import com.yantrago.api.security.PermissionEvaluator;
+import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.TenantGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,7 @@ public class AlertRuleService {
     private final AlertRuleRepository alertRuleRepository;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
+    private final MachineAccessPolicy machineAccessPolicy;
     private final PermissionEvaluator permissionEvaluator;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
@@ -74,6 +76,7 @@ public class AlertRuleService {
     public AlertRuleService(AlertRuleRepository alertRuleRepository,
                              OwnerContextService ownerContextService,
                              TenantGuard tenantGuard,
+                             MachineAccessPolicy machineAccessPolicy,
                              PermissionEvaluator permissionEvaluator,
                              JdbcTemplate jdbcTemplate,
                              ObjectMapper objectMapper,
@@ -82,6 +85,7 @@ public class AlertRuleService {
         this.alertRuleRepository = alertRuleRepository;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
+        this.machineAccessPolicy = machineAccessPolicy;
         this.permissionEvaluator = permissionEvaluator;
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
@@ -118,7 +122,8 @@ public class AlertRuleService {
     public AlertRuleDto createRule(AlertRuleRequest request) {
         UUID orgId = ownerContextService.getOrganizationId();
         validateRequest(request);
-        validateMachineOwnership(orgId, request.getMachineId());
+        // SEC-02: centralized machine-access policy (fail-closed)
+        machineAccessPolicy.loadAndValidate(request.getMachineId());
 
         AlertRule rule = new AlertRule();
         rule.setOrganizationId(orgId);
@@ -149,7 +154,8 @@ public class AlertRuleService {
                 .orElseThrow(() -> new IllegalArgumentException("Alert rule not found: " + id));
         tenantGuard.validateTenantAccess(rule.getOrganizationId());
         validateRequest(request);
-        validateMachineOwnership(rule.getOrganizationId(), request.getMachineId());
+        // SEC-02: centralized machine-access policy (fail-closed)
+        machineAccessPolicy.loadAndValidate(request.getMachineId());
         validateRuleOwnership(rule);
 
         String oldConfig = rule.getConditionConfig();
@@ -354,45 +360,22 @@ public class AlertRuleService {
     }
 
     /**
-     * Validates that the current customer owns the specified machine.
-     * Admin/org_admin roles bypass this check (they have org-wide access).
-     */
-    private void validateMachineOwnership(UUID orgId, UUID machineId) {
-        UUID customerId = getCustomerIdIfCustomer();
-        if (customerId == null) {
-            return; // admin role — org-wide access
-        }
-        if (machineId == null) {
-            throw new SecurityException(
-                    "Access denied: customers can only create rules for their own machines");
-        }
-        Machine machine = machineRepository.findById(machineId)
-                .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
-        if (!customerId.equals(machine.getCustomerId())) {
-            throw new SecurityException(
-                    "Access denied: machine " + machineId + " is not assigned to you");
-        }
-    }
-
-    /**
      * Validates that the current customer owns the machine associated with
      * the given alert rule. Admin/org_admin roles bypass this check.
+     *
+     * SEC-02: uses the centralized MachineAccessPolicy (fail-closed) instead
+     * of the previous getCustomerIdIfCustomer pattern that failed open when
+     * the customer record was absent.
      */
     private void validateRuleOwnership(AlertRule rule) {
-        UUID customerId = getCustomerIdIfCustomer();
-        if (customerId == null) {
-            return; // admin role — org-wide access
-        }
         if (rule.getMachineId() == null) {
-            throw new SecurityException(
-                    "Access denied: org-wide rules can only be managed by admins");
+            // Org-wide rules — only admins can manage; customers are denied
+            if (getCustomerIdIfCustomer() != null) {
+                throw new SecurityException(
+                        "Access denied: org-wide rules can only be managed by admins");
+            }
+            return;
         }
-        Machine machine = machineRepository.findById(rule.getMachineId())
-                .orElseThrow(() -> new SecurityException(
-                        "Access denied: machine not found for rule"));
-        if (!customerId.equals(machine.getCustomerId())) {
-            throw new SecurityException(
-                    "Access denied: this alert rule belongs to another customer's machine");
-        }
+        machineAccessPolicy.loadAndValidate(rule.getMachineId());
     }
 }

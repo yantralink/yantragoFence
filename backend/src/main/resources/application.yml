@@ -56,7 +56,8 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
-    virtual-host: /
+    # SEC-17: isolated vhost — set RABBITMQ_VHOST in staging/production.
+    virtual-host: ${RABBITMQ_VHOST:/}
     publisher-confirm-type: correlated    # Phase 1 fix: enable publisher confirms
     publisher-returns: true               # Phase 1 fix: detect unroutable messages
     listener:
@@ -82,6 +83,13 @@ spring:
       write-dates-as-timestamps: false
     deserialization:
       fail-on-unknown-properties: false
+
+# CORS — explicit origin allowlist (SEC-13).
+# In production set SECURITY_CORS_ALLOWED_ORIGINS to the actual admin-web domain.
+# Mobile apps do not use CORS; only browser clients need an entry here.
+security:
+  cors:
+    allowed-origins: ${SECURITY_CORS_ALLOWED_ORIGINS:}
 
 # JWT configuration — secrets MUST be provided via environment variables in production
 jwt:
@@ -158,6 +166,31 @@ notification:
     max-per-minute: ${NOTIFICATION_STORM_MAX_PER_MIN:10}        # per-user push limit per minute
     max-per-type-per-hour: ${NOTIFICATION_STORM_MAX_PER_TYPE:5}  # per-user per-alert-type per hour
 
+# Geocoding — SEC-15: machine addresses are resolved server-side so the
+# mobile app never sends farmer-linked coordinates to a third party.
+# Outbound provider calls are globally throttled (default ~1 req/sec, the
+# Nominatim usage-policy limit) and cached. For production, point
+# GEOCODING_PROVIDER_URL at an approved provider under a data-processing
+# agreement (e.g. a self-hosted Nominatim instance or a commercial
+# geocoder); the default is the public OSM Nominatim endpoint.
+geocoding:
+  enabled: ${GEOCODING_ENABLED:true}
+  provider:
+    base-url: ${GEOCODING_PROVIDER_URL:https://nominatim.openstreetmap.org}
+  user-agent: ${GEOCODING_USER_AGENT:YantraGO-Backend/1.0}
+  cache-max-entries: ${GEOCODING_CACHE_MAX_ENTRIES:500}
+  min-request-interval-ms: ${GEOCODING_MIN_REQUEST_INTERVAL_MS:1100}
+  max-wait-ms: ${GEOCODING_MAX_WAIT_MS:15000}
+  # decimals sent to the provider — 4 ≈ 11m precision, enough for an address
+  coordinate-precision: ${GEOCODING_COORDINATE_PRECISION:4}
+
+# Privacy / erasure (PLAY-06)
+# Mailbox that receives account-deletion-request notifications. Empty =
+# notification disabled (requests are still recorded in audit_logs).
+# The privacy policy's deletion-request contact should match this address.
+privacy:
+  notify-email: ${PRIVACY_NOTIFY_EMAIL:}
+
 # Actuator
 management:
   endpoints:
@@ -168,13 +201,15 @@ management:
     health:
       show-details: when-authorized
 
-# OpenAPI / Swagger
+# OpenAPI / Swagger — SEC-13: disabled by default; enabled in dev profile
+# or explicitly via SWAGGER_ENABLED=true in non-production environments.
 springdoc:
   api-docs:
     path: /v3/api-docs
+    enabled: ${SWAGGER_ENABLED:false}
   swagger-ui:
     path: /swagger-ui.html
-    enabled: true
+    enabled: ${SWAGGER_ENABLED:false}
 
 # Logging
 logging:
