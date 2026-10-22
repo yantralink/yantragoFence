@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,7 +17,6 @@ import 'package:yantrago/features/machines/providers/machine_address_provider.da
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/widgets/location_card.dart';
-import 'package:yantrago/models/location.dart';
 import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/machine_location.dart';
 
@@ -35,15 +35,6 @@ MachineLocation _location() => const MachineLocation(
       machineId: 'm1',
       latitude: 18.520430,
       longitude: 73.856740,
-    );
-
-Location _gpsLocation() => Location(
-      id: 'l1',
-      deviceId: 'd1',
-      imei: '000000000000001',
-      latitude: 18.520430,
-      longitude: 73.856740,
-      timestamp: DateTime(2026, 1, 1, 10, 30),
     );
 
 /// Fixed-consent controllers for tests — they never touch
@@ -120,6 +111,18 @@ Future<void> _pump(
 }
 
 void main() {
+  // FlutterSecureStorage channel calls never complete inside testWidgets —
+  // the platform message goes nowhere and the future hangs. Answer them so
+  // consent grant() reaches its state update (persistence still no-ops).
+  TestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+      (call) async => null,
+    );
+  });
+
   group('MachineLocationMapPage', () {
     testWidgets('shows loading state when consent granted', (tester) async {
       final completer = Completer<MachineLocation?>();

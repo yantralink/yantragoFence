@@ -30,10 +30,25 @@ const User _user = User(
 );
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  /// Seeds the notifier into Authenticated state. The constructor's
+  /// _checkExistingSession() resolves to Unauthenticated in tests because
+  /// secure storage has no plugin implementation — pumpEventQueue() lets
+  /// it settle before we seed.
+  Future<_TrackingAuthNotifier> authenticatedNotifier(
+      {bool pushFails = false, bool serverLogoutFails = false}) async {
+    final notifier = _TrackingAuthNotifier(
+        pushFails: pushFails, serverLogoutFails: serverLogoutFails);
+    await pumpEventQueue();
+    notifier.seedAuthenticated();
+    expect(notifier.state, isA<Authenticated>());
+    return notifier;
+  }
+
   group('SEC-16: Logout cleanup', () {
     test('logout captures user identity before state changes', () async {
-      final notifier = _TrackingAuthNotifier();
-      expect(notifier.state, isA<Authenticated>());
+      final notifier = await authenticatedNotifier();
 
       await notifier.logout();
 
@@ -45,8 +60,10 @@ void main() {
     });
 
     test('logout clears secure storage even if push deactivation fails', () async {
-      final notifier = _TrackingAuthNotifier(pushFails: true);
-      await notifier.logout();
+      final notifier = await authenticatedNotifier(pushFails: true);
+      // logout() propagates the push failure after cleanup — matching the
+      // real notifier's try/finally contract.
+      await expectLater(notifier.logout(), throwsA(anything));
 
       expect(notifier.state, isA<Unauthenticated>());
       expect(notifier.storageCleared, isTrue,
@@ -54,8 +71,8 @@ void main() {
     });
 
     test('logout clears secure storage even if server logout fails', () async {
-      final notifier = _TrackingAuthNotifier(serverLogoutFails: true);
-      await notifier.logout();
+      final notifier = await authenticatedNotifier(serverLogoutFails: true);
+      await expectLater(notifier.logout(), throwsA(anything));
 
       expect(notifier.state, isA<Unauthenticated>());
       expect(notifier.storageCleared, isTrue,
@@ -63,8 +80,9 @@ void main() {
     });
 
     test('logout clears secure storage even if both push and server fail', () async {
-      final notifier = _TrackingAuthNotifier(pushFails: true, serverLogoutFails: true);
-      await notifier.logout();
+      final notifier =
+          await authenticatedNotifier(pushFails: true, serverLogoutFails: true);
+      await expectLater(notifier.logout(), throwsA(anything));
 
       expect(notifier.state, isA<Unauthenticated>());
       expect(notifier.storageCleared, isTrue);
@@ -122,8 +140,11 @@ class _TrackingAuthNotifier extends AuthStateNotifier {
     this.serverLogoutFails = false,
   }) : super(_NoAuthService(), _NoPushService(), _NoRef());
 
-  @override
-  void dispose() {}
+  /// Seeds Authenticated state for a test (the real session check can't
+  /// produce it — secure storage has no plugin implementation here).
+  void seedAuthenticated() {
+    state = Authenticated(_user);
+  }
 
   // Override the state setter to track when it changes
   @override

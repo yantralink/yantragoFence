@@ -104,6 +104,9 @@ void main() {
       await container
           .read(localeSyncProvider.notifier)
           .localeChanged(locale: 'hi', userId: 'u1', organizationId: 'o1');
+      // localeChanged only enqueues — the serialized sync runs on the
+      // internal queue, so drain the event loop before asserting.
+      await pumpEventQueue();
 
       expect(authService.calls, 1);
       expect(authService.requestedLocales, ['hi']);
@@ -123,6 +126,7 @@ void main() {
       await container
           .read(localeSyncProvider.notifier)
           .localeChanged(locale: 'mr', userId: 'u1', organizationId: 'o1');
+      await pumpEventQueue();
 
       final state = container.read(localeSyncProvider);
       expect(state.status, LocaleSyncStatus.pending);
@@ -142,6 +146,7 @@ void main() {
       await container
           .read(localeSyncProvider.notifier)
           .localeChanged(locale: 'hi', userId: 'u1', organizationId: 'o1');
+      await pumpEventQueue();
 
       expect(container.read(localeSyncProvider).status,
           LocaleSyncStatus.failed);
@@ -157,11 +162,14 @@ void main() {
       addTearDown(container.dispose);
       final notifier = container.read(localeSyncProvider.notifier);
 
-      // Overlapping selections — writes are serialized in order.
+      // Overlapping selections — writes are serialized in order. Drain
+      // the internal queue after each call so both attempts complete.
       await notifier.localeChanged(
           locale: 'hi', userId: 'u1', organizationId: 'o1');
+      await pumpEventQueue();
       await notifier.localeChanged(
           locale: 'mr', userId: 'u1', organizationId: 'o1');
+      await pumpEventQueue();
 
       expect(authService.requestedLocales, ['hi', 'mr']);
       expect(container.read(localeSyncProvider).status,
@@ -225,13 +233,16 @@ void main() {
             organizationId: 'o1',
             serverPreferredLocale: 'hi', // server is behind — local wins
           );
+      await pumpEventQueue();
 
       expect(
           container.read(localeControllerProvider).locale.languageCode, 'mr');
+      // The pending intent was re-attempted and confirmed — after the
+      // queue drains, a confirmed sync reports synced (never pending).
       expect(container.read(localeSyncProvider).status,
-          LocaleSyncStatus.pending);
-      // The pending intent was re-attempted and confirmed.
+          LocaleSyncStatus.synced);
       expect(authService.requestedLocales.contains('mr'), isTrue);
+      expect(LocalePendingStore.read(prefs, 'u1', 'o1'), isNull);
     });
 
     test('sessionResolved: unset server preference syncs the device locale',
@@ -248,6 +259,7 @@ void main() {
             organizationId: 'o1',
             serverPreferredLocale: null, // never chose — first sync
           );
+      await pumpEventQueue();
 
       expect(authService.requestedLocales, ['hi']);
       expect(container.read(localeSyncProvider).status,
@@ -283,7 +295,12 @@ void main() {
       addTearDown(container.dispose);
       final notifier = container.read(localeSyncProvider.notifier);
 
-      // Local edit not yet synced.
+      // Local edit not yet synced. A real selection also switches the UI
+      // locale via the locale controller — localeChanged only records the
+      // account-scoped intent and queues the server write.
+      await container
+          .read(localeControllerProvider.notifier)
+          .setLocale(const Locale('hi'));
       await notifier.localeChanged(
           locale: 'hi', userId: 'u1', organizationId: 'o1');
       // Server reports an older value — the pending edit must win.

@@ -5,8 +5,6 @@
 // nav, light/dark themes, and large text. Providers are overridden so
 // the tests never contact the network or secure storage.
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -300,7 +298,7 @@ void main() {
               .overrideWithValue(_FakeAccountService(true)),
         ],
       );
-      expect(find.text('Support & Privacy'), findsOneWidget);
+      expect(find.text('Support & Privacy'.toUpperCase()), findsOneWidget);
       expect(find.textContaining('Contact Support'), findsOneWidget);
       expect(find.text('Privacy Policy'), findsOneWidget);
       expect(find.text('Request account deletion'), findsOneWidget);

@@ -139,7 +139,7 @@ void main() {
 
 final _pluralPattern = RegExp(r',\s*plural\s*,');
 final _pluralOtherPattern = RegExp(r'other\s*\{');
-final _pluralSelectorPattern = RegExp(r'(?:=\d+|one|other)\s*\{');
+final _pluralSelectorPattern = RegExp(r'(=\d+|one|other)\s*\{');
 final _placeholderPattern = RegExp(r'\{([A-Za-z_][A-Za-z0-9_]*)(\s*,[^}]*)?\}');
 
 /// Message keys are everything that is not `@key` metadata or `@@locale`.

@@ -94,7 +94,7 @@ void main() {
   testWidgets('picker shows all three languages in native script',
       (tester) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    final prefs = await SharedPreferences.getInstance();
+    await SharedPreferences.getInstance();
     await _root(
       tester,
       const MaterialApp(
@@ -171,6 +171,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         home: _PageHost(child: const LanguageSettingsPage()),
       ),
+      prefs: prefs,
     );
 
     await tester.tap(find.text('open'));

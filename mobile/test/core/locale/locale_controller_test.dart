@@ -20,7 +20,7 @@ void main() {
     test('device locale resolved to supported language, region stripped', () {
       final locale = LocaleController.resolveInitialLocale(
         null,
-        const [Locale('en', 'US'), Locale('hi', 'IN')],
+        const [Locale('hi', 'IN'), Locale('en', 'US')],
       );
       expect(locale.languageCode, 'hi');
     });
@@ -169,11 +169,15 @@ void main() {
     });
 
     test('retrySave persists after storage recovers', () async {
-      // A mutable holder lets the same container simulate storage becoming
-      // available again — exactly the state retrySave is designed for.
-      SharedPreferences? holder;
+      // The provider's prefs object never changes in production — what
+      // retrySave actually handles is a transient WRITE failure (I/O),
+      // simulated here by a prefs that throws once on setString. (Swapping
+      // the provider value can't simulate recovery: localeController.build
+      // watches sharedPreferencesProvider, so a swap rebuilds the notifier
+      // and discards the failed locale.)
+      final flaky = _FlakyPrefs(prefs);
       final container2 = ProviderContainer(overrides: <Override>[
-        sharedPreferencesProvider.overrideWith((ref) => holder),
+        sharedPreferencesProvider.overrideWithValue(flaky),
         deviceLocalesProvider.overrideWithValue(const [Locale('en')]),
       ]);
       addTearDown(container2.dispose);
@@ -186,11 +190,35 @@ void main() {
       expect(prefs.getString(LocalePreferences.languageKey), isNull);
 
       // Storage "recovers", then the user taps Retry.
-      holder = prefs;
       await container2.read(localeControllerProvider.notifier).retrySave();
       expect(container2.read(localeControllerProvider).saveStatus,
           LocaleSaveStatus.idle);
       expect(prefs.getString(LocalePreferences.languageKey), 'hi');
     });
   });
+}
+
+/// SharedPreferences whose first setString throws — every call after
+/// delegates to the real (mocked) store. Used to simulate a transient
+/// persistence failure that recovery can retry past.
+class _FlakyPrefs implements SharedPreferences {
+  _FlakyPrefs(this._inner);
+  final SharedPreferences _inner;
+  bool _failNext = true;
+
+  @override
+  Future<bool> setString(String key, String value) {
+    if (_failNext) {
+      _failNext = false;
+      return Future<bool>.error(StateError('simulated IO failure'));
+    }
+    return _inner.setString(key, value);
+  }
+
+  @override
+  String? getString(String key) => _inner.getString(key);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      super.noSuchMethod(invocation);
 }

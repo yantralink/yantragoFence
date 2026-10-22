@@ -1,8 +1,6 @@
 // Widget and model tests for the notification inbox feature.
 // Providers are overridden so the tests never contact the network.
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
