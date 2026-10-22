@@ -2,10 +2,10 @@
 
 ## Document Status
 
-- **Status:** Planning only.
-- **Visual reference:** `docs/UI.svg`.
-- **Scope:** Flutter mobile app presentation, shared theme, reusable components, and UI verification.
-- **Implementation:** Not started.
+- **Status:** Original design-system plan with historical implementation tracking; current code-backed UI/UX audit and feature recommendations added in section 22 on 2026-09-29.
+- **Visual reference:** `docs/UI.svg` and `docs/mobile-ui-mockups/` are design references, not current application screenshots.
+- **Scope:** Flutter mobile app presentation, shared theme, reusable components, UI verification, and proposed product improvements.
+- **Implementation:** Shared theme and components exist in the current code. Earlier completion/test claims below are historical, not verification of the current branch. Section 22 recommendations have NOT been implemented.
 - **Execution rule:** Implement one phase at a time. After completing and verifying each phase, STOP and ask the user whether to start the next phase.
 - **Approval:** Saving or reviewing this document does not authorize implementation.
 
@@ -1152,3 +1152,283 @@ analyzer errors are the pre-existing `stomp_dart_client` 0.4.4 API mismatch in
 migration and predates Phase 2. No raw `Colors.*`, raw `Card(`, or
 `Center(child: CircularProgressIndicator)` patterns remain in
 `mobile/lib/features/`.
+
+---
+
+# 22. Current UI/UX Audit and Product Recommendations — 2026-09-29
+
+## 22.1 Executive recommendation
+
+**Evolve YantraGO from a collection of readings into a clear, trustworthy machine-operation app. Do not restart the design system or add many new tabs.**
+
+The interface should answer four questions in order:
+
+1. Which machine am I looking at?
+2. What do we actually know about its condition, and how recent is that information?
+3. Does anything need my attention?
+4. What can I safely do next, and did that action really complete?
+
+The strongest improvement is clearer status and action feedback, not gradients, extra animations, or a new font. Retain the restrained slate surfaces, semantic colors, Material controls, Riverpod architecture, and existing shared widgets. Address truthful operational feedback before expanding features.
+
+### Review scope and confidence
+
+- Reviewed routed Flutter screens, shared theme/components, machine telemetry/control flows, notifications, analytics, account/settings, selected tests, and relevant backend API entry points.
+- Visually inspected the saved light overview and machine-details mockup. These explicitly contain fictional data and differ from the implementation; they are not current-app screenshots.
+- Current code, not the older architecture tree or mockups, is the source of truth for the findings below.
+- `flutter` and `dart` were not found on the review shell's PATH. `adb devices -l` reported no connected device/emulator. No current-app screenshot capture, Flutter test/analyzer/build, or physical-device usability session was performed in this audit.
+- **Confirmed** means visible in the inspected code. **Validation risk** means the on-device impact needs testing. **Proposed** means a recommendation, not an implemented feature.
+- This is a UI/UX and product review, not a backend security certification or device-protocol review. Backend entry points indicate reuse opportunities, not proof that every proposed flow is production-ready.
+- Only this existing document was updated. Application code, migrations, protocol behavior, and the separate security audit were left unchanged.
+
+### Documentation drift
+
+Sections 1–21 preserve the original migration plan and historical completion notes. Do not treat the historical test count, build size, or analyzer findings as current results. For example, current analytics widgets contain raw `Colors.*` values and `Card` widgets despite the older closing claim. A themed `Card` is not inherently defective; inconsistent semantics and inaccessible combinations are the concern.
+
+## 22.2 What already exists — improve rather than duplicate
+
+| Capability found in the code | Recommendation |
+|---|---|
+| Four bottom destinations: Machines, Notifications, Analytics, Profile | Keep this structure initially. The route/key still says Alerts, but the English user-facing label is already Notifications. |
+| Shared light/dark theme, semantic colors, cards, buttons, badges, state panels | Extend the existing visual system. |
+| English, Hindi, Marathi, including a pre-login language picker | Improve translated layouts and domain wording; multilingual support is not new. |
+| Machine list/details, REST telemetry, live telemetry socket, missing-data states | Add visible freshness, clearer hierarchy, and complete list pagination. |
+| ON/OFF requests, command state model/history, command push handling | Complete the inline command journey; reuse the audited pipeline. |
+| Notification inbox, unread count, type/unread filters, read and acknowledge actions | Improve triage. Reading/acknowledging is not physical fault resolution. |
+| Machine map, address fallback, external Google Maps link, theft toggle and geofence circle | Improve layout and protection visibility; these capabilities already exist. |
+| Customer theft defaults for radius and speed | Separate future defaults from currently active per-machine settings. |
+| Battery/voltage analytics, fault intervals, ignition activity, battery trend/projection support | Improve interpretation and accessibility. Basic battery analysis is not new. |
+| Backend JSON report and PDF/CSV export implementations | A mobile reporting flow can reuse these, subject to authorization and export-quality checks. |
+
+Anchors: `mobile/lib/routing/app_router.dart`, `mobile/lib/app.dart`, `mobile/lib/core/config/theme.dart`, `mobile/lib/core/locale/supported_locales.dart`, and the feature files below. Scheduled operation and QR onboarding have existing proposals; those documents alone do not establish shipped functionality.
+
+## 22.3 Prioritized findings
+
+**P0:** trust/correctness before new features. **P1:** core usability/accessibility. **P2:** polish or expansion. These are implementation priorities, not measured incident severity or completion estimates. Mobile paths below are relative to `mobile/lib/` unless prefixed otherwise.
+
+### U01 — Command progress ends too early in the visible controls [P0, confirmed]
+
+**Evidence:** `features/machines/widgets/on_off_button.dart:33–60` clears `_sending` after the HTTP request. Buttons depend only on that flag. `machine_detail_page.dart:70–95` has no persistent command-status panel. `features/commands/providers/command_provider.dart:25–52` models pending/terminal state, but only for the last command. A search of `mobile/lib` found `commandSocketProvider` only at its declaration; current screens do not activate it. Push handling exists separately in `app.dart`.
+
+**Change:** Show machine-scoped progress beside the controls: Submitting request → Waiting for device → Device acknowledged → Completed, with distinct Failed and Confirmation not received outcomes. Map to actual backend semantics; ACK and DONE must not be collapsed if different. Keep requested state separate from reported state.
+
+Track the relevant command across navigation/resume and reconcile through authorized REST status/history when push/socket delivery is unavailable. Prevent duplicate/conflicting requests through an agreed server-backed policy, not just a local spinner. A timeout is not proof that the machine is OFF; retry must not blindly repeat an action with an uncertain outcome.
+
+**Acceptance:** Delayed ACK, ACK without completion, failure, timeout, lost HTTP response after acceptance, repeated taps, resume, and switching between machines. No premature success and no cross-machine pending indicator. This requires provider/lifecycle work, not styling alone.
+
+### U02 — Freshness is not visible at the point of decision [P0, confirmed]
+
+**Evidence:** `features/machines/widgets/machine_telemetry_grid.dart:44–88` uses fallback fields on loading/error and rejects some stale live frames. However, `:133–146` supplies only values to tiles. `AppMetricCard` supports stale/error/freshness presentation, but these callers do not use it. The info card uses a direct live ignition override without the grid's freshness guards.
+
+**Change:** Show “Last reported …” and stale/unavailable states near the operating state and metrics. Distinguish phone connectivity, device connectivity, and measurement age. Use field-specific timestamps where available: a fresh GPS packet must not refresh the apparent age of old voltage. If the contract only provides a snapshot timestamp, say so instead of claiming per-reading freshness. Re-evaluate age over time and on resume, not only on new packets.
+
+**Acceptance:** Failed refresh preserves useful last-known information but labels it accurately. A silent socket eventually makes readings visibly stale. Never label data Live solely because the connection is open; reported state is not a safety certification for physical maintenance.
+
+### U03 — Theft settings can falsely report a successful save [P0, confirmed]
+
+**Evidence:** `features/profile/providers/customer_settings_provider.dart:54–68` catches update failures and stores `AsyncError` without rethrowing. `theft_protection_settings_page.dart:188–206` then displays the saved message and pops after awaiting the call without checking success.
+
+**Change:** Return/check an explicit outcome, retain entered values on failure, show a localized actionable error, and close only on confirmed success. Warn about unsaved changes when appropriate. Distinguish customer defaults from active machine protection.
+
+**Acceptance:** A failed PUT never displays Saved or silently discards edits; retry works. Successful save displays the server-accepted values.
+
+### U04 — Machine selection/counts do not scale beyond one returned page [P1, confirmed]
+
+**Evidence:** `features/machines/providers/machine_provider.dart:17–26` extracts `content` and discards pagination metadata. `machine_list_page.dart:53–63` displays `list.length` as the assigned count and eagerly builds returned cards. `backend/src/main/java/com/yantrago/api/controller/MachineController.java:35–44` returns a page. Analytics selects from the same partial list.
+
+**Change:** Complete pagination and accurate totals first. Then add search, status filters, and sorting: Needs attention, Offline, Running, and recent/favorites where supported. Use lazy lists and retain scroll/filter state. Keep the single-machine experience simple.
+
+**Dependency:** Page parameters already exist. Name search, status filters, and fleet-wide summary counts need API work or further verification; never infer “all machines healthy” from one loaded page.
+
+**Acceptance:** Machines beyond page one are reachable in both Machines and Analytics. Distinguish filtered, loaded, and total counts. Empty search results offer Clear filters, not the unassigned-machine message.
+
+### U05 — Icon-only charging/fault indicators are ambiguous [P1, confirmed]
+
+**Evidence:** `features/dashboard/widgets/battery_widget.dart:33–45` and `faults_widget.dart:32–44` use filled/outline colored bulbs. `AppMetricCard`'s `bodyIcon` branch omits value/status/freshness content. The implementation deliberately maps particular device values to these indicators.
+
+**Change:** Preserve approved mappings and add localized state text and screen-reader semantics. Possible wording, only when justified: Charging indicator active, Fault reported, No fault reported, Status unavailable. A grey bulb should not mean several possible things. Label external battery percentage as a voltage-derived estimate, not measured capacity.
+
+**Boundary:** Do not reinterpret the internal battery field as a conventional percentage or change protocol mappings during UI work. Confirm wording with the device domain owner: ACC input, fence output, connectivity, and charging indication are distinct facts.
+
+### U06 — Machine details prioritize density over the operating task [P1, confirmed layout; viewport impact unverified]
+
+**Evidence:** `features/machines/pages/machine_detail_page.dart:70–88` places identity and six telemetry tiles before controls. The grid becomes one column at large text sizes. `machine_info_card.dart:40–68` puts badges alongside the name in a fixed row and repeats ignition state already shown in a tile.
+
+**Change:** Order content as identity → reported state/freshness → urgent issue → controls/progress → health → location/technical details. Move IMEI and less-used metadata to expandable technical information with copy actions. Let badges wrap. Add contextual links to this machine's activity and analytics without removing global history.
+
+Prefer controls immediately below the summary. A bottom dock, if approved, must reserve layout space and respect safe areas/navigation/large text; it must not cover readings. Keep explicit ON/OFF requests, not an optimistic switch. Test a concise accessible confirmation for high-consequence actions; avoid gesture-only activation and unnecessary confirmation fatigue.
+
+### U07 — Map layout and recovery need hardening [P1, confirmed structure; device impact unverified]
+
+**Evidence:** `features/machines/pages/machine_location_map_page.dart:84–110` constructs/loads a WebView controller inside `build` and fixes map/details at a 3:1 height split. Address and theft controls share the smaller non-scrollable panel. `:48–62` treats fetch failure like missing location. `:292–312` uses a small `GestureDetector` for the external-map link.
+
+**Change:** Stabilize the controller lifecycle so unrelated address/protection updates do not reset the map. Use content-aware or draggable/scrollable details instead of a fixed bottom quarter. Make Open in maps an accessible button. Show location age, recenter, coordinate copy, active protection/radius, and separate no GPS, stale location, network failure and map-resource failure states with recovery.
+
+Preserve attribution and current provider behavior; engine replacement is unnecessary for this work. Dark app chrome does not automatically darken external tiles; avoid CSS inversion. Describe GPS uncertainty and do not imply guaranteed theft detection.
+
+### U08 — Notifications need triage, not another inbox [P1, confirmed]
+
+**Evidence:** `features/alerts/pages/alerts_page.dart` presents only the inbox; the previous Active Alerts view was deliberately removed. `notification_inbox_view.dart` provides unread/type filters and page navigation. Detail already provides acknowledgement, incident status and machine drill-down.
+
+**Change:** Keep Notifications. Cards should answer Which machine? What happened? When? Still active? What next? Group by date/incident where supported. Show active filters and Clear filters; add pull-to-refresh and consider accessible Load more. Surface read/acknowledgement failures clearly.
+
+Do not restore the removed Active Alerts tab without approval. A Needs attention summary/filter is an extension, but unread count is not active-fault count and Mark all read is not Resolve all. Machine/severity/incident-state filters are absent from the inspected inbox API; they need backend support, not filtering one page locally.
+
+**Validation risk:** The filter sheet is a non-scrollable `Column` with many chips. Make it scrollable and safe-area aware; test Hindi/Marathi and enlarged text before adding controls.
+
+### U09 — Analytics need clearer meaning, not simply more graphs [P1, confirmed]
+
+**Evidence:** `features/analytics/widgets/battery_health_card.dart:131–154` uses time-only labels/tooltips across multi-day ranges; `:229` calls the last sample Now. `analytics_provider.dart:115–129` uses a fixed seven-day health analysis independent of chart range. The chart joins samples without explicitly marking collection gaps. Summary labels are single-line constrained.
+
+**Change:** Use dates on multi-day axes, date/time/unit tooltips, and Latest report with a timestamp unless freshness is established. Label the health-analysis window independently. Distinguish recorded values and dashed projections with a legend; break measured lines at meaningful data gaps. Provide readable textual summaries/event lists alongside charts.
+
+Use semantic colors, responsive summaries, and unknown rather than Healthy for unexpected status codes. Explain the approved voltage band without inventing thresholds or precise battery lifetime. Score/insight text is deliberately hidden in current code/tests; reintroducing it requires approval, not an assumption that it is missing.
+
+### U10 — Theme consistency and accessibility need follow-up [P1, confirmed values; compliance unverified]
+
+**Evidence:** `core/config/theme.dart:90–94` uses light success green for app-bar titles in both themes. Analytics/bulb widgets use raw status colors. Metric labels use small typography, uppercase and ellipsis; action buttons truncate labels, and ON/OFF always share a row. `AppPageBody` has no wide-layout constraint.
+
+**Change:** Use neutral theme-aware page titles, reserving status colors for meaning. Keep intentional brand green only with a suitable dark counterpart. Wrap important text and stack controls rather than truncating action labels. Use content-driven heights and existing spacing/radius tokens. Reduce nested padding rather than shrinking all content. Constrain wide forms and use intentional tablet layouts without unnecessarily constraining maps.
+
+**Acceptance targets, not current compliance claims:** at least 4.5:1 normal-text contrast; 3:1 for large text/essential non-text where applicable; at least 48×48 logical-pixel touch targets; readable 200% text; screen-reader labels/order; and no state communicated only by color. Verify actual foreground/background pairs in both themes.
+
+### U11 — Login/recovery should reduce friction [P1, confirmed]
+
+**Evidence:** `features/auth/pages/login_page.dart` has no recovery action or autofill hints. Password visibility has no explicit tooltip. `_handleLogin` and the auth listener can both show an error. Keyboard submission does not check `_isLoading`, unlike the button.
+
+**Change:** Add password-manager/autofill support, visibility semantics, a single error path and duplicate-submission guards for all entry points. Keep the language picker. Offer Need help signing in through a real support process; password reset requires a proper recovery backend, not a decorative link. Verify keyboard-open/narrow layouts and clearer phone/email entry without unnecessary extra steps.
+
+### U12 — Profile/preferences need more context [P1/P2, confirmed]
+
+**Evidence:** Profile groups account, notification preferences, language, theft defaults and history in one card. Preferences can display raw alert-type codes. `app.dart` initializes push after the first frame, and `push_notification_provider.dart:35–43` requests OS permission. Preference toggles do not show whether OS settings permit delivery.
+
+**Change:** Group Account, Notifications & protection, Activity, and Help & legal. Add summaries such as selected language and OS permission status. Explain notification value before requesting permission at an appropriate moment; support denied permission with an OS-settings action. Distinguish server preferences from OS permission/channel readiness and keep the app usable without permission.
+
+Localize known types/severities/command stages; reserve raw codes for diagnostics. Add verified support/privacy/account-management destinations when real policies/workflows exist. A label for SMS, WhatsApp or email does not prove that delivery channel is operational. Retain global history and add machine-context entry points.
+
+## 22.4 Proposed screen direction
+
+### Machines: overview without an extra Home tab
+
+- Organization identity and compact, accurate authorized-machine summary.
+- Needs attention backed by actual incidents/freshness, not unread notifications.
+- Search/filter/sort for accounts that need them, without cluttering one-machine use.
+- Cards with recognizable name, reported state, last seen and one highest-priority issue when available.
+- Favorites/site groups only after validating multi-machine needs.
+- No quick ON/OFF in a scrolling list in the first redesign: details provide context and reduce accidental requests.
+
+### Machine details: proposed hierarchy
+
+```text
+< Machine name                         More
+Reported operating state | Connectivity
+Last reported: [actual timestamp/freshness]
+
+[Highest-priority active issue, if known]
+[Open issue / approved troubleshooting guidance]
+
+[Turn ON]                     [Turn OFF]
+[Persistent command progress and outcome]
+
+Health
+[Battery estimate + volts] [Fault indicator + text]
+[Charging indicator]       [Signal]
+
+[View analytics] [View activity]
+[Location and theft-protection summary]
+[Expandable technical information]
+```
+
+This is information hierarchy, not a fixed-size screenshot. Controls/metrics stack at narrow widths and enlarged text. Reported operating state must use verified domain meaning: do not silently equate ACC or a successful command with independently measured fence output. Readings are not a physical-maintenance safety certification.
+
+### Notifications and analytics
+
+Notifications should have a clear machine/event heading, severity, condition state, timestamp and useful next action. Detail must distinguish read, user acknowledgement, device acknowledgement and resolved. Avoid duplicate headings and truncating the only machine identifier.
+
+Analytics should present machine/range, a plain summary, battery trend, faults, and activity. Enable event drill-down where identifiers exist. Explain insufficient data and collection gaps. Custom ranges/comparisons/exports can follow without crowding today's screen.
+
+### Visual direction
+
+Keep the calm operational style: slate surfaces, subtle borders, clear hierarchy, blue navigation/general actions, and deliberate semantic colors. Avoid glass effects, decorative gauges, animated glows and large illustrations competing with readings. Use subtle transitions respecting reduced motion; never animate an unconfirmed machine state into apparent success.
+
+## 22.5 Feature opportunities ranked by value and dependency
+
+Rankings are qualitative hypotheses for customer validation, not measured ROI. **Extend** reuses existing capability; **New** means no routed implementation was found in this review; **Planned** means a separate proposal exists. Sizes describe relative scope, not timelines.
+
+| Rank | Opportunity | User benefit / minimal useful scope | Foundation and additional dependencies | Size |
+|---|---|---|---|---|
+| 1 | **Extend: machine activity and command receipts** | See who requested what, when it was acknowledged/completed, and what failed, directly from the machine. Retain global history. | Command history exists. Add scoped filtering, readable errors, exact timestamps and machine-keyed state; verify actor/attempt fields and authorization. | Medium |
+| 2 | **New mobile capability: offline read-only access** | Open last-known status, location text and recent events on poor connections, clearly labeled with cache age. | Bounded, account/tenant-scoped local cache with expiry, appropriate protection and logout/account-switch cleanup. Cached permissions do not authorize execution. Never silently queue physical commands. Offline map tiles are a separate licensing/technical issue. | Major |
+| 3 | **Planned: scheduled ON/OFF with visible outcomes** | Daily/weekly operation, next run, pause/skip, and scheduled-attempt history. | `docs/SCHEDULED_IGNITION_PLAN.md` is a draft. Use backend scheduling and the existing audited RabbitMQ/ACK pipeline, not phone timers. Approve timezone, conflicts, offline/missed-run behavior, expiry and manual override. Draft retry/catch-up decisions are not approved by this audit. | Major |
+| 4 | **New: guided troubleshooting and service handoff** | Explain faults, offer manufacturer-approved non-hazardous checks, and request help with machine/event context. | Start with approved localized guidance. Tickets, photos and technician assignment need backend/storage/workflow support. Remotely reported OFF must never imply that physical maintenance is safe. | Medium to Major |
+| 5 | **Extend: mobile reports and sharing** | Export a selected machine/range for an owner/service team using an explicit share action. | JSON/PDF/CSV backend exists. Verify customer/assignment access. Current PDF uses one text page and truncates rows: review pagination, columns and localized fonts; verify CSV safety/encoding and large exports before exposing it. | Medium to Major |
+| 6 | **New: maintenance log and reminders** | Service dates, battery replacements, warranty notes and inspections, connected to fault history. | No dedicated mobile flow found. Requires tenant-scoped records, reminders and service history. Calendar/runtime reminders are not predictive-maintenance guarantees. | Major |
+| 7 | **Extend: fleet/site overview** | Find problem machines, group sites and view authorized machines on one map. | Existing list/single-machine map. Add complete pagination, aggregate/filter APIs, grouping/favorites and clustering as needed. Avoid one telemetry request per card or a redundant fifth tab. | Medium to Major |
+| 8 | **Planned: QR onboarding with approval status** | Scan, request assignment, and see pending/approved/rejected status. | Existing onboarding document proposes web entry and admin approval. Reuse via mobile deep links; do not create a competing claim flow. Secure token lifecycle, identity verification and backend approval required. Scanning an identifier never grants ownership. | Major |
+| 9 | **Extend: notification health and escalation controls** | Explain permission/delivery readiness, digest routine events, optionally notify an approved backup contact for unresolved critical conditions. | Inbox/push/preferences and backend severity escalation exist. Quiet hours, recipient escalation, alternate channels and diagnostics need consent/provider/backend work. Sent is not Seen; push cannot guarantee bypassing device settings. | Medium to Major |
+| 10 | **Extend: protection management** | Protection summary on details, active radius/location, and an approved temporary-relocation flow. | Theft toggle/geofence already exist. Active editing or timed pause may need API work and auditable expiry. Re-arming must not silently move the protection baseline. | Medium to Major |
+| 11 | **Extend: useful battery insights** | Explain validated trends, data sufficiency and approved service guidance. | Health/status/projection already exist; score/insight are deliberately hidden. Approval and chemistry/calibration/prediction validation required. Do not promise precise remaining hours from voltage alone. | Medium to Major |
+| 12 | **New mobile workflows: delegated access and account recovery** | Limited viewer/operator access and secure recovery instead of informal password sharing. | Existing roles are a starting point, not proof of machine-scoped delegation. Invitation/revocation/expiry APIs, RBAC/assignment checks and verified recovery needed. Biometrics may protect local sessions but cannot replace server authorization. | Major |
+
+Backend report anchors: `backend/src/main/java/com/yantrago/api/controller/ReportController.java` and `service/ReportExportService.java`. QR proposal: `docs/Fencing Machine QR-Based Customer Onboarding Flow.md`.
+
+### Do not prioritize yet
+
+- Generic AI chat before dependable command feedback and readable faults.
+- Rebuilding dark mode, translations, push, theft protection or battery charts as if absent.
+- Bulk commands, unbounded automation or offline command queues before conflict/expiry/idempotency policies are agreed.
+- Energy/cost savings from voltage alone; appropriate current/power measurements and validated models are required.
+- Guaranteed theft prevention, precise battery life or unsupported all-safe scores.
+- Marketplaces, social feeds or many top-level tabs unrelated to the core machine tasks.
+
+## 22.6 Recommended phased delivery
+
+These proposed phases are separate from historical design-system phases 1–8. **Documenting this audit does not authorize implementation.** Each phase must be self-contained, deployable and testable. Stop after each, request verification, and explicitly ask whether to start the next.
+
+| Phase | Scope | Approval/verification gate |
+|---|---|---|
+| A — Operational trust | U01–U03: machine-scoped command lifecycle, visible freshness, truthful save outcome. Write regression tests before fixes. | Demonstrate delayed ACK/DONE, failure, stale data, resume and machine switching with simulator/test devices only. |
+| B — Core usability | U04–U07: pagination, detail hierarchy, explicit indicators and resilient map layout, including relevant accessibility/localization fixes. | Approve current-app list/detail/map captures in both themes and three locales; verify multi-page accounts and full large-text interaction. |
+| C — Information/account experience | U08–U12: notifications, chart interpretation, theme consistency, login/settings and contextual history. | Verify read/ack failures, filters, keyboard/autofill, denied push permission and charts understandable without color. |
+| D — One selected extension | Choose offline read-only access, scheduling, or troubleshooting/support based on customer evidence. Do not combine all three into one phase. | Approve scope, contracts, data/security policy and feature-specific acceptance tests first. |
+| E — Further extensions | Select reports, maintenance, fleet grouping, onboarding or delegation individually. | Each becomes a separately approved feature phase with measurable user outcomes. |
+
+Keep backend additions within the intentional backend API + device-gateway architecture. Use shared RabbitMQ contracts, JWT-derived tenant context, RBAC, audited commands/attempts, Bean Validation, domain error handling and JUnit tests. Schema work requires Flyway migrations and UUIDs. UI improvements do not authorize parser changes or new services.
+
+## 22.7 Verification and customer validation
+
+### During implementation
+
+Use `flutter analyze`, `flutter test`, and `flutter build apk --debug` as documented in section 17. Run scoped tests while iterating, then full affected checks; verify backend changes when contracts/lifecycle change. No Flutter tests/builds were run for this documentation-only audit.
+
+Existing tests cover useful async states, stale live-frame selection, large-text layouts, locales and command models. However, `mobile/test/features/map_location_test.dart:148–149` explicitly omits WebView data-state tests. Shared-component goldens are not current full-screen visual verification.
+
+Add/extend tests for:
+
+- Pending lifecycle through the screen/provider integration, ACK versus DONE, unknown statuses, reconciliation, repeated taps and cross-machine isolation.
+- Stale REST fallback, silence without new frames, GPS-only updates, and actual per-reading age where supported.
+- Failed theft-default saves retaining input and never showing success.
+- Pagination/counts/analytics selection, filter reset, read/ack/preference failures and denied permission.
+- Unknown/missing/stale readings remaining distinct from healthy/zero.
+- Accessible responsive charts, collection gaps, multi-day labels and projection legend.
+- Approved full-screen goldens with deterministic dates/data/fonts/locales, without production connections.
+
+### On-device approval matrix
+
+- 320 logical-pixel width, common phones, short-height phone, landscape, and tablet.
+- 100%, 150%, 200% text; English/Hindi/Marathi; long names/addresses.
+- Light/dark themes, bright outdoor viewing, TalkBack; VoiceOver if iOS is a release target.
+- Keyboard, safe areas/gesture navigation, complete filter sheet, real map interaction.
+- Slow/offline phone, offline device, stale data, reconnect/resume, denied permission, interrupted saves.
+- One/no/many machines, multiple pages, no GPS, no analytics data, long event history.
+- Notification deep links in foreground/background/terminated states, expired sessions and unavailable machines.
+- Back/selected-tab behavior when Profile opens notification preferences; the router currently normalizes that route to Notifications.
+
+Run physical-control checks only against authorized test devices/simulator, not live production machines to evaluate a design.
+
+### Representative customer tasks
+
+Include a single-machine owner, multi-machine manager and support technician, with Hindi/Marathi readers and a participant using enlarged text. Ask each to identify a machine needing attention; explain last-reported versus requested state; request a test action and recognize confirmed/unknown outcome; find a fault and next step; recover from failed save/offline data; and distinguish chart history from projection.
+
+Record task completion, misunderstandings, accidental repeat requests, recovery failures and navigation effort. Establish a baseline before setting improvement targets. Avoid collecting credentials, precise locations or unnecessary customer identifiers in usability analytics.
+
+**Final recommendation: approve Phase A first.** YantraGO already has substantial core capability. Making its operational state and feedback dependable offers more value than adding multiple features on top of ambiguous states.
