@@ -21,7 +21,7 @@ import java.util.UUID;
 @Service
 public class OwnerContextService {
 
-    private static final String ROLE_SUPER_ADMIN = "ROLE_super_admin";
+    private static final String ROLE_SUPER_ADMIN = "ROLE_SUPER_ADMIN";
 
     private static final ThreadLocal<UUID> TENANT_CONTEXT = new ThreadLocal<>();
 

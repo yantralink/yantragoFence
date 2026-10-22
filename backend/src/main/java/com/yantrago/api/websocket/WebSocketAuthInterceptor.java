@@ -123,7 +123,7 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
         }
         // Roles are stored as a comma-separated string in the JWT.
         for (String role : roles.split(",")) {
-            if ("ROLE_super_admin".equalsIgnoreCase(role.trim())) {
+            if ("super_admin".equalsIgnoreCase(role.trim())) {
                 return true;
             }
         }

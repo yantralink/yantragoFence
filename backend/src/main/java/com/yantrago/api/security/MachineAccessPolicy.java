@@ -42,7 +42,7 @@ public class MachineAccessPolicy {
 
     private static final Logger log = LoggerFactory.getLogger(MachineAccessPolicy.class);
     private static final String ROLE_CUSTOMER = "ROLE_CUSTOMER";
-    private static final String ROLE_SUPER_ADMIN = "ROLE_super_admin";
+    private static final String ROLE_SUPER_ADMIN = "ROLE_SUPER_ADMIN";
 
     private final MachineRepository machineRepository;
     private final CustomerRepository customerRepository;

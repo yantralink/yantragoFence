@@ -29,7 +29,7 @@ import java.util.UUID;
 public class TenantGuard {
 
     private static final Logger log = LoggerFactory.getLogger(TenantGuard.class);
-    private static final String ROLE_SUPER_ADMIN = "ROLE_super_admin";
+    private static final String ROLE_SUPER_ADMIN = "ROLE_SUPER_ADMIN";
 
     private final OwnerContextService ownerContextService;
 

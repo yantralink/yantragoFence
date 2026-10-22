@@ -34,7 +34,7 @@ import java.io.IOException;
 public class TenantContextFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(TenantContextFilter.class);
-    private static final String ROLE_SUPER_ADMIN = "ROLE_super_admin";
+    private static final String ROLE_SUPER_ADMIN = "ROLE_SUPER_ADMIN";
 
     private final OwnerContextService ownerContextService;
 

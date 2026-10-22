@@ -23,7 +23,7 @@ import java.util.UUID;
 public class PermissionEvaluator {
 
     private static final Logger log = LoggerFactory.getLogger(PermissionEvaluator.class);
-    private static final String SUPER_ADMIN_ROLE = "ROLE_super_admin";
+    private static final String SUPER_ADMIN_ROLE = "ROLE_SUPER_ADMIN";
 
     /**
      * Checks if the current user has the given permission.
@@ -83,7 +83,7 @@ public class PermissionEvaluator {
             return false;
         }
         for (String role : roleNames) {
-            String roleAuthority = "ROLE_" + role;
+            String roleAuthority = "ROLE_" + role.toUpperCase();
             for (GrantedAuthority ga : auth.getAuthorities()) {
                 if (roleAuthority.equals(ga.getAuthority())) {
                     return true;

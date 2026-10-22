@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
  * Per AGENTS.md rule 8: never trust tenant_id/organization_id supplied by the frontend.
  *
  * SEC-07: null tenant context no longer bypasses the check by default.
- * The bypass is now gated on an explicit ROLE_super_admin authority.
+ * The bypass is now gated on an explicit ROLE_SUPER_ADMIN authority.
  */
 class TenantIsolationTest {
 
@@ -79,7 +79,7 @@ class TenantIsolationTest {
     }
 
     @Test
-    @DisplayName("super_admin (ROLE_super_admin in SecurityContext, null tenant context) should bypass tenant check")
+    @DisplayName("super_admin (ROLE_SUPER_ADMIN in SecurityContext, null tenant context) should bypass tenant check")
     void validateTenantAccess_shouldBypassForSuperAdmin() {
         setSuperAdminAuth();
         when(ownerContextService.getOrganizationIdOrNull()).thenReturn(null);
@@ -88,7 +88,7 @@ class TenantIsolationTest {
     }
 
     @Test
-    @DisplayName("SEC-07: null tenant context WITHOUT ROLE_super_admin should fail closed")
+    @DisplayName("SEC-07: null tenant context WITHOUT ROLE_SUPER_ADMIN should fail closed")
     void validateTenantAccess_shouldFailClosedForNullContextWithoutSuperAdmin() {
         setNonSuperAdminAuth();
         when(ownerContextService.getOrganizationIdOrNull()).thenReturn(null);
@@ -115,7 +115,7 @@ class TenantIsolationTest {
     }
 
     @Test
-    @DisplayName("canAccess should return true for super_admin (ROLE_super_admin in SecurityContext)")
+    @DisplayName("canAccess should return true for super_admin (ROLE_SUPER_ADMIN in SecurityContext)")
     void canAccess_shouldReturnTrueForSuperAdmin() {
         setSuperAdminAuth();
         when(ownerContextService.getOrganizationIdOrNull()).thenReturn(null);
@@ -124,7 +124,7 @@ class TenantIsolationTest {
     }
 
     @Test
-    @DisplayName("SEC-07: canAccess should return false for null context without ROLE_super_admin")
+    @DisplayName("SEC-07: canAccess should return false for null context without ROLE_SUPER_ADMIN")
     void canAccess_shouldReturnFalseForNullContextWithoutSuperAdmin() {
         setNonSuperAdminAuth();
         when(ownerContextService.getOrganizationIdOrNull()).thenReturn(null);
@@ -181,7 +181,7 @@ class TenantIsolationTest {
     private void setSuperAdminAuth() {
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 UUID.randomUUID(), null,
-                List.of(new SimpleGrantedAuthority("ROLE_super_admin")));
+                List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")));
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 

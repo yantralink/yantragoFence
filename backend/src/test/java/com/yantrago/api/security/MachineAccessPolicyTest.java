@@ -223,7 +223,7 @@ class MachineAccessPolicyTest {
     private void setSuperAdminAuth() {
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 UUID.randomUUID(), null,
-                List.of(new SimpleGrantedAuthority("ROLE_super_admin")));
+                List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")));
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 

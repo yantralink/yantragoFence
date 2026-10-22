@@ -68,7 +68,7 @@ class WebSocketAuthInterceptorTest {
         when(jwtService.parseAccessToken(TOKEN)).thenReturn(claims);
         when(jwtService.extractUserId(claims)).thenReturn(USER_ID);
         when(jwtService.extractOrganizationId(claims)).thenReturn(ORG_ID);
-        when(jwtService.extractRoles(claims)).thenReturn("ROLE_customer");
+        when(jwtService.extractRoles(claims)).thenReturn("customer");
         when(jwtService.extractPermissions(claims)).thenReturn("read");
     }
 
@@ -85,7 +85,7 @@ class WebSocketAuthInterceptorTest {
         assertTrue(result);
         assertEquals(USER_ID, attrs.get("userId"));
         assertEquals(ORG_ID, attrs.get("organizationId"));
-        assertEquals("ROLE_customer", attrs.get("roles"));
+        assertEquals("customer", attrs.get("roles"));
         assertEquals(false, attrs.get("isSuperAdmin"));
         assertEquals(EXPIRY, attrs.get("tokenExpiration"));
     }
@@ -133,7 +133,7 @@ class WebSocketAuthInterceptorTest {
     void handshake_superAdmin_isSuperAdminTrue() {
         stubValidToken();
         Claims claims = jwtService.parseAccessToken(TOKEN);
-        when(jwtService.extractRoles(claims)).thenReturn("ROLE_super_admin");
+        when(jwtService.extractRoles(claims)).thenReturn("super_admin");
 
         Map<String, Object> attrs = new HashMap<>();
 
@@ -150,7 +150,7 @@ class WebSocketAuthInterceptorTest {
     void handshake_superAdminAmongRoles_isSuperAdminTrue() {
         stubValidToken();
         Claims claims = jwtService.parseAccessToken(TOKEN);
-        when(jwtService.extractRoles(claims)).thenReturn("ROLE_admin,ROLE_super_admin,ROLE_customer");
+        when(jwtService.extractRoles(claims)).thenReturn("admin,super_admin,customer");
 
         Map<String, Object> attrs = new HashMap<>();
 
