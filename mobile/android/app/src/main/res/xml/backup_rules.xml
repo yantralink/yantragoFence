@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SEC-16: Full backup rules.
+  Disables backup of all app data to prevent sensitive credentials,
+  tokens, and PII from being extracted via adb backup or restored on
+  a different device. FlutterSecureStorage (Android EncryptedSharedPreferences)
+  is already excluded by default, but we disable backup entirely as
+  defense in depth.
+-->
+<full-backup-content>
+    <!-- Exclude everything — no app data is backed up. -->
+    <exclude domain="root" />
+    <exclude domain="file" />
+    <exclude domain="database" />
+    <exclude domain="sharedpref" />
+    <exclude domain="external" />
+</full-backup-content>

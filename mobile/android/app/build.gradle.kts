@@ -6,6 +6,17 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Release signing (PLAY, Task 12.3): reads mobile/android/key.properties,
+// which is gitignored and injected from CI secrets in build-aab.yml.
+// Format: storeFile/storePassword/keyAlias/keyPassword.
+// When the file is absent (local dev builds) the release build falls back
+// to the debug key so `flutter run --release` keeps working.
+val keystoreProperties = java.util.Properties().apply {
+    val keyFile = rootProject.file("key.properties")
+    if (keyFile.exists()) keyFile.inputStream().use { load(it) }
+}
+val releaseSigningConfigured = keystoreProperties.containsKey("storeFile")
+
 android {
     namespace = "com.yantrago.yantrago"
     compileSdk = flutter.compileSdkVersion
@@ -33,11 +44,26 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = keystoreProperties.getProperty("storeFile")
+                    ?.let { rootProject.file(it) }
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (releaseSigningConfigured) {
+                signingConfigs.getByName("release")
+            } else {
+                // Local/dev builds only — never ship a debug-signed AAB.
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

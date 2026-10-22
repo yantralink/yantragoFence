@@ -1,22 +1,33 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:yantrago/core/services/map_consent_service.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/theft_protection_provider.dart';
 import 'package:yantrago/l10n/l10n.dart';
+import 'package:yantrago/models/machine_location.dart';
 
 /// Machine location map page — shows a single machine's GPS location on an
-/// in-app map using Leaflet.js + OpenStreetMap tiles with a default marker.
+/// in-app map using the bundled Leaflet.js assets (SEC-15: no remote
+/// executable code is ever loaded) with a default marker.
 /// Opened from the LocationCard on the machine detail page.
 ///
 /// Displays:
 /// - Interactive map with marker at the machine's coordinates
 /// - AppBar with the machine name and a back arrow
-/// - Address text below the map (reverse-geocoded)
+/// - Address text below the map (reverse-geocoded via the backend proxy)
+///
+/// SEC-15 privacy gate: map tiles (OpenStreetMap) and address lookups
+/// transfer data to third parties, so the map only renders after the user
+/// grants affirmative consent. Without consent the page shows raw
+/// coordinates only — no third-party request is made.
 class MachineLocationMapPage extends ConsumerStatefulWidget {
   final String machineId;
 
@@ -29,13 +40,16 @@ class MachineLocationMapPage extends ConsumerStatefulWidget {
 
 class _MachineLocationMapPageState
     extends ConsumerState<MachineLocationMapPage> {
+  static const _mapAssetPath = 'assets/map/map.html';
+
+  WebViewController? _mapController;
+  bool _mapPageLoaded = false;
+  Map<String, Object?>? _pendingMapConfig;
 
   @override
   Widget build(BuildContext context) {
     final machine = ref.watch(machineDetailProvider(widget.machineId));
-    final location = ref.watch(machineLocationProvider(widget.machineId));
-    final address = ref.watch(machineAddressProvider(widget.machineId));
-    final protection = ref.watch(theftProtectionNotifierProvider(widget.machineId));
+    final consent = ref.watch(mapConsentProvider);
     final l10n = context.l10n;
 
     return Scaffold(
@@ -45,131 +59,283 @@ class _MachineLocationMapPageState
           orElse: () => Text(l10n.machineLocationTitle),
         ),
       ),
-      body: location.when(
+      body: consent.when(
         loading: () =>
             AppStatePanel.loading(message: l10n.loadingLocation),
-        error: (_, __) => AppStatePanel.empty(
-          title: l10n.noLocationData,
-          message: l10n.noLocationMessage,
-          icon: Icons.location_off,
-        ),
-        data: (loc) {
-          if (loc == null) {
-            return AppStatePanel.empty(
-              title: l10n.noLocationData,
-              message: l10n.noLocationMessage,
-              icon: Icons.location_off,
-            );
-          }
-
-          // Get geofence info for map circle (if protection active)
-          final protectionStatus = protection.valueOrNull;
-          final geofenceLat = protectionStatus?.geofenceLatitude;
-          final geofenceLng = protectionStatus?.geofenceLongitude;
-          final geofenceRadius = protectionStatus?.geofenceRadiusMeters;
-
-          // Build Leaflet.js HTML with marker + optional geofence circle.
-          // Popup labels are localized in the widget layer and passed in —
-          // the HTML/JS template itself stays unlocalized.
-          final html = _buildLeafletHtml(
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-            geofenceLatitude: geofenceLat,
-            geofenceLongitude: geofenceLng,
-            geofenceRadiusMeters: geofenceRadius,
-            markerPopupLabel: l10n.machineLocationTitle,
-            geofencePopupLabel: l10n.geofencePopupPrefix,
-          );
-
-          final controller = WebViewController()
-            ..setJavaScriptMode(JavaScriptMode.unrestricted)
-            ..loadHtmlString(html);
-
-          return Column(
-            children: <Widget>[
-              // Map — 75% of available height
-              Expanded(
-                flex: 3,
-                child: WebViewWidget(controller: controller),
-              ),
-              // Bottom panel — 25% of available height
-              Expanded(
-                flex: 1,
-                child: Column(
-                  children: <Widget>[
-                    // Address bar
-                    _AddressBar(
-                      latitude: loc.latitude,
-                      longitude: loc.longitude,
-                      address: address,
-                    ),
-                    // Theft protection bottom panel
-                    _TheftProtectionPanel(machineId: widget.machineId),
-                  ],
-                ),
-              ),
-            ],
-          );
+        // Fail closed: an unreadable consent store means "not asked yet".
+        error: (_, __) => const _MapConsentGate(),
+        data: (decision) => switch (decision) {
+          MapConsent.granted => _buildMapBody(context),
+          MapConsent.declined =>
+            _MapDeclinedView(machineId: widget.machineId),
+          MapConsent.undecided => const _MapConsentGate(),
         },
       ),
     );
   }
 
-  /// Builds the Leaflet.js HTML with OpenStreetMap tiles, a marker, and
-  /// an optional geofence circle.
-  ///
-  /// [markerPopupLabel] and [geofencePopupLabel] are localized by the
-  /// widget layer; the radius digits and " m" unit stay unlocalized.
-  String _buildLeafletHtml({
-    required double latitude,
-    required double longitude,
+  Widget _buildMapBody(BuildContext context) {
+    final location = ref.watch(machineLocationProvider(widget.machineId));
+    final address = ref.watch(machineAddressProvider(widget.machineId));
+    final protection =
+        ref.watch(theftProtectionNotifierProvider(widget.machineId));
+    final l10n = context.l10n;
+
+    return location.when(
+      loading: () =>
+          AppStatePanel.loading(message: l10n.loadingLocation),
+      error: (_, __) => AppStatePanel.empty(
+        title: l10n.noLocationData,
+        message: l10n.noLocationMessage,
+        icon: Icons.location_off,
+      ),
+      data: (loc) {
+        if (loc == null || !_isValidCoordinate(loc.latitude, loc.longitude)) {
+          return AppStatePanel.empty(
+            title: l10n.noLocationData,
+            message: l10n.noLocationMessage,
+            icon: Icons.location_off,
+          );
+        }
+
+        final protectionStatus = protection.valueOrNull;
+        _updateMap(
+          loc: loc,
+          geofenceLatitude: protectionStatus?.geofenceLatitude,
+          geofenceLongitude: protectionStatus?.geofenceLongitude,
+          geofenceRadiusMeters: protectionStatus?.geofenceRadiusMeters,
+          markerPopupLabel: l10n.machineLocationTitle,
+          geofencePopupLabel: l10n.geofencePopupPrefix,
+        );
+
+        final controller = _mapController;
+        if (controller == null) {
+          return AppStatePanel.loading(message: l10n.loadingLocation);
+        }
+
+        return Column(
+          children: <Widget>[
+            // Map — 75% of available height
+            Expanded(
+              flex: 3,
+              child: WebViewWidget(controller: controller),
+            ),
+            // Bottom panel — 25% of available height
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: <Widget>[
+                  _AddressBar(
+                    latitude: loc.latitude,
+                    longitude: loc.longitude,
+                    address: address,
+                  ),
+                  _TheftProtectionPanel(machineId: widget.machineId),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Creates the WebView controller once, loads the bundled map page, and
+  /// constrains navigation to local assets only (SEC-15). OSM tiles are
+  /// subresource image loads, not navigations, so they are unaffected by
+  /// the delegate — the page CSP (assets/map/map.html) is what scopes them.
+  void _ensureMapController() {
+    if (_mapController != null) return;
+    _mapController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(NavigationDelegate(
+        onNavigationRequest: (request) => request.url.startsWith('file://')
+            ? NavigationDecision.navigate
+            : NavigationDecision.prevent,
+        onPageFinished: (_) {
+          _mapPageLoaded = true;
+          _flushMapConfig();
+        },
+      ))
+      ..loadFlutterAsset(_mapAssetPath);
+  }
+
+  /// Stages the map configuration and pushes it into the WebView once the
+  /// bundled page has finished loading. Parameters cross the bridge as a
+  /// jsonEncode'd object — labels are data, never interpolated code.
+  void _updateMap({
+    required MachineLocation loc,
     double? geofenceLatitude,
     double? geofenceLongitude,
     int? geofenceRadiusMeters,
     required String markerPopupLabel,
     required String geofencePopupLabel,
   }) {
-    final hasGeofence = geofenceLatitude != null &&
-        geofenceLongitude != null &&
-        geofenceRadiusMeters != null;
-    final geofenceJs = hasGeofence
-        ? '''
-    L.circle([$geofenceLatitude, $geofenceLongitude], {
-      radius: $geofenceRadiusMeters,
-      color: '#1976D2',
-      fillColor: '#1976D2',
-      fillOpacity: 0.15,
-      weight: 2
-    }).addTo(map).bindPopup('$geofencePopupLabel ($geofenceRadiusMeters m)');
-'''
-        : '';
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
-    #map { width: 100%; height: 100%; }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script>
-    var map = L.map('map').setView([$latitude, $longitude], 16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
-    L.marker([$latitude, $longitude]).addTo(map)
-      .bindPopup('$markerPopupLabel');
-    $geofenceJs
-  </script>
-</body>
-</html>
-''';
+    _ensureMapController();
+
+    final hasGeofence = _isValidLat(geofenceLatitude) &&
+        _isValidLng(geofenceLongitude) &&
+        geofenceRadiusMeters != null &&
+        geofenceRadiusMeters > 0;
+
+    _pendingMapConfig = <String, Object?>{
+      'latitude': loc.latitude,
+      'longitude': loc.longitude,
+      'zoom': 16,
+      'markerPopupLabel': markerPopupLabel,
+      if (hasGeofence)
+        'geofence': <String, Object?>{
+          'latitude': geofenceLatitude,
+          'longitude': geofenceLongitude,
+          'radiusMeters': geofenceRadiusMeters,
+          'popupLabel': geofencePopupLabel,
+        },
+    };
+    _flushMapConfig();
+  }
+
+  void _flushMapConfig() {
+    final config = _pendingMapConfig;
+    final controller = _mapController;
+    if (config == null || controller == null || !_mapPageLoaded) return;
+    _pendingMapConfig = null;
+    unawaited(controller.runJavaScript(
+        'window.yantraMap.init(${jsonEncode(config)});'));
+  }
+
+  static bool _isValidLat(double? v) =>
+      v != null && v.isFinite && v.abs() <= 90;
+
+  static bool _isValidLng(double? v) =>
+      v != null && v.isFinite && v.abs() <= 180;
+
+  static bool _isValidCoordinate(double lat, double lng) =>
+      _isValidLat(lat) && _isValidLng(lng);
+}
+
+/// Consent gate shown before any third-party map/geocoding transfer.
+///
+/// SEC-15 / Play user-data policy: machine coordinates are farmer-linked
+/// precise location, so rendering the map requires prior affirmative
+/// consent. The disclosure names the recipients (OpenStreetMap tiles;
+/// the backend geocoding proxy) and states what is shared.
+class _MapConsentGate extends ConsumerWidget {
+  const _MapConsentGate();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.privacy_tip_outlined,
+                color: colors.primary, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              l10n.mapConsentTitle,
+              style: text.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.mapConsentMessage,
+              style: text.bodyMedium
+                  ?.copyWith(color: colors.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () =>
+                    ref.read(mapConsentProvider.notifier).grant(),
+                child: Text(l10n.mapConsentAllow),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () =>
+                    ref.read(mapConsentProvider.notifier).decline(),
+                child: Text(l10n.mapConsentNotNow),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown when the user declined map services — raw coordinates only, no
+/// third-party requests. Offers a path to grant consent later.
+class _MapDeclinedView extends ConsumerWidget {
+  final String machineId;
+
+  const _MapDeclinedView({required this.machineId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+    final l10n = context.l10n;
+    final location = ref.watch(machineLocationProvider(machineId));
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.map_outlined,
+                color: colors.onSurfaceVariant, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              l10n.mapDisabledTitle,
+              style: text.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.mapDisabledMessage,
+              style: text.bodyMedium
+                  ?.copyWith(color: colors.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            location.maybeWhen(
+              data: (loc) => loc == null
+                  ? const SizedBox.shrink()
+                  : Text(
+                      '${loc.latitude.toStringAsFixed(6)}, '
+                      '${loc.longitude.toStringAsFixed(6)}',
+                      style: text.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w500),
+                    ),
+              orElse: () => const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () =>
+                    ref.read(mapConsentProvider.notifier).grant(),
+                child: Text(l10n.mapEnableServices),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

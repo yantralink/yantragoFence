@@ -12,10 +12,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:dio/dio.dart';
 import 'package:yantrago/core/auth/auth_service.dart';
 import 'package:yantrago/core/auth/auth_state.dart';
 import 'package:yantrago/core/config/theme.dart';
 import 'package:yantrago/core/network/network_error_messages.dart';
+import 'package:yantrago/core/services/account_service.dart';
 import 'package:yantrago/features/auth/pages/login_page.dart';
 import 'package:yantrago/features/auth/pages/splash_page.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
@@ -273,6 +275,78 @@ void main() {
     });
   });
 
+  group('Privacy & support (Phase 11)', () {
+    testWidgets('login page shows a pre-login privacy policy link',
+        (tester) async {
+      await _pump(
+        tester,
+        const LoginPage(),
+        overrides: [
+          authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref))
+        ],
+      );
+      expect(find.text('Privacy Policy'), findsOneWidget);
+    });
+
+    testWidgets('profile shows support & privacy section', (tester) async {
+      await _pump(
+        tester,
+        const ProfilePage(),
+        overrides: [
+          authStateProvider.overrideWith(
+              (ref) => _FakeAuthNotifier(ref: ref, authenticated: true)),
+          profileProvider.overrideWith((ref) => _user),
+          accountServiceProvider
+              .overrideWithValue(_FakeAccountService(true)),
+        ],
+      );
+      expect(find.text('Support & Privacy'), findsOneWidget);
+      expect(find.textContaining('Contact Support'), findsOneWidget);
+      expect(find.text('Privacy Policy'), findsOneWidget);
+      expect(find.text('Request account deletion'), findsOneWidget);
+    });
+
+    testWidgets('deletion request posts to backend and confirms',
+        (tester) async {
+      final service = _FakeAccountService(true);
+      await _pump(
+        tester,
+        const ProfilePage(),
+        overrides: [
+          authStateProvider.overrideWith(
+              (ref) => _FakeAuthNotifier(ref: ref, authenticated: true)),
+          profileProvider.overrideWith((ref) => _user),
+          accountServiceProvider.overrideWithValue(service),
+        ],
+      );
+      await tester.tap(find.text('Request account deletion'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(service.called, isTrue);
+      expect(find.textContaining('Deletion request received'),
+          findsOneWidget);
+    });
+
+    testWidgets('failed deletion request suggests the privacy email',
+        (tester) async {
+      final service = _FakeAccountService(false);
+      await _pump(
+        tester,
+        const ProfilePage(),
+        overrides: [
+          authStateProvider.overrideWith(
+              (ref) => _FakeAuthNotifier(ref: ref, authenticated: true)),
+          profileProvider.overrideWith((ref) => _user),
+          accountServiceProvider.overrideWithValue(service),
+        ],
+      );
+      await tester.tap(find.text('Request account deletion'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.textContaining('privacy@yantrago.com'), findsOneWidget);
+    });
+  });
+
   group('Navigation shell', () {
     testWidgets('tab switching with context.go changes selected index', (tester) async {
       final GoRouter router = GoRouter(
@@ -386,6 +460,21 @@ class _FakeAuthNotifier extends AuthStateNotifier {
       return;
     }
     state = const Authenticated(_user);
+  }
+}
+
+/// Test-only account service — records the deletion call and returns a
+/// canned result without touching the network.
+class _FakeAccountService extends AccountService {
+  _FakeAccountService(this._result) : super(Dio());
+
+  final bool _result;
+  bool called = false;
+
+  @override
+  Future<bool> requestAccountDeletion() async {
+    called = true;
+    return _result;
   }
 }
 

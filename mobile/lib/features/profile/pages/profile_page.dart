@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import 'package:yantrago/core/config/app_config.dart';
+import 'package:yantrago/core/services/account_service.dart';
+import 'package:yantrago/core/utils/link_launcher.dart';
 import 'package:yantrago/core/widgets/app_action_button.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_section_header.dart';
@@ -126,6 +129,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+
+            // Support, privacy policy & deletion request — Play requires
+            // the policy and an erasure-request path to be discoverable
+            // from the app.
+            AppSectionHeader(title: l10n.supportPrivacySection),
+            const _SupportPrivacyCard(),
             const SizedBox(height: 24),
 
             // Logout
@@ -183,6 +193,98 @@ class _SettingsTile extends StatelessWidget {
             Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Support & privacy rows: contact support, open the privacy policy, and
+/// submit an account-deletion request to the backend.
+class _SupportPrivacyCard extends ConsumerStatefulWidget {
+  const _SupportPrivacyCard();
+
+  @override
+  ConsumerState<_SupportPrivacyCard> createState() =>
+      _SupportPrivacyCardState();
+}
+
+class _SupportPrivacyCardState extends ConsumerState<_SupportPrivacyCard> {
+  bool _deletionBusy = false;
+
+  void _snack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  Future<void> _contactSupport() async {
+    if (!await launchEmail(AppConfig.supportEmail) && mounted) {
+      _snack(context.l10n.couldNotOpenLink);
+    }
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    if (!await launchExternalUrl(AppConfig.privacyPolicyUrl) && mounted) {
+      _snack(context.l10n.couldNotOpenLink);
+    }
+  }
+
+  Future<void> _requestDeletion() async {
+    if (_deletionBusy) return;
+    setState(() => _deletionBusy = true);
+    final ok =
+        await ref.read(accountServiceProvider).requestAccountDeletion();
+    if (!mounted) return;
+    setState(() => _deletionBusy = false);
+    final l10n = context.l10n;
+    _snack(ok
+        ? l10n.deletionRequestSent
+        : l10n.deletionRequestFailed(AppConfig.privacyEmail));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return AppSurfaceCard(
+      child: Column(
+        children: <Widget>[
+          _SettingsTile(
+            icon: Icons.support_agent,
+            label: '${l10n.contactSupport} — ${AppConfig.supportEmail}',
+            onTap: _contactSupport,
+          ),
+          _SettingsDivider(),
+          _SettingsTile(
+            icon: Icons.privacy_tip_outlined,
+            label: l10n.privacyPolicy,
+            onTap: _openPrivacyPolicy,
+          ),
+          _SettingsDivider(),
+          _SettingsTile(
+            icon: Icons.delete_outline,
+            label: l10n.requestAccountDeletion,
+            onTap: _requestDeletion,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            child: Text(
+              l10n.deletionPolicyNote,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          if (_deletionBusy)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+        ],
       ),
     );
   }

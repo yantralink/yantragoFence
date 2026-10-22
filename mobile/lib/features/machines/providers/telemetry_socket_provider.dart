@@ -15,8 +15,8 @@ import 'package:yantrago/models/telemetry.dart';
 /// Real-time telemetry socket controller.
 ///
 /// Mirrors `CommandSocketController` (notification plan Phase 4 pattern):
-/// - Own `StompClient` connecting to `${AppConfig.wsBaseUrl}?token=$token`
-/// - Authorization header fallback for non-SockJS clients
+/// - Own `StompClient` connecting to `${AppConfig.wsBaseUrl}`
+/// - Authorization header (Bearer token) for authentication (SEC-09)
 /// - 5s reconnect `Timer`
 /// - `_disposed` guard
 ///
@@ -70,9 +70,9 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
       return;
     }
 
-    // Pass token as query parameter (SockJS-safe); keep Authorization header
-    // as fallback for non-SockJS clients.
-    final wsUrl = '${AppConfig.wsBaseUrl}?token=$token';
+    // SEC-09: pass token via Authorization header only — never via URL query
+    // parameter (URL tokens leak through proxy/access logs).
+    final wsUrl = AppConfig.wsBaseUrl;
 
     debugPrint('TelemetrySocket: connecting for machineId=$machineId');
     _client = StompClient(
@@ -100,12 +100,13 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
           _scheduleReconnect();
         },
         onStompError: (frame) {
-          debugPrint('TelemetrySocket: STOMP error: ${frame.body}');
+          debugPrint('TelemetrySocket: STOMP error received');
           state = null;
           _scheduleReconnect();
         },
         onWebSocketError: (error) {
-          debugPrint('TelemetrySocket: WebSocket error: $error');
+          // SEC-08: Don't log error details — may contain connection info.
+          debugPrint('TelemetrySocket: WebSocket error');
           state = null;
           _scheduleReconnect();
         },
@@ -151,7 +152,8 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
       }
     } catch (e) {
       // Never surface raw exceptions to the UI — log and swallow.
-      debugPrint('TelemetrySocket: failed to handle telemetry frame: $e');
+      // SEC-08: Don't log exception details — may contain telemetry data.
+      debugPrint('TelemetrySocket: failed to handle telemetry frame');
     }
   }
 

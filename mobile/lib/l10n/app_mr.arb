@@ -282,6 +282,34 @@
   "@geofencePopupPrefix": {
     "description": "Prefix of the map geofence circle popup; the radius in meters is appended after it."
   },
+  "mapConsentTitle": "नकाशा सेवा सक्षम करा",
+  "@mapConsentTitle": {
+    "description": "Title of the consent prompt shown before any third-party map/geocoding transfer."
+  },
+  "mapConsentMessage": "ही मशीन नकाशावर दाखवण्यासाठी, YantraGO OpenStreetMap वरून नकाशा टाइल्स लोड करतो आणि पत्ता मिळवण्यासाठी आमच्या सुरक्षित सर्व्हरद्वारे मशीनचे निर्देशांक एका मॅप पुरवठादाराला पाठवू शकतो. केवळ मशीनची स्थिती शेअर होते — तुमचे वैयक्तिक स्थान कधीही नाही.",
+  "@mapConsentMessage": {
+    "description": "Disclosure text for the map/geocoding third-party consent prompt."
+  },
+  "mapConsentAllow": "अनुमती द्या",
+  "@mapConsentAllow": {
+    "description": "Button that grants consent for third-party map/geocoding transfers."
+  },
+  "mapConsentNotNow": "आत्ता नको",
+  "@mapConsentNotNow": {
+    "description": "Button that declines consent for third-party map/geocoding transfers."
+  },
+  "mapDisabledTitle": "नकाशा सेवा बंद आहेत",
+  "@mapDisabledTitle": {
+    "description": "Title shown when the user has declined third-party map services."
+  },
+  "mapDisabledMessage": "तुम्ही तृतीय-पक्ष नकाशा सेवांना परवानगी दिली नाही, म्हणून नकाशा आणि पत्ता लुकअप बंद आहेत. मशीनचे निर्देशांक खाली दाखवले आहेत.",
+  "@mapDisabledMessage": {
+    "description": "Explanation shown when the user has declined third-party map services."
+  },
+  "mapEnableServices": "नकाशा सेवा सक्षम करा",
+  "@mapEnableServices": {
+    "description": "Button that re-opens the consent choice to enable map services."
+  },
   "loadingDashboard": "डॅशबोर्ड लोड होत आहे…",
   "@loadingDashboard": {
     "description": "Loading state message on the dashboard page."
@@ -1267,5 +1295,39 @@
   "errorUnexpected": "एक अनपेक्षित त्रुटी आली.",
   "@errorUnexpected": {
     "description": "Fallback network error message for unknown failures."
+  },
+
+  "privacyPolicy": "गोपनीयता धोरण",
+  "@privacyPolicy": {
+    "description": "Link label opening the public privacy policy page."
+  },
+  "supportPrivacySection": "मदत आणि गोपनीयता",
+  "@supportPrivacySection": {
+    "description": "Section header for support, privacy and deletion rows on the profile page."
+  },
+  "contactSupport": "मदतशी संपर्क करा",
+  "@contactSupport": {
+    "description": "Row that opens an email to the support address."
+  },
+  "requestAccountDeletion": "खाते हटवण्याची विनंती करा",
+  "@requestAccountDeletion": {
+    "description": "Row that submits an account deletion request."
+  },
+  "deletionPolicyNote": "तुमचे खाते आणि वैयक्तिक डेटा पुसून टाकण्याची विनंती करा.",
+  "@deletionPolicyNote": {
+    "description": "Subtitle explaining what the deletion-request row does."
+  },
+  "deletionRequestSent": "हटवण्याची विनंती मिळाली आहे. मदत टीम ३० दिवसांच्या आत तिची प्रक्रिया करेल.",
+  "@deletionRequestSent": {
+    "description": "Confirmation shown after a deletion request is accepted by the server."
+  },
+  "deletionRequestFailed": "विनंती पाठवता आली नाही. तुम्ही {email} वर ईमेलही करू शकता.",
+  "@deletionRequestFailed": {
+    "description": "Shown when the deletion request fails; {email} is the privacy contact address.",
+    "placeholders": {"email": {"type": "String"}}
+  },
+  "couldNotOpenLink": "लिंक उघडता आली नाही.",
+  "@couldNotOpenLink": {
+    "description": "Snackbar when the device cannot open a web or email link."
   }
 }

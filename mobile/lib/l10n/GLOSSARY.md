@@ -98,6 +98,22 @@ Marathi speaker before production exposure.**
 | Device acknowledged the command | डिवाइस ने पुष्टि की | डिव्हाइसने पुष्टी केली | — |
 | Fence ON/OFF · confirmed | फ़ेंस चालू/बंद · पुष्टि प्राप्त | फेन्स चालू/बंद · पुष्टी प्राप्त | "confirmed" = ACK received, not state guaranteed; verify. |
 
+## Privacy & legal — PENDING NATIVE REVIEW
+
+Legal-adjacent strings added in Phase 11 (privacy policy links, deletion
+requests). Wording should read formally and unambiguously — these affect
+user rights under the DPDP Act. AI-generated drafts pending native review.
+
+| English term | Hindi (draft) | Marathi (draft) | Review note |
+| --- | --- | --- | --- |
+| Privacy Policy | गोपनीयता नीति | गोपनीयता धोरण | Common Indian usage; verify vs "निजता नीति". |
+| Support & Privacy | सहायता और गोपनीयता | मदत आणि गोपनीयता | "मदत" vs "सपोर्ट" — confirm natural register. |
+| Contact Support | सहायता से संपर्क करें | मदतशी संपर्क करा | — |
+| Request account deletion | खाता हटाने का अनुरोध करें | खाते हटवण्याची विनंती करा | Must read as a request, not an instant self-delete. |
+| Ask us to erase your account and personal data | अपना खाता और व्यक्तिगत डेटा मिटाने के लिए अनुरोध करें | तुमचे खाते आणि वैयक्तिक डेटा पुसून टाकण्याची विनंती करा | "erase" = permanent removal; verify clarity. |
+| Deletion request received. Support will process it within 30 days | हटाने का अनुरोध मिल गया है। सहायता टीम 30 दिनों के भीतर इसे संसाधित करेगी। | हटवण्याची विनंती मिळाली आहे. मदत टीम ३० दिवसांच्या आत तिची प्रक्रिया करेल. | 30-day figure must stay exact — it is the committed SLA. |
+| Could not open the link | लिंक नहीं खुल सकी। | लिंक उघडता आली नाही. | — |
+
 Additional review guidance:
 
 - Transliterations (कमांड, फ़ॉल्ट, शटडाउन, असाइन, रिचार्ज) were chosen for

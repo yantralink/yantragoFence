@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SEC-16: Data extraction rules (Android 12+ / API 31+).
+  Disables backup and device transfer of all app data to prevent
+  sensitive credentials, tokens, and PII from being extracted or
+  transferred to a new device.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Disable all cloud backup -->
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <!-- Disable all device-to-device transfer -->
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

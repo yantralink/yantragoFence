@@ -8,6 +8,7 @@ import 'package:yantrago/core/utils/validators.dart';
 import 'package:yantrago/core/widgets/app_action_button.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/language_picker_row.dart';
+import 'package:yantrago/core/widgets/privacy_policy_link.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
@@ -190,6 +191,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   // Pre-login language picker — native names, immediate
                   // switch, device-persisted (survives logout).
                   const LanguagePickerRow(),
+                  const SizedBox(height: 8),
+
+                  // Play policy: privacy policy must be reachable
+                  // before sign-in.
+                  const Center(child: PrivacyPolicyLink()),
                 ],
               ),
             ),

@@ -22,6 +22,14 @@ class AppConfig {
   static const String refreshEndpoint = '/api/v1/auth/refresh';
   static const String logoutEndpoint = '/api/v1/auth/logout';
   static const String meEndpoint = '/api/v1/auth/me';
+  static const String accountDeletionRequestEndpoint =
+      '/api/v1/account/deletion-request';
+
+  // Public URLs & contacts — must match the deployed privacy policy.
+  static const String privacyPolicyUrl =
+      'https://yantrago.com/privacy-policy';
+  static const String supportEmail = 'support@yantrago.com';
+  static const String privacyEmail = 'privacy@yantrago.com';
 
   static const String machinesEndpoint = '/api/v1/machines';
   static const String commandsEndpoint = '/api/v1/commands';

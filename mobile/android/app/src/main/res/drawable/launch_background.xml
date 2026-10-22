@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- PLAY Task 12.8: brand-colored launch background with centered logo —
+     removes the default white flash on cold start. When
+     flutter_native_splash:create is run it will overwrite this file with
+     its generated equivalent (same look). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <item android:drawable="@color/launch_background" />
+    <!-- drawable-nodpi keeps the bitmap at its pixel size; @mipmap/
+         ic_launcher must NOT be referenced here — it becomes an adaptive
+         icon XML on API 26+ and crashes <bitmap> inflation. -->
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@drawable/launch_logo" />
+    </item>
 </layer-list>

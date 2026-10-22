@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:yantrago/core/config/theme.dart';
+import 'package:yantrago/core/services/map_consent_service.dart';
 import 'package:yantrago/features/machines/pages/machine_location_map_page.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
@@ -44,6 +45,23 @@ Location _gpsLocation() => Location(
       longitude: 73.856740,
       timestamp: DateTime(2026, 1, 1, 10, 30),
     );
+
+/// Fixed-consent controllers for tests — they never touch
+/// FlutterSecureStorage (which has no plugin implementation in tests).
+class _GrantedConsent extends MapConsentController {
+  @override
+  Future<MapConsent> build() async => MapConsent.granted;
+}
+
+class _UndecidedConsent extends MapConsentController {
+  @override
+  Future<MapConsent> build() async => MapConsent.undecided;
+}
+
+class _DeclinedConsent extends MapConsentController {
+  @override
+  Future<MapConsent> build() async => MapConsent.declined;
+}
 
 Widget _wrapped(
   Widget child, {
@@ -103,12 +121,13 @@ Future<void> _pump(
 
 void main() {
   group('MachineLocationMapPage', () {
-    testWidgets('shows loading state', (tester) async {
+    testWidgets('shows loading state when consent granted', (tester) async {
       final completer = Completer<MachineLocation?>();
       await _pump(
         tester,
         const MachineLocationMapPage(machineId: 'm1'),
         overrides: [
+          mapConsentProvider.overrideWith(() => _GrantedConsent()),
           machineDetailProvider('m1').overrideWith((ref) async => _machine()),
           machineLocationProvider('m1').overrideWith((ref) => completer.future),
           machineAddressProvider('m1').overrideWith((ref) async => null),
@@ -123,6 +142,7 @@ void main() {
         tester,
         const MachineLocationMapPage(machineId: 'm1'),
         overrides: [
+          mapConsentProvider.overrideWith(() => _GrantedConsent()),
           machineDetailProvider('m1').overrideWith((ref) async => _machine()),
           machineLocationProvider('m1').overrideWith((ref) async => null),
           machineAddressProvider('m1').overrideWith((ref) async => null),
@@ -136,6 +156,7 @@ void main() {
         tester,
         const MachineLocationMapPage(machineId: 'm1'),
         overrides: [
+          mapConsentProvider.overrideWith(() => _GrantedConsent()),
           machineDetailProvider('m1').overrideWith((ref) async => _machine()),
           machineLocationProvider('m1').overrideWith(
             (ref) async => throw Exception('Network error'),
@@ -144,6 +165,65 @@ void main() {
         ],
       );
       expect(find.text('No location data available'), findsOneWidget);
+    });
+
+    testWidgets('shows consent gate when undecided — no map, no geocoding',
+        (tester) async {
+      await _pump(
+        tester,
+        const MachineLocationMapPage(machineId: 'm1'),
+        overrides: [
+          mapConsentProvider.overrideWith(() => _UndecidedConsent()),
+          machineDetailProvider('m1').overrideWith((ref) async => _machine()),
+          machineLocationProvider('m1').overrideWith((ref) async => _location()),
+          machineAddressProvider('m1').overrideWith((ref) async => null),
+        ],
+      );
+      expect(find.text('Enable map services'), findsWidgets);
+      expect(find.text('Allow'), findsOneWidget);
+      expect(find.text('Not now'), findsOneWidget);
+    });
+
+    testWidgets('shows declined view with coordinates only', (tester) async {
+      await _pump(
+        tester,
+        const MachineLocationMapPage(machineId: 'm1'),
+        overrides: [
+          mapConsentProvider.overrideWith(() => _DeclinedConsent()),
+          machineDetailProvider('m1').overrideWith((ref) async => _machine()),
+          machineLocationProvider('m1').overrideWith((ref) async => _location()),
+          machineAddressProvider('m1').overrideWith((ref) async => null),
+        ],
+      );
+      expect(find.text('Map services are off'), findsOneWidget);
+      expect(find.textContaining('18.520430'), findsOneWidget);
+    });
+
+    testWidgets('granting consent from the gate transitions to map flow',
+        (tester) async {
+      await _pump(
+        tester,
+        const MachineLocationMapPage(machineId: 'm1'),
+        overrides: [
+          mapConsentProvider.overrideWith(() => _UndecidedConsent()),
+          machineDetailProvider('m1').overrideWith((ref) async => _machine()),
+          machineLocationProvider('m1').overrideWith(
+              (ref) => Completer<MachineLocation?>().future),
+          machineAddressProvider('m1').overrideWith((ref) async => null),
+        ],
+      );
+      expect(find.text('Allow'), findsOneWidget);
+
+      // Tap Allow — grant() writes to SecureStorage; in tests the plugin
+      // call fails but the controller still applies the session choice.
+      await tester.tap(find.text('Allow'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Consent gate gone — the page moved into the location flow
+      // (which stays on the loading panel while the future pends).
+      expect(find.text('Not now'), findsNothing);
+      expect(find.text('Loading location…'), findsOneWidget);
     });
     // Note: Data-state tests (with WebView) are skipped because
     // WebViewPlatform.instance is not available in widget tests.

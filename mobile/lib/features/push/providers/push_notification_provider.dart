@@ -260,7 +260,23 @@ class PushNotificationService {
 
   /// Deactivates all device tokens on logout.
   /// Called when the user logs out to prevent push to a shared device.
+  ///
+  /// SEC-16: All steps are best-effort — logout proceeds regardless of
+  /// push/network errors. Each step is independently try-catched so
+  /// a failure in one doesn't skip the others.
+  ///
+  /// Note: This deactivates ALL device tokens for the user across all
+  /// installations (all-device logout). For the shared-phone use case
+  /// this is the correct behavior — it prevents stale-account
+  /// notifications after account switching. If multi-device login
+  /// is supported later, a current-installation-only deactivation
+  /// endpoint should be added.
   Future<void> deactivateAllTokensOnLogout() async {
+    // SEC-16: Clear pending navigation so a stale notification tap
+    // doesn't navigate after account switch.
+    _pendingNavigationInboxId = null;
+
+    // Best-effort server deactivation
     try {
       final accessToken = await SecureStorage.getAccessToken();
       if (accessToken == null) return;
@@ -276,11 +292,19 @@ class PushNotificationService {
     }
 
     // Clear local token state
-    await SecureStorage.setFcmToken(null);
-    await SecureStorage.setFcmTokenRegistered(false);
+    try {
+      await SecureStorage.setFcmToken(null);
+      await SecureStorage.setFcmTokenRegistered(false);
+    } catch (e) {
+      // Best-effort
+    }
 
     // Unregister from FCM
-    await FirebaseMessaging.instance.deleteToken();
+    try {
+      await FirebaseMessaging.instance.deleteToken();
+    } catch (e) {
+      // Best-effort — logout proceeds regardless of FCM errors
+    }
   }
 
   /// Re-registers the FCM token after login (for shared-phone account switch).

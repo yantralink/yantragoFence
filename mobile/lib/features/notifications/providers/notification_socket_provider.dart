@@ -68,14 +68,13 @@ class NotificationSocketController
       return;
     }
 
-    // Phase 3 fix: pass token as query parameter (SockJS-safe) instead of
-    // relying on Authorization headers which SockJS may not reliably transmit.
-    final wsUrl = '${AppConfig.wsBaseUrl}?token=$token';
+    // SEC-09: pass token via Authorization header only — never via URL query
+    // parameter (URL tokens leak through proxy/access logs).
+    final wsUrl = AppConfig.wsBaseUrl;
 
     _client = StompClient(
       config: StompConfig(
         url: wsUrl,
-        // Keep Authorization header as fallback for non-SockJS clients
         stompConnectHeaders: {'Authorization': 'Bearer $token'},
         webSocketConnectHeaders: {'Authorization': 'Bearer $token'},
         onConnect: (frame) {

@@ -16,8 +16,8 @@ import 'package:yantrago/models/command_status_update.dart';
 /// Real-time command status socket controller.
 ///
 /// Mirrors `NotificationSocketController` (notification plan Phase 4):
-/// - Own `StompClient` connecting to `${AppConfig.wsBaseUrl}?token=$token`
-/// - Authorization header fallback for non-SockJS clients
+/// - Own `StompClient` connecting to `${AppConfig.wsBaseUrl}`
+/// - Authorization header (Bearer token) for authentication (SEC-09)
 /// - 5s reconnect `Timer`
 /// - `_disposed` guard
 /// - Sealed state class
@@ -76,9 +76,9 @@ class CommandSocketController extends StateNotifier<CommandSocketState> {
       return;
     }
 
-    // Pass token as query parameter (SockJS-safe); keep Authorization header
-    // as fallback for non-SockJS clients.
-    final wsUrl = '${AppConfig.wsBaseUrl}?token=$token';
+    // SEC-09: pass token via Authorization header only — never via URL query
+    // parameter (URL tokens leak through proxy/access logs).
+    final wsUrl = AppConfig.wsBaseUrl;
 
     _client = StompClient(
       config: StompConfig(
@@ -130,7 +130,8 @@ class CommandSocketController extends StateNotifier<CommandSocketState> {
       _ref.invalidate(commandHistoryProvider);
     } catch (e) {
       // Never surface raw exceptions to the UI — log and swallow.
-      debugPrint('CommandSocket: failed to handle status frame: $e');
+      // SEC-08: Don't log exception details — may contain command data.
+      debugPrint('CommandSocket: failed to handle status frame');
     }
   }
 

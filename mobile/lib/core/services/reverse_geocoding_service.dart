@@ -1,14 +1,16 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yantrago/core/network/api_client.dart';
 
-/// Reverse geocoding service — converts lat/lon to a human-readable address.
+/// Reverse geocoding service — resolves a machine's location to a
+/// human-readable address.
 ///
-/// Uses the Nominatim (OpenStreetMap) reverse geocoding API which is free
-/// and requires no API key. Results are cached to avoid repeated lookups
-/// for the same coordinates.
-///
-/// Usage policy: max 1 request per second (Nominatim fair use).
-/// We cache results so repeated UI rebuilds don't trigger new requests.
+/// SEC-15: geocoding is proxied through the YantraGO backend
+/// (`GET /api/v1/geocoding/reverse`). The app never sends machine
+/// coordinates to a third party directly — the backend applies machine
+/// access validation, a bounded cache, and provider rate limiting, and
+/// the external provider only ever sees the backend server. Results are
+/// cached per machine+language to avoid repeated lookups.
 
 /// A resolved address with structured fields for detailed display.
 class ResolvedAddress {
@@ -79,77 +81,67 @@ class ResolvedAddress {
     }
     return lines;
   }
+
+  /// Builds from the backend's camelCase AddressDto JSON shape.
+  factory ResolvedAddress.fromJson(Map<String, dynamic> json) {
+    return ResolvedAddress(
+      displayName: json['displayName'] as String? ?? '',
+      road: json['road'] as String?,
+      neighbourhood: json['neighbourhood'] as String?,
+      suburb: json['suburb'] as String?,
+      city: json['city'] as String?,
+      county: json['county'] as String?,
+      state: json['state'] as String?,
+      postcode: json['postcode'] as String?,
+      country: json['country'] as String?,
+    );
+  }
 }
 
-final reverseGeocodingProvider =
-    Provider<ReverseGeocodingService>((ref) => ReverseGeocodingService());
+final reverseGeocodingProvider = Provider<ReverseGeocodingService>(
+    (ref) => ReverseGeocodingService(ref.watch(apiClientProvider)));
 
 class ReverseGeocodingService {
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'https://nominatim.openstreetmap.org',
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    headers: {
-      'User-Agent': 'YantraGO-App/1.0',
-    },
-  ));
+  ReverseGeocodingService(this._dio);
 
-  /// Cache: "<language>|lat,lon" (rounded to 4 decimal places) → address.
+  /// Shared app Dio — carries the auth interceptor, so the backend can
+  /// validate machine access before any provider call is made.
+  final Dio _dio;
+
+  /// Cache: "<language>|<machineId>" → address.
   ///
   /// The language code is part of the cache identity: a localized address
-  /// must never be served for a different UI language. Falls back to
-  /// English at the provider level when a language is unsupported.
+  /// must never be served for a different UI language.
   final Map<String, ResolvedAddress> _cache = {};
 
-  /// Reverse geocodes lat/lon to a human-readable address.
-  ///
-  /// [languageCode] localizes street/place names via Nominatim's
-  /// Accept-Language header (Phase 3). Defaults to English.
-  /// Returns null if geocoding fails.
-  Future<ResolvedAddress?> reverseGeocode(
-    double lat,
-    double lon, {
+  /// Resolves the current location of [machineId] to an address via the
+  /// backend geocoding proxy. Returns null when the machine has no
+  /// location (404), geocoding is unavailable, or the request fails —
+  /// the UI falls back to raw coordinates.
+  Future<ResolvedAddress?> reverseGeocodeMachine(
+    String machineId, {
     String languageCode = 'en',
   }) async {
-    // Round to ~11m precision for cache key
-    final cacheKey =
-        '$languageCode|${lat.toStringAsFixed(4)},${lon.toStringAsFixed(4)}';
+    final cacheKey = '$languageCode|$machineId';
     if (_cache.containsKey(cacheKey)) {
       return _cache[cacheKey];
     }
 
     try {
-      final response = await _dio.get('/reverse', queryParameters: {
-        'format': 'jsonv2',
-        'lat': lat,
-        'lon': lon,
-        'addressdetails': 1,
-      }, options: Options(headers: {
-        'Accept-Language': languageCode,
-      }));
+      final response = await _dio.get(
+        '/api/v1/geocoding/reverse',
+        queryParameters: {'machineId': machineId, 'lang': languageCode},
+      );
 
       if (response.statusCode == 200 && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-        final address = data['address'] as Map<String, dynamic>?;
-
-        final resolved = ResolvedAddress(
-          displayName: data['display_name'] as String? ?? '',
-          road: address?['road'] as String?,
-          neighbourhood: address?['neighbourhood'] as String?,
-          suburb: address?['suburb'] as String?,
-          city: (address?['city'] ?? address?['town'] ?? address?['village'])
-              as String?,
-          county: address?['county'] as String?,
-          state: address?['state'] as String?,
-          postcode: address?['postcode'] as String?,
-          country: address?['country'] as String?,
-        );
-
+        final resolved = ResolvedAddress.fromJson(
+            response.data as Map<String, dynamic>);
         _cache[cacheKey] = resolved;
         return resolved;
       }
-    } catch (e) {
-      // Network error or parsing error — return null, UI will show coordinates
+    } on DioException {
+      // 404 (no location), 502 (provider down), network error — all fall
+      // back to coordinates-only display.
     }
     return null;
   }

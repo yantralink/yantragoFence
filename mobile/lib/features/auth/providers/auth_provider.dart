@@ -124,23 +124,39 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }
 
   /// Logs out the current user.
+  ///
+  /// SEC-16: Guarantees local credential/cache/socket/pending-navigation
+  /// cleanup in a top-level `finally` regardless of push/network errors.
+  /// Captures the user identity BEFORE state changes so account-scoped
+  /// cleanup uses the correct user, not null.
+  ///
   /// Phase 5: deactivates all device tokens to prevent push to a shared
   /// device, and clears account-scoped locale sync state so this account's
   /// pending write can never replay with the next user's credentials.
   Future<void> logout() async {
+    // SEC-16: Capture identity BEFORE state changes.
+    final user =
+        state is Authenticated ? (state as Authenticated).user : null;
+
     state = const AuthLoading();
     try {
-      final user =
-          state is Authenticated ? (state as Authenticated).user : null;
       // Clear locale sync intent BEFORE storage teardown.
       await _ref.read(localeSyncProvider.notifier).accountCleared(
             userId: user?.id,
             organizationId: user?.organizationId,
           );
-      // Deactivate push tokens before clearing auth state
+      // Deactivate push tokens before clearing auth state.
+      // Best-effort — logout proceeds regardless of push/network errors.
       await _pushService.deactivateAllTokensOnLogout();
+      // Server-side logout (revokes refresh token).
       await _authService.logout();
     } finally {
+      // SEC-16: Guarantee local cleanup regardless of what happened above.
+      // _authService.logout() clears SecureStorage in its own finally,
+      // but we also clear here as defense in depth in case the service
+      // call was never reached (e.g. an exception in push deactivation
+      // before logout was called).
+      await SecureStorage.clearAll();
       state = const Unauthenticated();
     }
   }

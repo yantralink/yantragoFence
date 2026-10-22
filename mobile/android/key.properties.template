@@ -1,0 +1,16 @@
+# Template for mobile/android/key.properties (gitignored — never commit the
+# real file). Copy this file to key.properties and fill in the values.
+#
+# storeFile is resolved relative to mobile/android/ — place the upload
+# keystore (yantrago-upload.jks) in mobile/android/ or use a relative path.
+#
+# Generate the upload key (Task 12.1):
+#   keytool -genkey -v -keystore yantrago-upload.jks -keyalg RSA \
+#     -keysize 2048 -validity 10000 -alias yantrago-upload
+#
+# CI injects these values from GitHub secrets (see .github/workflows/build-aab.yml).
+
+storeFile=yantrago-upload.jks
+storePassword=CHANGE_ME
+keyAlias=yantrago-upload
+keyPassword=CHANGE_ME

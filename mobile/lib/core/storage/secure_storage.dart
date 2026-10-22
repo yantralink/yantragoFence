@@ -18,6 +18,7 @@ class SecureStorage {
   static const _keyOrgName = 'org_name';
   static const _keyFcmToken = 'fcm_token';
   static const _keyFcmTokenRegistered = 'fcm_token_registered';
+  static const _keyMapConsent = 'map_consent';
 
   static Future<String?> getAccessToken() => _storage.read(key: _keyAccessToken);
   static Future<void> setAccessToken(String? token) async {
@@ -86,5 +87,15 @@ class SecureStorage {
   static Future<void> setFcmTokenRegistered(bool registered) async {
     await _storage.write(
         key: _keyFcmTokenRegistered, value: registered ? 'true' : 'false');
+  }
+
+  // SEC-15: map/geocoding third-party consent ('granted' | 'declined' | null)
+  static Future<String?> getMapConsent() => _storage.read(key: _keyMapConsent);
+  static Future<void> setMapConsent(String? value) async {
+    if (value == null) {
+      await _storage.delete(key: _keyMapConsent);
+    } else {
+      await _storage.write(key: _keyMapConsent, value: value);
+    }
   }
 }
