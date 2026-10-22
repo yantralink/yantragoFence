@@ -3,6 +3,11 @@
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+// SEC-15: marker icons are bundled via webpack imports — no runtime
+// fetches to unpkg/CDNs for executable-adjacent resources.
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 
 interface MapPoint {
   id: string;
@@ -18,13 +23,20 @@ interface MapViewProps {
   zoom?: number;
 }
 
-// Fix default marker icon
+// Fix default marker icon — bundled assets, same-origin URLs.
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconRetinaUrl: markerIcon2x.src,
+  iconUrl: markerIcon.src,
+  shadowUrl: markerShadow.src,
 });
+
+function isValidCoordinate(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) && Math.abs(lat) <= 90 &&
+    Number.isFinite(lng) && Math.abs(lng) <= 180
+  );
+}
 
 export function MapView({
   points,
@@ -38,15 +50,17 @@ export function MapView({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
-        {points.map((point) => (
-          <Marker key={point.id} position={[point.lat, point.lng]}>
-            <Popup>
-              <strong>{point.name}</strong>
-              <br />
-              Status: {point.status || 'Unknown'}
-            </Popup>
-          </Marker>
-        ))}
+        {points
+          .filter((point) => isValidCoordinate(point.lat, point.lng))
+          .map((point) => (
+            <Marker key={point.id} position={[point.lat, point.lng]}>
+              <Popup>
+                <strong>{point.name}</strong>
+                <br />
+                Status: {point.status || 'Unknown'}
+              </Popup>
+            </Marker>
+          ))}
       </MapContainer>
     </div>
   );
