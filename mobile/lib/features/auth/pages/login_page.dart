@@ -109,11 +109,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'YantraGO', // always-en: brand name
+                    'YantraGo - Smart Fence', // always-en: brand name
                     textAlign: TextAlign.center,
                     style: text.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colors.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'powered by Electstark Technology', // always-en: brand attribution
+                    textAlign: TextAlign.center,
+                    style: text.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 8),

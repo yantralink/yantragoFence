@@ -126,7 +126,8 @@ void main() {
         const LoginPage(),
         overrides: [authStateProvider.overrideWith((ref) => _FakeAuthNotifier(ref: ref))],
       );
-      expect(find.text('YantraGO'), findsOneWidget);
+      expect(find.text('YantraGo - Smart Fence'), findsOneWidget);
+      expect(find.text('powered by Electstark Technology'), findsOneWidget);
       expect(find.text('Email or Phone'), findsOneWidget);
       expect(find.text('Password'), findsOneWidget);
       expect(find.text('Login'), findsOneWidget);
