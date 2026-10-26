@@ -1,9 +1,12 @@
-# Deploy Production — deploy on release tag (v*.*.*)
+# Deploy Production — deploy on release tag (v*.*.*) and every push to main.
 name: Deploy Production
 
 on:
   release:
     types: [published]
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -48,7 +51,14 @@ jobs:
 
       - name: Extract version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        # Release events use the tag (v1.2.3); push/dispatch events get a
+        # SHA-based tag — refs/heads/main would be an invalid image tag.
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=sha-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
