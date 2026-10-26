@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,10 +36,53 @@ class ScheduleCard extends ConsumerWidget {
           child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      // 403 = user lacks schedule:read (e.g. a JWT issued before the
+      // permission was seeded — fixed by re-login/refresh). Hide rather
+      // than tease a control they cannot use. Transient errors get a
+      // small retry row so a network blip doesn't hide the feature.
+      error: (err, _) => _isForbidden(err)
+          ? const SizedBox.shrink()
+          : _ErrorCard(onRetry: () =>
+              ref.invalidate(machineScheduleProvider(machineId))),
       data: (s) => s == null
           ? _EmptyCard(machineId: machineId)
           : _ConfiguredCard(machineId: machineId, schedule: s, l10n: l10n),
+    );
+  }
+
+  bool _isForbidden(Object err) =>
+      err is DioException && err.response?.statusCode == 403;
+}
+
+/// Compact retry row shown when the schedule fetch fails transiently —
+/// network/5xx errors shouldn't silently hide the feature card.
+class _ErrorCard extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _ErrorCard({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSurfaceCard(
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.schedule, size: 20,
+              color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              context.l10n.scheduleAutoTitle,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, size: 20),
+            onPressed: onRetry,
+          ),
+        ],
+      ),
     );
   }
 }
