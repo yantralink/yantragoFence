@@ -124,14 +124,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.splashTagline,
-                    textAlign: TextAlign.center,
-                    style: text.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
                   const SizedBox(height: 48),
 
                   // Identifier field (email or phone)
