@@ -40,11 +40,28 @@ class CommandRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              Text(
-                _typeLabel(l10n, command.commandType),
-                style: text.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
+              Row(
+                children: <Widget>[
+                  Text(
+                    _typeLabel(l10n, command.commandType),
+                    style: text.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (command.isScheduled) ...[
+                    const SizedBox(width: 6),
+                    Icon(Icons.schedule, size: 14,
+                        color: colors.onSurfaceVariant),
+                    const SizedBox(width: 2),
+                    Text(
+                      l10n.scheduleBadge,
+                      style: text.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               if (command.lastError != null)
                 Text(

@@ -21,6 +21,8 @@ public class CommandResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime completedAt;
+    private String source;
+    private UUID scheduleId;
 
     public CommandResponse() {}
 
@@ -28,6 +30,14 @@ public class CommandResponse {
                            String commandType, String status, Integer attemptCount, Integer maxAttempts,
                            String lastError, LocalDateTime createdAt, LocalDateTime updatedAt,
                            LocalDateTime completedAt) {
+        this(id, organizationId, machineId, deviceId, issuedBy, commandType, status, attemptCount,
+                maxAttempts, lastError, createdAt, updatedAt, completedAt, "USER", null);
+    }
+
+    public CommandResponse(UUID id, UUID organizationId, UUID machineId, UUID deviceId, UUID issuedBy,
+                           String commandType, String status, Integer attemptCount, Integer maxAttempts,
+                           String lastError, LocalDateTime createdAt, LocalDateTime updatedAt,
+                           LocalDateTime completedAt, String source, UUID scheduleId) {
         this.id = id;
         this.organizationId = organizationId;
         this.machineId = machineId;
@@ -41,6 +51,8 @@ public class CommandResponse {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.completedAt = completedAt;
+        this.source = source;
+        this.scheduleId = scheduleId;
     }
 
     public UUID getId() { return id; }
@@ -69,4 +81,8 @@ public class CommandResponse {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
     public LocalDateTime getCompletedAt() { return completedAt; }
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
+    public UUID getScheduleId() { return scheduleId; }
+    public void setScheduleId(UUID scheduleId) { this.scheduleId = scheduleId; }
 }

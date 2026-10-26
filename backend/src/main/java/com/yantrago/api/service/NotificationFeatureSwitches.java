@@ -50,6 +50,9 @@ public class NotificationFeatureSwitches {
     // Battery-state types (BatteryStateAlertService): MACHINE_CHARGING = internal
     // battery 10% (green bulb), FENCE_FAULT = internal battery 100% (red bulb).
     // OPEN transitions only — resolutions are silent by design.
+    // Scheduled fence ON/OFF (ScheduleExecutionService): EXECUTED = device
+    // confirmed, FAILED = terminally failed after retries, MISSED = stale ON
+    // slot not fired for safety.
     private static final Set<String> ALL_FAMILIES = Set.of(
             "LOW_BATTERY", "VOLTAGE_DROP", "GSM_SIGNAL_LOW",
             "DEVICE_OFFLINE", "SIM_EXPIRY",
@@ -58,7 +61,9 @@ public class NotificationFeatureSwitches {
             "MACHINE_ON", "MACHINE_OFF", "COMMAND_ACK", "COMMAND_FAILED",
             "MACHINE_MOVING", "GEOFENCE_BREACH",
             "ACC_ON",
-            "MACHINE_CHARGING", "FENCE_FAULT"
+            "MACHINE_CHARGING", "FENCE_FAULT",
+            "SCHEDULED_ON_EXECUTED", "SCHEDULED_OFF_EXECUTED",
+            "SCHEDULED_COMMAND_FAILED", "SCHEDULED_COMMAND_MISSED"
     );
 
     public NotificationFeatureSwitches(

@@ -45,6 +45,12 @@ public class MachineCommand extends BaseEntity {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Column(name = "source", nullable = false, length = 20)
+    private String source = "USER";
+
+    @Column(name = "schedule_id")
+    private java.util.UUID scheduleId;
+
     public java.util.UUID getOrganizationId() { return organizationId; }
     public void setOrganizationId(java.util.UUID organizationId) { this.organizationId = organizationId; }
     public java.util.UUID getMachineId() { return machineId; }
@@ -65,4 +71,8 @@ public class MachineCommand extends BaseEntity {
     public void setLastError(String lastError) { this.lastError = lastError; }
     public LocalDateTime getCompletedAt() { return completedAt; }
     public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
+    public java.util.UUID getScheduleId() { return scheduleId; }
+    public void setScheduleId(java.util.UUID scheduleId) { this.scheduleId = scheduleId; }
 }

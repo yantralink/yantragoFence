@@ -18,6 +18,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -108,7 +110,18 @@ class CommandServiceTest {
         request.setMachineId(machineId);
         request.setCommandType("ON");
 
-        CommandResponse response = commandService.createCommand(request);
+        // createCommand defers the RabbitMQ publish to afterCommit (race fix
+        // e4ab60e) — simulate the transaction boundary in the unit test.
+        TransactionSynchronizationManager.initSynchronization();
+        CommandResponse response;
+        try {
+            response = commandService.createCommand(request);
+            for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+                sync.afterCommit();
+            }
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
 
         assertEquals(commandId, response.getId());
         assertEquals("PENDING", response.getStatus());
@@ -172,7 +185,14 @@ class CommandServiceTest {
         request.setMachineId(machineId);
         request.setCommandType("ON");
 
-        commandService.createCommand(request);
+        // createCommand defers the RabbitMQ publish to afterCommit (race fix
+        // e4ab60e) — simulate the transaction boundary in the unit test.
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            commandService.createCommand(request);
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
 
         // SEC-02: machine access is now validated via MachineAccessPolicy
         verify(machineAccessPolicy).loadAndValidate(machineId);
@@ -321,9 +341,11 @@ class CommandServiceTest {
 
         commandService.recordAttempt(commandId, 2, "SENT", null);
 
-        // Verify attempt count was incremented on machine_commands
+        // Verify attempt count was incremented on machine_commands.
+        // recordAttempt saves the command twice: once to persist lastError
+        // early, and again when incrementing attemptCount for a new attempt.
         ArgumentCaptor<MachineCommand> commandCaptor = ArgumentCaptor.forClass(MachineCommand.class);
-        verify(commandRepository).save(commandCaptor.capture());
+        verify(commandRepository, times(2)).save(commandCaptor.capture());
         assertEquals(2, commandCaptor.getValue().getAttemptCount());
 
         // Verify a CommandAttempt row was persisted

@@ -16,6 +16,8 @@ class Command {
   final String? lastError;
   final DateTime? completedAt;
   final DateTime createdAt;
+  final String source;
+  final String? scheduleId;
 
   const Command({
     required this.id,
@@ -29,6 +31,8 @@ class Command {
     this.lastError,
     this.completedAt,
     required this.createdAt,
+    this.source = 'USER',
+    this.scheduleId,
   });
 
   factory Command.fromJson(Map<String, dynamic> json) {
@@ -44,6 +48,8 @@ class Command {
       lastError: json['lastError'] as String?,
       completedAt: AppDateUtils.parse(json['completedAt'] as String?),
       createdAt: AppDateUtils.parseStrict(json['createdAt'] as String),
+      source: json['source'] as String? ?? 'USER',
+      scheduleId: json['scheduleId'] as String?,
     );
   }
 
@@ -53,6 +59,10 @@ class Command {
   bool get isFailed => status == 'FAILED';
   bool get isTimeout => status == 'TIMEOUT';
   bool get isTerminal => isDone || isFailed || isTimeout;
+
+  /// True when this command was fired by an automatic schedule rather
+  /// than a user tapping ON/OFF (source='SCHEDULE' on machine_commands).
+  bool get isScheduled => source == 'SCHEDULE';
 
   /// Returns a copy of this command with the given fields replaced.
   /// A null argument means "keep the existing value" for that field.
@@ -74,6 +84,8 @@ class Command {
       lastError: lastError ?? this.lastError,
       completedAt: completedAt ?? this.completedAt,
       createdAt: createdAt,
+      source: source,
+      scheduleId: scheduleId,
     );
   }
 }

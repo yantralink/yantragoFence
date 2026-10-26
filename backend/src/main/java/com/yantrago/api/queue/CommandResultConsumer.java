@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yantrago.api.dto.command.CommandResponse;
 import com.yantrago.api.service.CommandService;
+import com.yantrago.api.service.ScheduleExecutionService;
 import com.yantrago.api.websocket.CommandBroadcastService;
 import com.yantrago.shared.queue.AlertTransitionMessage;
 import com.yantrago.shared.queue.CommandResultMessage;
@@ -36,15 +37,18 @@ public class CommandResultConsumer {
 
     private final CommandService commandService;
     private final CommandBroadcastService commandBroadcastService;
+    private final ScheduleExecutionService scheduleExecutionService;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
     public CommandResultConsumer(CommandService commandService,
                                  CommandBroadcastService commandBroadcastService,
+                                 ScheduleExecutionService scheduleExecutionService,
                                  JdbcTemplate jdbcTemplate,
                                  ObjectMapper objectMapper) {
         this.commandService = commandService;
         this.commandBroadcastService = commandBroadcastService;
+        this.scheduleExecutionService = scheduleExecutionService;
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
     }
@@ -83,11 +87,26 @@ public class CommandResultConsumer {
                     message.getCommandId(), e.getMessage(), e);
         }
 
-        try {
-            generateCommandNotification(response, message);
-        } catch (Exception e) {
-            log.error("Failed to generate command notification for commandId={}: {}",
-                    message.getCommandId(), e.getMessage(), e);
+        // Scheduled commands update their schedule_runs record and get
+        // schedule-specific notifications from ScheduleExecutionService —
+        // the generic MACHINE_ON/OFF/COMMAND_FAILED notifications are skipped
+        // so users can distinguish scheduled from manual commands and so
+        // failed retries don't push an alert per attempt.
+        if (CommandService.SOURCE_SCHEDULE.equals(response.getSource())) {
+            try {
+                scheduleExecutionService.onScheduledCommandResult(
+                        response, message.getStatus(), message.getError());
+            } catch (Exception e) {
+                log.error("Failed to update schedule run for commandId={}: {}",
+                        message.getCommandId(), e.getMessage(), e);
+            }
+        } else {
+            try {
+                generateCommandNotification(response, message);
+            } catch (Exception e) {
+                log.error("Failed to generate command notification for commandId={}: {}",
+                        message.getCommandId(), e.getMessage(), e);
+            }
         }
     }
 

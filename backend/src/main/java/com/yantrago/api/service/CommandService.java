@@ -41,6 +41,10 @@ public class CommandService {
 
     private static final Logger log = LoggerFactory.getLogger(CommandService.class);
 
+    /** Command origin values stored in machine_commands.source. */
+    public static final String SOURCE_USER = "USER";
+    public static final String SOURCE_SCHEDULE = "SCHEDULE";
+
     private final CommandRepository commandRepository;
     private final CommandAttemptRepository commandAttemptRepository;
     private final MachineRepository machineRepository;
@@ -76,7 +80,6 @@ public class CommandService {
 
     @Transactional
     public CommandResponse createCommand(CommandRequest request) {
-        UUID orgId = ownerContextService.getOrganizationId();
         UUID issuedBy = permissionEvaluator.getCurrentUserId();
 
         // SEC-02: validate machine access — org + customer assignment.
@@ -89,6 +92,29 @@ public class CommandService {
         if ("FENCING_ON".equals(commandType)) commandType = "ON";
         if ("FENCING_OFF".equals(commandType)) commandType = "OFF";
 
+        MachineCommand command = dispatch(machine, commandType, issuedBy, SOURCE_USER, null);
+        return toResponse(command);
+    }
+
+    /**
+     * Shared command dispatch — creates the audited machine_commands row and
+     * schedules the RabbitMQ publish after the surrounding transaction commits.
+     *
+     * Called by createCommand (source='USER') and ScheduleExecutionService
+     * (source='SCHEDULE'). organization_id is taken from the validated Machine
+     * entity — for the REST path it equals the JWT tenant; for the scheduler
+     * path (no HTTP context) it is the tenant recorded when the schedule was
+     * created. Never trusted from a request body (rules 7, 8).
+     *
+     * Per AGENTS.md rule 5: never assume success until ack is received.
+     * Per AGENTS.md rule 6: all commands auditable via machine_commands.
+     *
+     * Must be called inside an active transaction — the publish is deferred
+     * to afterCommit (see e4ab60e race fix).
+     */
+    @Transactional
+    public MachineCommand dispatch(Machine machine, String commandType, UUID issuedBy,
+                                   String source, UUID scheduleId) {
         // Find device bound to this machine via devices.machine_id (not serial_number)
         Device device = deviceRepository.findByMachineId(machine.getId()).orElse(null);
         UUID deviceId = device != null ? device.getId() : null;
@@ -99,7 +125,7 @@ public class CommandService {
         }
 
         MachineCommand command = new MachineCommand();
-        command.setOrganizationId(orgId);
+        command.setOrganizationId(machine.getOrganizationId());
         command.setMachineId(machine.getId());
         command.setDeviceId(deviceId);
         command.setIssuedBy(issuedBy);
@@ -107,14 +133,15 @@ public class CommandService {
         command.setStatus(CommandStateMachine.CommandState.PENDING.name());
         command.setAttemptCount(0);
         command.setMaxAttempts(3);
+        command.setSource(source);
+        command.setScheduleId(scheduleId);
 
         command = commandRepository.save(command);
-        log.info("Created command id={} machineId={} type={} issuedBy={}",
-                command.getId(), command.getMachineId(), command.getCommandType(), issuedBy);
+        log.info("Created command id={} machineId={} type={} issuedBy={} source={} scheduleId={}",
+                command.getId(), command.getMachineId(), command.getCommandType(), issuedBy, source, scheduleId);
 
         // Publish command to RabbitMQ for the device gateway to consume.
         // Per AGENTS.md rule 4: device communication is asynchronous via RabbitMQ.
-        // Per AGENTS.md rule 5: never assume success until ack is received.
         //
         // Defer publish until after the transaction commits to avoid a race condition:
         // if we publish inside the transaction, the gateway can process the command and
@@ -131,7 +158,7 @@ public class CommandService {
             }
         });
 
-        return toResponse(command);
+        return command;
     }
 
     @Transactional(readOnly = true)
@@ -283,7 +310,9 @@ public class CommandService {
                 c.getLastError(),
                 c.getCreatedAt(),
                 c.getUpdatedAt(),
-                c.getCompletedAt()
+                c.getCompletedAt(),
+                c.getSource(),
+                c.getScheduleId()
         );
     }
 }

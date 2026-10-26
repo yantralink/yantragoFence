@@ -31,6 +31,7 @@ class CommandResultConsumerTest {
 
     private CommandService commandService;
     private CommandBroadcastService commandBroadcastService;
+    private com.yantrago.api.service.ScheduleExecutionService scheduleExecutionService;
     private JdbcTemplate jdbcTemplate;
     private ObjectMapper objectMapper;
     private CommandResultConsumer consumer;
@@ -45,11 +46,12 @@ class CommandResultConsumerTest {
     void setUp() {
         commandService = mock(CommandService.class);
         commandBroadcastService = mock(CommandBroadcastService.class);
+        scheduleExecutionService = mock(com.yantrago.api.service.ScheduleExecutionService.class);
         jdbcTemplate = mock(JdbcTemplate.class);
         objectMapper = new ObjectMapper().findAndRegisterModules();
 
         consumer = new CommandResultConsumer(commandService, commandBroadcastService,
-                jdbcTemplate, objectMapper);
+                scheduleExecutionService, jdbcTemplate, objectMapper);
     }
 
     private CommandResponse commandResponse(String commandType, String status) {
@@ -164,6 +166,25 @@ class CommandResultConsumerTest {
 
         consumer.handleCommandResult(resultMessage("PENDING", null, 1));
 
+        verify(jdbcTemplate, never()).update(anyString(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("SCHEDULE-source command routes to ScheduleExecutionService and skips generic notification")
+    void scheduledCommand_routesToScheduleExecution() {
+        UUID scheduleId = UUID.randomUUID();
+        CommandResponse response = new CommandResponse(
+                commandId, orgId, machineId, deviceId, issuedBy,
+                "ON", "DONE", 1, 3, null,
+                LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now(),
+                "SCHEDULE", scheduleId);
+        when(commandService.transitionCommand(eq(commandId), eq("DONE"), any()))
+                .thenReturn(response);
+
+        consumer.handleCommandResult(resultMessage("DONE", null, 1));
+
+        verify(scheduleExecutionService).onScheduledCommandResult(eq(response), eq("DONE"), isNull());
+        // generic command notifications must not be written for scheduled commands
         verify(jdbcTemplate, never()).update(anyString(), any(), any(), any(), any(), any(), any());
     }
 

@@ -224,6 +224,19 @@ public class NotificationPreferenceService {
                         List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
                 new EventCatalogDto("FENCE_FAULT", "Fence Fault",
                         "Triggered when the machine's internal battery reports the fence fault state (100%) — red bulb.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                // Automatic fence ON/OFF scheduling (ScheduleExecutionService)
+                new EventCatalogDto("SCHEDULED_ON_EXECUTED", "Scheduled Turn On",
+                        "Triggered when a scheduled fence ON command is confirmed by the device.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                new EventCatalogDto("SCHEDULED_OFF_EXECUTED", "Scheduled Turn Off",
+                        "Triggered when a scheduled fence OFF command is confirmed by the device.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                new EventCatalogDto("SCHEDULED_COMMAND_FAILED", "Scheduled Command Failed",
+                        "Triggered when a scheduled ON/OFF command fails after all retries — fence state unchanged.",
+                        List.of("PUSH", "EMAIL", "SMS", "IN_APP")),
+                new EventCatalogDto("SCHEDULED_COMMAND_MISSED", "Scheduled Command Missed",
+                        "Triggered when a scheduled ON slot was missed and was not executed for safety.",
                         List.of("PUSH", "EMAIL", "SMS", "IN_APP"))
         );
     }

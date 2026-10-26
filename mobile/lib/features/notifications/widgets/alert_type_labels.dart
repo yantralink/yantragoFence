@@ -44,6 +44,14 @@ String alertTypeLabel(AppLocalizations l10n, String alertType) {
       return l10n.alertMachineCharging;
     case 'FENCE_FAULT':
       return l10n.alertFenceFault;
+    case 'SCHEDULED_ON_EXECUTED':
+      return l10n.alertScheduledOnExecuted;
+    case 'SCHEDULED_OFF_EXECUTED':
+      return l10n.alertScheduledOffExecuted;
+    case 'SCHEDULED_COMMAND_FAILED':
+      return l10n.alertScheduledCommandFailed;
+    case 'SCHEDULED_COMMAND_MISSED':
+      return l10n.alertScheduledCommandMissed;
     default:
       return alertType.replaceAll('_', ' ');
   }

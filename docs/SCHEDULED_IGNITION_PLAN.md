@@ -1,6 +1,6 @@
 # Scheduled Ignition ON/OFF — Implementation Plan
 
-Status: **DRAFT — awaiting user review**
+Status: **SUPERSEDED — see docs/SCHEDULED_FENCE_ONOFF_IMPLEMENTATION.md**
 Created: 2026-09-25
 Scope: Backend + Mobile (scheduler, API, notifications, UI)
 

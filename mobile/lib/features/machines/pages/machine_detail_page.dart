@@ -13,6 +13,8 @@ import 'package:yantrago/features/machines/widgets/location_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_info_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_telemetry_grid.dart';
 import 'package:yantrago/features/machines/widgets/on_off_button.dart';
+import 'package:yantrago/features/schedules/providers/schedule_provider.dart';
+import 'package:yantrago/features/schedules/widgets/schedule_card.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
 /// Machine detail page — shows machine info, location, telemetry, and
@@ -54,6 +56,7 @@ class MachineDetailPage extends ConsumerWidget {
             ref.invalidate(machineTelemetryProvider(machineId));
             ref.invalidate(machineLocationProvider(machineId));
             ref.invalidate(machineAddressProvider(machineId));
+            ref.invalidate(machineScheduleProvider(machineId));
             await Future.wait([
               ref.read(machineDetailProvider(machineId).future),
               ref.read(machineTelemetryProvider(machineId).future),
@@ -84,6 +87,8 @@ class MachineDetailPage extends ConsumerWidget {
                 MachineTelemetryGrid(machine: m),
                 const SizedBox(height: 16),
                 OnOffButton(machineId: m.id, imei: m.imei ?? ''),
+                const SizedBox(height: 8),
+                ScheduleCard(machineId: m.id),
                 const SizedBox(height: 8),
                 LocationCard(machineId: m.id),
                 const SizedBox(height: 12),

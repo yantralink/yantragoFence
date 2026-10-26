@@ -146,6 +146,18 @@ alert:
     batch-size: ${ALERT_EXPIRY_BATCH_SIZE:100}
     lease-seconds: ${ALERT_EXPIRY_LEASE_SECONDS:30}
 
+# Automatic fence ON/OFF scheduling (docs/SCHEDULED_FENCE_ONOFF_IMPLEMENTATION.md)
+schedule:
+  execution:
+    enabled: ${SCHEDULE_EXECUTION_ENABLED:true}          # kill switch — disables the engine without deploy
+  tick-ms: ${SCHEDULE_TICK_MS:30000}                     # scheduler tick interval
+  max-attempts: ${SCHEDULE_MAX_ATTEMPTS:3}               # dispatch attempts per run (gateway has no retry)
+  on-catchup-minutes: ${SCHEDULE_ON_CATCHUP_MINUTES:15}  # max lateness for a missed ON (safety cap)
+  retry-interval-minutes: ${SCHEDULE_RETRY_INTERVAL_MINUTES:5}    # re-dispatch spacing for failed runs
+  dispatch-timeout-minutes: ${SCHEDULE_DISPATCH_TIMEOUT_MINUTES:5} # stuck DISPATCHED reconciliation
+  runs-retention-days: ${SCHEDULE_RUNS_RETENTION_DAYS:90}          # schedule_runs cleanup
+  cleanup-cron: ${SCHEDULE_CLEANUP_CRON:0 0 3 * * *}               # daily 03:00
+
 # Geo-fence auto-creation (Phase 11)
 # Auto-creation on first GPS is DISABLED. Customers must explicitly enable
 # theft protection after installing the machine on their farm via the

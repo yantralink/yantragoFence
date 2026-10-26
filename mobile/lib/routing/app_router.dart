@@ -10,6 +10,7 @@ import 'package:yantrago/features/commands/pages/command_history_page.dart';
 import 'package:yantrago/features/machines/pages/machine_list_page.dart';
 import 'package:yantrago/features/machines/pages/machine_detail_page.dart';
 import 'package:yantrago/features/machines/pages/machine_location_map_page.dart';
+import 'package:yantrago/features/schedules/pages/schedule_edit_page.dart';
 import 'package:yantrago/features/alerts/pages/alert_detail_page.dart';
 import 'package:yantrago/features/alerts/pages/alerts_page.dart';
 import 'package:yantrago/features/analytics/pages/analytics_page.dart';
@@ -86,6 +87,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/app/machines/:id/location',
             builder: (context, state) => MachineLocationMapPage(
+              machineId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: '/app/machines/:id/schedule',
+            builder: (context, state) => ScheduleEditPage(
               machineId: state.pathParameters['id']!,
             ),
           ),
