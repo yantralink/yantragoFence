@@ -1,4 +1,12 @@
-# Deploy Production — deploy on release tag (v*.*.*) and every push to main.
+# Deploy Production — build JARs in CI, upload to the production server,
+# restart services. Same proven flow as deploy-staging.yml, different host.
+#
+# Server layout (see /opt/yantrago):
+#   backend/app.jar, gateway/app.jar — systemd services
+#     (yantrago-backend.service, yantrago-gateway.service)
+#   config/ — application-prod.yml, push.env, etc. (managed on the server)
+#
+# Flyway migrations apply automatically when the backend boots.
 name: Deploy Production
 
 on:
@@ -10,7 +18,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   deploy:
@@ -39,66 +46,61 @@ jobs:
       - name: Build gateway JAR
         run: ./gradlew :device-gateway:bootJar -x test --no-daemon
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.DOCKER_REGISTRY }}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Extract version
-        id: version
-        # Release events use the tag (v1.2.3); push/dispatch events get a
-        # SHA-based tag — refs/heads/main would be an invalid image tag.
+      - name: Stage JARs for upload
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "VERSION=sha-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
-          fi
+          mkdir -p deploy/backend deploy/gateway
+          cp backend/build/libs/backend-1.0.0.jar deploy/backend/app.jar
+          cp device-gateway/build/libs/device-gateway-1.0.0.jar deploy/gateway/app.jar
+          ls -la deploy/backend deploy/gateway
 
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
+      - name: Upload backend JAR
+        # SEC-12: Pinned to immutable commit SHA (not @v0.1.7 tag).
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
         with:
-          context: .
-          file: infra/docker/Dockerfile.backend
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_REGISTRY }}/yantrago-backend:latest
-            ${{ secrets.DOCKER_REGISTRY }}/yantrago-backend:${{ steps.version.outputs.VERSION }}
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          source: deploy/backend/app.jar
+          target: /opt/yantrago/backend/
+          strip_components: 2
 
-      - name: Build and push gateway image
-        uses: docker/build-push-action@v5
+      - name: Upload gateway JAR
+        # SEC-12: Pinned to immutable commit SHA (not @v0.1.7 tag).
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
         with:
-          context: .
-          file: infra/docker/Dockerfile.gateway
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_REGISTRY }}/yantrago-gateway:latest
-            ${{ secrets.DOCKER_REGISTRY }}/yantrago-gateway:${{ steps.version.outputs.VERSION }}
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          source: deploy/gateway/app.jar
+          target: /opt/yantrago/gateway/
+          strip_components: 2
 
-      - name: Deploy to production server
+      - name: Restart services and verify
         # SEC-12: Pinned to immutable commit SHA (not @v1.0.3 tag).
         uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USER }}
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          command_timeout: 10m
           script: |
-            cd /opt/yantrago
-            docker compose -f infra/docker/docker-compose.staging.yml pull
-            docker compose -f infra/docker/docker-compose.staging.yml up -d
-            # Public static pages (privacy policy) — required for Play listing.
-            # Repo may live at /opt/yantrago/repo or /opt/yantrago itself.
-            for SRC in /opt/yantrago/repo/infra/vultr/public-site /opt/yantrago/infra/vultr/public-site; do
-              if [ -d "$SRC" ]; then
-                mkdir -p /var/www/yantrago-public
-                cp -r "$SRC"/. /var/www/yantrago-public/
-                chown -R www-data:www-data /var/www/yantrago-public
+            set -e
+            systemctl restart yantrago-backend
+            systemctl restart yantrago-gateway
+            sleep 10
+            systemctl is-active yantrago-gateway
+            # Wait for the backend to come healthy (Flyway migrations run on boot)
+            for i in $(seq 1 30); do
+              if curl -sf http://localhost:8080/actuator/health | grep -q UP; then
+                echo "Backend healthy after ${i} checks"
                 break
               fi
+              if [ "$i" -eq 30 ]; then
+                echo "Backend failed to become healthy"
+                journalctl -u yantrago-backend -n 50 --no-pager
+                exit 1
+              fi
+              sleep 5
             done
-            docker image prune -f
+            systemctl is-active yantrago-backend yantrago-gateway
+            echo "Deploy complete"
