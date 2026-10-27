@@ -22,6 +22,7 @@ import 'package:yantrago/features/machines/providers/machine_location_provider.d
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
 import 'package:yantrago/features/machines/providers/telemetry_socket_provider.dart';
+import 'package:yantrago/features/schedules/providers/schedule_provider.dart';
 import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/machine_location.dart';
 import 'package:yantrago/models/telemetry.dart';
@@ -150,6 +151,8 @@ List<Override> _overrides({
     else
       machineAddressProvider('m1').overrideWith((ref) async => null),
     commandProvider.overrideWith((ref) => _FakeCommandNotifier(pending)),
+    // Stub the schedule card so it never hits the network.
+    machineScheduleProvider('m1').overrideWith((ref) async => null),
     // Stub the command socket so it never opens a real WebSocket in tests.
     commandSocketProvider('m1')
         .overrideWith((ref) => _StubCommandSocketController(ref, 'm1')),

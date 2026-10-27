@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:yantrago/core/config/theme.dart';
+import 'package:yantrago/l10n/generated/app_localizations.dart';
 import 'package:yantrago/features/schedules/models/machine_schedule.dart';
 import 'package:yantrago/features/schedules/providers/schedule_provider.dart';
 import 'package:yantrago/features/schedules/widgets/schedule_card.dart';
@@ -113,6 +114,8 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(body: ScheduleCard(machineId: 'm1')),
         ),
       );
