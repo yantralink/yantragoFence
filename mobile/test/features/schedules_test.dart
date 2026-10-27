@@ -106,7 +106,7 @@ void main() {
   });
 
   group('ScheduleCard', () {
-    Widget _app(AsyncValue<MachineSchedule?> schedule) {
+    Widget buildApp(AsyncValue<MachineSchedule?> schedule) {
       return ProviderScope(
         overrides: [
           machineScheduleProvider
@@ -122,7 +122,7 @@ void main() {
     }
 
     testWidgets('empty state shows the setup call-to-action', (tester) async {
-      await tester.pumpWidget(_app(const AsyncData(null)));
+      await tester.pumpWidget(buildApp(const AsyncData(null)));
       await tester.pumpAndSettle();
       expect(find.text('Auto Schedule'), findsOneWidget);
       expect(find.text('Set up automatic ON/OFF'), findsOneWidget);
@@ -130,7 +130,7 @@ void main() {
 
     testWidgets('configured state shows times, days and the edit action',
         (tester) async {
-      await tester.pumpWidget(_app(AsyncData(_schedule())));
+      await tester.pumpWidget(buildApp(AsyncData(_schedule())));
       await tester.pumpAndSettle();
       expect(find.text('Auto Schedule'), findsOneWidget);
       expect(find.text('Daily'), findsOneWidget);

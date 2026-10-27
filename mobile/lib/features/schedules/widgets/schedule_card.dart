@@ -105,8 +105,11 @@ class _EmptyCard extends StatelessWidget {
               Icon(Icons.schedule, size: 20,
                   color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
-              Text(l10n.scheduleAutoTitle,
-                  style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              Expanded(
+                child: Text(l10n.scheduleAutoTitle,
+                    style: text.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+              ),
             ],
           ),
           const SizedBox(height: 8),
