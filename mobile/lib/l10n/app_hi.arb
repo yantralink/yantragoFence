@@ -288,7 +288,7 @@
   "@mapConsentTitle": {
     "description": "Title of the consent prompt shown before any third-party map/geocoding transfer."
   },
-  "mapConsentMessage": "इस मशीन को नक्शे पर दिखाने के लिए, YantraGO OpenStreetMap से नक्शा टाइलें लोड करता है और पता जानने के लिए हमारे सुरक्षित सर्वर के माध्यम से मशीन के निर्देशांक एक मैप प्रदाता को भेज सकता है। केवल मशीन की स्थिति साझा होती है — आपका व्यक्तिगत स्थान कभी नहीं।",
+  "mapConsentMessage": "इस मशीन को नक्शे पर दिखाने के लिए, YantraGO OpenStreetMap से नक्शा टाइलें और Esri से सैटेलाइट चित्र लोड करता है और पता जानने के लिए हमारे सुरक्षित सर्वर के माध्यम से मशीन के निर्देशांक एक मैप प्रदाता को भेज सकता है। केवल मशीन की स्थिति साझा होती है — आपका व्यक्तिगत स्थान कभी नहीं।",
   "@mapConsentMessage": {
     "description": "Disclosure text for the map/geocoding third-party consent prompt."
   },
@@ -1389,5 +1389,29 @@
   "alertScheduledCommandMissed": "शेड्यूल कमांड छूट गया",
   "@alertScheduledCommandMissed": {"description": "Alert type label shown in notifications when a scheduled slot is missed."},
   "scheduleRecentRuns": "हाल के रन",
-  "@scheduleRecentRuns": {"description": "Section header above the schedule execution history on the edit page."}
+  "@scheduleRecentRuns": {"description": "Section header above the schedule execution history on the edit page."},
+  "statusMoving": "चल रही है",
+  "@statusMoving": {"description": "Status chip on the machine map when the machine is moving (speed above threshold)."},
+  "statusStopped": "रुकी हुई",
+  "@statusStopped": {"description": "Status chip on the machine map when the machine is stationary."},
+  "mapMachineOn": "मशीन ऑन",
+  "@mapMachineOn": {"description": "Status pill on the machine map when the machine is powered on."},
+  "mapMachineOff": "मशीन ऑफ",
+  "@mapMachineOff": {"description": "Status pill on the machine map when the machine is powered off."},
+  "mapFenceOn": "फेंस ऑन",
+  "@mapFenceOn": {"description": "Status pill on the machine map when the fence output is on."},
+  "mapFenceOff": "फेंस ऑफ",
+  "@mapFenceOff": {"description": "Status pill on the machine map when the fence output is off."},
+  "setSchedule": "शेड्यूल सेट करें",
+  "@setSchedule": {"description": "Action pill on the machine map that opens the schedule editor."},
+  "locationLabel": "स्थान",
+  "@locationLabel": {"description": "Small caption above the resolved address in the map location card."},
+  "theftProtectionSubtitle": "अनधिकृत हलचाल या छेड़छाड़ की सूचना पाएं",
+  "@theftProtectionSubtitle": {"description": "Subtitle under the Theft Protection title in the map info card."},
+  "mapLayers": "मैप लेयर",
+  "mapZoomIn": "ज़ूम इन",
+  "@mapZoomIn": {"description": "Tooltip for the map zoom-in control."},
+  "mapZoomOut": "ज़ूम आउट",
+  "@mapZoomOut": {"description": "Tooltip for the map zoom-out control."},
+  "@mapLayers": {"description": "Tooltip for the map layers toggle button (standard/satellite view)."}
 }

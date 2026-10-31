@@ -85,6 +85,12 @@ class MapConsentController extends AsyncNotifier<MapConsent> {
     }
   }
 
+  /// Stored-value format version. Bump when the disclosure scope changes
+  /// (v2 added Esri satellite imagery to the tile providers) so choices
+  /// made under an older disclosure require a fresh opt-in.
+  static const String _disclosureVersion = 'v2';
+
   String _storedValue((String, String?) account, MapConsent value) =>
-      jsonEncode([account.$1, account.$2, value.name]);
+      jsonEncode(
+          [account.$1, account.$2, _disclosureVersion, value.name]);
 }

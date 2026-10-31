@@ -54,7 +54,9 @@ class AppConfig {
   static const String customerSettingsEndpoint = '/api/v1/customer/settings';
 
   // WebSocket STOMP destinations
-  static const String wsTopicLocation = '/topic/locations';
+  static const String wsTopicLocation = '/topic/location';
+  static String wsTopicLocationMachine(String machineId) =>
+      '$wsTopicLocation/$machineId';
   static const String wsTopicTelemetry = '/topic/telemetry';
   static String wsTopicTelemetryMachine(String machineId) =>
       '/topic/telemetry/$machineId';
