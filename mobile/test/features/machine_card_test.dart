@@ -29,7 +29,8 @@ const _address = ResolvedAddress(
 
 Machine _machine({
   bool online = true,
-  String status = 'FENCING_OFF',
+  String status = 'ACTIVE',
+  String? fencingState = 'OFF',
   String name = 'Accenture Machine 2',
 }) => Machine(
   id: 'm1',
@@ -37,6 +38,7 @@ Machine _machine({
   name: name,
   status: status,
   isOnline: online,
+  fencingState: fencingState,
   createdAt: DateTime(2026),
   lastSeenAt: DateTime.now(),
 );
@@ -111,10 +113,10 @@ void main() {
   testWidgets('online alone never confirms OFF; explicit ON remains separate', (
     tester,
   ) async {
-    await _pump(tester, machine: _machine(status: 'ACTIVE'));
+    await _pump(tester, machine: _machine(fencingState: 'UNKNOWN'));
     expect(find.text('Online'), findsOneWidget);
     expect(find.textContaining('confirmed'), findsNothing);
-    await _pump(tester, machine: _machine(status: 'FENCING_ON'));
+    await _pump(tester, machine: _machine(fencingState: 'ON'));
     expect(find.text('Online'), findsOneWidget);
     expect(find.text('Fence ON · confirmed'), findsOneWidget);
   });

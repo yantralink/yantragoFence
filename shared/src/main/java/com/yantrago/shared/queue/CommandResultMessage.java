@@ -26,6 +26,7 @@ public class CommandResultMessage implements Serializable {
     private UUID commandId;
     private String status;
     private int attemptCount;
+    private String fencingState; // device-reported ON | OFF | UNKNOWN, null = not reported
     private String error;
     private Instant timestamp;
 
@@ -62,6 +63,14 @@ public class CommandResultMessage implements Serializable {
 
     public void setAttemptCount(int attemptCount) {
         this.attemptCount = attemptCount;
+    }
+
+    public String getFencingState() {
+        return fencingState;
+    }
+
+    public void setFencingState(String fencingState) {
+        this.fencingState = fencingState;
     }
 
     public String getError() {

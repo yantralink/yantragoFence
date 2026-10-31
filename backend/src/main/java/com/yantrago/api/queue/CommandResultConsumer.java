@@ -63,7 +63,8 @@ public class CommandResultConsumer {
         CommandResponse response = commandService.transitionCommand(
                 message.getCommandId(),
                 message.getStatus(),
-                message.getError()
+                message.getError(),
+                message.getFencingState()
         );
 
         if (message.getAttemptCount() > 0) {
@@ -109,6 +110,7 @@ public class CommandResultConsumer {
             }
         }
     }
+
 
     /**
      * Writes an AlertTransitionMessage to the event_outbox for command lifecycle

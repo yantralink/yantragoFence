@@ -119,6 +119,10 @@ public class TelemetryConsumer {
                     ? readBatteryPct(message.getDeviceId())
                     : null;
 
+            if (message.getFencingState() != null) {
+                updateRelayState(message.getDeviceId(), orgId, message.getFencingState(), recordedAt);
+            }
+
             // Update latest device state on the devices table for fast API lookup.
             // Only update fields that are present in the message (null = no data).
             boolean deviceStateUpdated = updateDeviceState(message.getDeviceId(), message.getBattery(),
@@ -173,6 +177,22 @@ public class TelemetryConsumer {
         List<Double> rows = jdbcTemplate.queryForList(
                 "SELECT battery_pct FROM devices WHERE id = ?", Double.class, deviceId);
         return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    private void updateRelayState(UUID deviceId, UUID orgId,
+                                  String fencingState, LocalDateTime recordedAt) {
+        String relayState = "ON".equals(fencingState) ? "ON"
+                : "OFF".equals(fencingState) ? "OFF" : "UNKNOWN";
+        jdbcTemplate.update(
+                "INSERT INTO device_states (device_id, organization_id, online, relay_state, last_seen_at) " +
+                        "VALUES (?, ?, ?, ?, ?) " +
+                        "ON CONFLICT (device_id) DO UPDATE SET " +
+                        "online = EXCLUDED.online, " +
+                        "relay_state = EXCLUDED.relay_state, " +
+                        "last_seen_at = EXCLUDED.last_seen_at, " +
+                        "updated_at = now()",
+                deviceId, orgId, true, relayState, recordedAt
+        );
     }
 
     /**

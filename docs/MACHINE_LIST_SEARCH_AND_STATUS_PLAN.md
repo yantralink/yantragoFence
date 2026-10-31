@@ -294,3 +294,23 @@ Outstanding gaps / limits:
 Latest verification supersedes the earlier test counts: **321 non-golden mobile tests passed**, plus **2 machine-card golden comparisons passed** against unchanged baselines. The debug APK was rebuilt successfully at the same path. Analysis retains **66 pre-existing informational findings**; no new findings remain from this recheck.
 
 No further implementation phase has started. Phase 1 should not be described as fully signed off for live confirmed-state behavior until the contract gap and user verification are addressed.
+## Phase 2 implementation checkpoint — authoritative fencing state
+
+Implemented an authoritative fence-state contract using the existing `device_states.relay_state` column; no database migration was required.
+
+- `TelemetryMessage` and `CommandResultMessage` now carry an optional `fencingState` value: `ON`, `OFF`, or `UNKNOWN`.
+- Fencing protocol packets and command replies forward the actual device-reported state. Fault/undetected states map to `UNKNOWN`; missing evidence never becomes confirmed `OFF`.
+- `CommandService.transitionCommand` persists a reported state only when the command reaches `DONE`, inside the command transaction. ACK/QUEUED/SENT/FAILED/TIMEOUT do not overwrite the last confirmed state.
+- Telemetry ingestion upserts unsolicited device-reported fencing state into `device_states`.
+- `MachineDto` and `MachineStatusDto` expose `fencingState`, defaulting to `UNKNOWN`. Lifecycle `status`, `isOnline`, ACC ignition and fence relay state remain separate.
+- Mobile `Machine` parses `fencingState`; the machine card and detail status logic show confirmed ON/OFF only from the authoritative field and otherwise show “State unknown.”
+
+Validation performed:
+
+- Full Gradle suite (`./gradlew test --no-daemon`): **passed**.
+- Focused backend/gateway tests cover command-result state propagation, missing state, telemetry-state persistence, forwarding and protocol command-reply contracts: **passed**.
+- Full mobile suite (`/d/flutter/bin/flutter test`): **333 tests passed**.
+- Focused Flutter analysis for changed files: **no issues found**.
+- `git diff --check`: **passed**.
+
+Remaining live-system caveat: real devices must send a fencing-state packet or a command reply containing the resulting state for `ON`/`OFF` to appear. Before the first authoritative report, the API correctly returns `UNKNOWN`.

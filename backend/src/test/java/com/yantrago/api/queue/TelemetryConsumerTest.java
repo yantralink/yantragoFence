@@ -20,6 +20,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -129,6 +130,22 @@ class TelemetryConsumerTest {
         verify(telemetryBroadcastService).broadcastTelemetry(
                 eq(machineId), eq(deviceId),
                 eq(null), eq(60.0), eq(3), eq(true), eq(true), any()
+        );
+    }
+
+    @Test
+    @DisplayName("handleTelemetry should persist device-reported fencing state")
+    void handleTelemetry_shouldPersistReportedFencingState() {
+        TelemetryMessage msg = new TelemetryMessage(
+                deviceId, imei, null, null, null, Instant.now()
+        );
+        msg.setFencingState("OFF");
+
+        consumer.handleTelemetry(msg);
+
+        verify(jdbcTemplate).update(
+                contains("INSERT INTO device_states"),
+                eq(deviceId), eq(orgId), eq(true), eq("OFF"), any()
         );
     }
 

@@ -19,6 +19,7 @@ public class TelemetryMessage implements Serializable {
     private Integer gsmSignal;
     private Boolean charging;  // true = external power connected, false = on battery
     private Boolean ignitionOn;  // true = ACC high (engine on), false = ACC low, null = unknown
+    private String fencingState; // ON | OFF | UNKNOWN, null = not reported
     private Instant timestamp;
 
     public TelemetryMessage() {
@@ -99,6 +100,14 @@ public class TelemetryMessage implements Serializable {
 
     public void setIgnitionOn(Boolean ignitionOn) {
         this.ignitionOn = ignitionOn;
+    }
+
+    public String getFencingState() {
+        return fencingState;
+    }
+
+    public void setFencingState(String fencingState) {
+        this.fencingState = fencingState;
     }
 
     public Instant getTimestamp() {

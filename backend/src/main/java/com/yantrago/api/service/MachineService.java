@@ -13,6 +13,7 @@ import com.yantrago.api.model.MachineAssignment;
 import com.yantrago.api.repository.AlertRuleRepository;
 import com.yantrago.api.repository.CustomerRepository;
 import com.yantrago.api.repository.DeviceRepository;
+import com.yantrago.api.repository.DeviceStateRepository;
 import com.yantrago.api.repository.MachineAssignmentRepository;
 import com.yantrago.api.repository.MachineRepository;
 import com.yantrago.api.security.MachineAccessPolicy;
@@ -46,6 +47,7 @@ public class MachineService {
 
     private final MachineRepository machineRepository;
     private final DeviceRepository deviceRepository;
+    private final DeviceStateRepository deviceStateRepository;
     private final CustomerRepository customerRepository;
     private final MachineAssignmentRepository machineAssignmentRepository;
     private final OwnerContextService ownerContextService;
@@ -55,6 +57,7 @@ public class MachineService {
 
     public MachineService(MachineRepository machineRepository,
                           DeviceRepository deviceRepository,
+                          DeviceStateRepository deviceStateRepository,
                           CustomerRepository customerRepository,
                           MachineAssignmentRepository machineAssignmentRepository,
                           OwnerContextService ownerContextService,
@@ -63,6 +66,7 @@ public class MachineService {
                           AlertRuleRepository alertRuleRepository) {
         this.machineRepository = machineRepository;
         this.deviceRepository = deviceRepository;
+        this.deviceStateRepository = deviceStateRepository;
         this.customerRepository = customerRepository;
         this.machineAssignmentRepository = machineAssignmentRepository;
         this.ownerContextService = ownerContextService;
@@ -113,7 +117,12 @@ public class MachineService {
         // SEC-02: customer-level authorization was missing here — a customer
         // could read status for any machine in their org.
         Machine machine = machineAccessPolicy.loadAndValidate(id);
-        return new MachineStatusDto(machine.getId(), machine.getStatus(), machine.getIsOnline(), machine.getLastSeenAt());
+        String fencingState = deviceRepository.findByMachineId(id)
+                .flatMap(device -> deviceStateRepository.findById(device.getId()))
+                .map(com.yantrago.api.model.DeviceState::getRelayState)
+                .orElse("UNKNOWN");
+        return new MachineStatusDto(machine.getId(), machine.getStatus(), machine.getIsOnline(),
+                machine.getLastSeenAt(), fencingState);
     }
 
     /**
@@ -421,6 +430,8 @@ public class MachineService {
             dto.setVoltage(device.getVoltage());
             dto.setIgnitionOn(device.getIgnitionOn());
             dto.setLastTelemetryAt(device.getLastTelemetryAt());
+            deviceStateRepository.findById(device.getId())
+                    .ifPresent(state -> dto.setFencingState(state.getRelayState()));
         });
         // Populate customer name if assigned
         if (m.getCustomerId() != null) {

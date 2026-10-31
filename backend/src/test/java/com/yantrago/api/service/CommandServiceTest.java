@@ -10,6 +10,7 @@ import com.yantrago.api.queue.CommandProducer;
 import com.yantrago.api.repository.CommandAttemptRepository;
 import com.yantrago.api.repository.CommandRepository;
 import com.yantrago.api.repository.DeviceRepository;
+import com.yantrago.api.repository.DeviceStateRepository;
 import com.yantrago.api.repository.MachineRepository;
 import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.PermissionEvaluator;
@@ -42,6 +43,7 @@ class CommandServiceTest {
     private CommandAttemptRepository commandAttemptRepository;
     private MachineRepository machineRepository;
     private DeviceRepository deviceRepository;
+    private DeviceStateRepository deviceStateRepository;
     private CommandStateMachine stateMachine;
     private OwnerContextService ownerContextService;
     private TenantGuard tenantGuard;
@@ -52,6 +54,7 @@ class CommandServiceTest {
 
     private final UUID orgId = UUID.randomUUID();
     private final UUID machineId = UUID.randomUUID();
+    private final UUID deviceId = UUID.randomUUID();
     private final UUID userId = UUID.randomUUID();
     private final UUID commandId = UUID.randomUUID();
 
@@ -61,6 +64,7 @@ class CommandServiceTest {
         commandAttemptRepository = mock(CommandAttemptRepository.class);
         machineRepository = mock(MachineRepository.class);
         deviceRepository = mock(DeviceRepository.class);
+        deviceStateRepository = mock(DeviceStateRepository.class);
         stateMachine = new CommandStateMachine();
         ownerContextService = mock(OwnerContextService.class);
         tenantGuard = mock(TenantGuard.class);
@@ -70,7 +74,7 @@ class CommandServiceTest {
 
         commandService = new CommandService(
                 commandRepository, commandAttemptRepository, machineRepository, deviceRepository,
-                stateMachine, ownerContextService, tenantGuard, machineAccessPolicy,
+                deviceStateRepository, stateMachine, ownerContextService, tenantGuard, machineAccessPolicy,
                 permissionEvaluator, commandProducer
         );
     }
@@ -291,6 +295,52 @@ class CommandServiceTest {
         CommandResponse response = commandService.transitionCommand(commandId, "DONE", null);
 
         assertNotNull(response.getCompletedAt());
+    }
+
+
+    @Test
+    @DisplayName("DONE result should persist device-reported fence state")
+    void transitionCommand_doneWithReportedState_shouldPersistRelayState() {
+        MachineCommand command = new MachineCommand();
+        command.setId(commandId);
+        command.setOrganizationId(orgId);
+        command.setMachineId(machineId);
+        command.setDeviceId(deviceId);
+        command.setCommandType("ON");
+        command.setStatus("ACK");
+        command.setCreatedAt(LocalDateTime.now());
+        when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
+        when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(deviceStateRepository.findById(deviceId)).thenReturn(Optional.empty());
+
+        commandService.transitionCommand(commandId, "DONE", null, "OFF");
+
+        ArgumentCaptor<com.yantrago.api.model.DeviceState> captor =
+                ArgumentCaptor.forClass(com.yantrago.api.model.DeviceState.class);
+        verify(deviceStateRepository).save(captor.capture());
+        assertEquals(deviceId, captor.getValue().getDeviceId());
+        assertEquals(orgId, captor.getValue().getOrganizationId());
+        assertEquals("OFF", captor.getValue().getRelayState());
+        assertTrue(captor.getValue().getOnline());
+    }
+
+    @Test
+    @DisplayName("DONE result without reported state should not overwrite relay state")
+    void transitionCommand_doneWithoutReportedState_shouldNotPersistRelayState() {
+        MachineCommand command = new MachineCommand();
+        command.setId(commandId);
+        command.setOrganizationId(orgId);
+        command.setMachineId(machineId);
+        command.setDeviceId(deviceId);
+        command.setCommandType("OFF");
+        command.setStatus("ACK");
+        command.setCreatedAt(LocalDateTime.now());
+        when(commandRepository.findById(commandId)).thenReturn(Optional.of(command));
+        when(commandRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        commandService.transitionCommand(commandId, "DONE", null, null);
+
+        verify(deviceStateRepository, never()).save(any());
     }
 
     @Test

@@ -42,7 +42,7 @@ class CommandResultServiceTest {
     void processCommandReply_shouldPublishAckThenDoneOnSuccess() {
         when(pendingCommandRegistry.remove(imei)).thenReturn(commandId);
 
-        commandResultService.processCommandReply(imei, true, "OK", true);
+        commandResultService.processCommandReply(imei, true, "OK", "ON");
 
         ArgumentCaptor<CommandResultMessage> captor = ArgumentCaptor.forClass(CommandResultMessage.class);
         verify(commandResultProducer, times(2)).publishCommandResult(captor.capture());
@@ -52,6 +52,8 @@ class CommandResultServiceTest {
         assertEquals(CommandResultMessage.STATUS_DONE, messages.get(1).getStatus());
         assertNull(messages.get(0).getError());
         assertNull(messages.get(1).getError());
+        assertEquals("ON", messages.get(0).getFencingState());
+        assertEquals("ON", messages.get(1).getFencingState());
     }
 
     @Test
@@ -59,7 +61,7 @@ class CommandResultServiceTest {
     void processCommandReply_shouldPublishFailedOnFailure() {
         when(pendingCommandRegistry.remove(imei)).thenReturn(commandId);
 
-        commandResultService.processCommandReply(imei, false, "Device error", false);
+        commandResultService.processCommandReply(imei, false, "Device error", "OFF");
 
         ArgumentCaptor<CommandResultMessage> captor = ArgumentCaptor.forClass(CommandResultMessage.class);
         verify(commandResultProducer, times(1)).publishCommandResult(captor.capture());
@@ -72,7 +74,7 @@ class CommandResultServiceTest {
     void processCommandReply_shouldIgnoreWhenNoPendingCommand() {
         when(pendingCommandRegistry.remove(imei)).thenReturn(null);
 
-        commandResultService.processCommandReply(imei, true, "OK", true);
+        commandResultService.processCommandReply(imei, true, "OK", "ON");
 
         verify(commandResultProducer, never()).publishCommandResult(any());
     }

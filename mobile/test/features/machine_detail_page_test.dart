@@ -33,6 +33,7 @@ Machine _machine({
   String machineId = 'YG-001',
   String? imei = '000000000000001',
   String status = 'OFFLINE',
+  String? fencingState,
   bool isOnline = false,
   String? protocolType = 'CONCOX_V5',
   String? model,
@@ -48,6 +49,7 @@ Machine _machine({
     name: name,
     imei: imei,
     status: status,
+    fencingState: fencingState,
     isOnline: isOnline,
     protocolType: protocolType,
     model: model,
@@ -202,7 +204,7 @@ void main() {
   testWidgets('shows online success badge for online machine', (tester) async {
     await _pump(
       tester,
-      _overrides(machine: _machine(status: 'FENCING_ON', isOnline: true)),
+      _overrides(machine: _machine(fencingState: 'ON', isOnline: true)),
     );
     expect(find.text('Online'), findsOneWidget);
   });

@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -76,7 +77,7 @@ class CommandResultConsumerTest {
     @DisplayName("FAILED transition should write outbox event with error text in message field")
     void failedTransition_shouldWriteOutboxWithErrorInMessage() throws Exception {
         CommandResponse response = commandResponse("ON", "FAILED");
-        when(commandService.transitionCommand(eq(commandId), eq("FAILED"), anyString()))
+        when(commandService.transitionCommand(eq(commandId), eq("FAILED"), anyString(), any()))
                 .thenReturn(response);
 
         consumer.handleCommandResult(resultMessage("FAILED", "Device not responding", 1));
@@ -89,7 +90,7 @@ class CommandResultConsumerTest {
     @DisplayName("TIMEOUT transition should write outbox event with COMMAND_FAILED alert type and TIMEOUT state")
     void timeoutTransition_shouldWriteOutboxWithTimeoutState() throws Exception {
         CommandResponse response = commandResponse("ON", "TIMEOUT");
-        when(commandService.transitionCommand(eq(commandId), eq("TIMEOUT"), anyString()))
+        when(commandService.transitionCommand(eq(commandId), eq("TIMEOUT"), anyString(), any()))
                 .thenReturn(response);
 
         consumer.handleCommandResult(resultMessage("TIMEOUT", "Device did not respond", 1));
@@ -101,7 +102,7 @@ class CommandResultConsumerTest {
     @DisplayName("DONE transition for ON command should write outbox with MACHINE_ON alert type")
     void doneTransition_onCommand_shouldWriteMACHINE_ON() throws Exception {
         CommandResponse response = commandResponse("ON", "DONE");
-        when(commandService.transitionCommand(eq(commandId), eq("DONE"), any()))
+        when(commandService.transitionCommand(eq(commandId), eq("DONE"), any(), any()))
                 .thenReturn(response);
 
         consumer.handleCommandResult(resultMessage("DONE", null, 1));
@@ -113,7 +114,7 @@ class CommandResultConsumerTest {
     @DisplayName("DONE transition for OFF command should write outbox with MACHINE_OFF alert type")
     void doneTransition_offCommand_shouldWriteMACHINE_OFF() throws Exception {
         CommandResponse response = commandResponse("OFF", "DONE");
-        when(commandService.transitionCommand(eq(commandId), eq("DONE"), any()))
+        when(commandService.transitionCommand(eq(commandId), eq("DONE"), any(), any()))
                 .thenReturn(response);
 
         consumer.handleCommandResult(resultMessage("DONE", null, 1));
@@ -122,10 +123,36 @@ class CommandResultConsumerTest {
     }
 
     @Test
+    @DisplayName("DONE result should pass device-reported fencing state to transaction")
+    void doneTransition_withReportedState_shouldPassRelayState() {
+        CommandResponse response = commandResponse("ON", "DONE");
+        when(commandService.transitionCommand(eq(commandId), eq("DONE"), any(), eq("ON")))
+                .thenReturn(response);
+        com.yantrago.shared.queue.CommandResultMessage message = resultMessage("DONE", null, 1);
+        message.setFencingState("ON");
+
+        consumer.handleCommandResult(message);
+
+        verify(commandService).transitionCommand(commandId, "DONE", null, "ON");
+    }
+
+    @Test
+    @DisplayName("DONE result without reported state should pass null")
+    void doneTransition_withoutReportedState_shouldPassNull() {
+        CommandResponse response = commandResponse("OFF", "DONE");
+        when(commandService.transitionCommand(eq(commandId), eq("DONE"), any(), isNull()))
+                .thenReturn(response);
+
+        consumer.handleCommandResult(resultMessage("DONE", null, 1));
+
+        verify(commandService).transitionCommand(commandId, "DONE", null, null);
+    }
+
+    @Test
     @DisplayName("ACK transition should write outbox with COMMAND_ACK alert type")
     void ackTransition_shouldWriteCOMMAND_ACK() throws Exception {
         CommandResponse response = commandResponse("ON", "ACK");
-        when(commandService.transitionCommand(eq(commandId), eq("ACK"), any()))
+        when(commandService.transitionCommand(eq(commandId), eq("ACK"), any(), any()))
                 .thenReturn(response);
 
         consumer.handleCommandResult(resultMessage("ACK", null, 1));
@@ -137,7 +164,7 @@ class CommandResultConsumerTest {
     @DisplayName("SENT transition should NOT generate a notification")
     void sentTransition_shouldNotGenerateNotification() {
         CommandResponse response = commandResponse("ON", "SENT");
-        when(commandService.transitionCommand(eq(commandId), eq("SENT"), any()))
+        when(commandService.transitionCommand(eq(commandId), eq("SENT"), any(), any()))
                 .thenReturn(response);
 
         consumer.handleCommandResult(resultMessage("SENT", null, 1));
@@ -149,7 +176,7 @@ class CommandResultConsumerTest {
     @DisplayName("QUEUED transition should NOT generate a notification")
     void queuedTransition_shouldNotGenerateNotification() {
         CommandResponse response = commandResponse("ON", "QUEUED");
-        when(commandService.transitionCommand(eq(commandId), eq("QUEUED"), any()))
+        when(commandService.transitionCommand(eq(commandId), eq("QUEUED"), any(), any()))
                 .thenReturn(response);
 
         consumer.handleCommandResult(resultMessage("QUEUED", null, 1));
@@ -161,7 +188,7 @@ class CommandResultConsumerTest {
     @DisplayName("PENDING transition should NOT generate a notification")
     void pendingTransition_shouldNotGenerateNotification() {
         CommandResponse response = commandResponse("ON", "PENDING");
-        when(commandService.transitionCommand(eq(commandId), eq("PENDING"), any()))
+        when(commandService.transitionCommand(eq(commandId), eq("PENDING"), any(), any()))
                 .thenReturn(response);
 
         consumer.handleCommandResult(resultMessage("PENDING", null, 1));
@@ -178,7 +205,7 @@ class CommandResultConsumerTest {
                 "ON", "DONE", 1, 3, null,
                 LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now(),
                 "SCHEDULE", scheduleId);
-        when(commandService.transitionCommand(eq(commandId), eq("DONE"), any()))
+        when(commandService.transitionCommand(eq(commandId), eq("DONE"), any(), any()))
                 .thenReturn(response);
 
         consumer.handleCommandResult(resultMessage("DONE", null, 1));
@@ -193,7 +220,7 @@ class CommandResultConsumerTest {
     @Test
     @DisplayName("Should rethrow when transitionCommand fails (for DLQ)")
     void shouldRethrowWhenTransitionFails() {
-        when(commandService.transitionCommand(eq(commandId), anyString(), any()))
+        when(commandService.transitionCommand(eq(commandId), anyString(), any(), any()))
                 .thenThrow(new IllegalStateException("Invalid command state transition: DONE → PENDING"));
 
         assertThrows(IllegalStateException.class, () ->
@@ -208,7 +235,7 @@ class CommandResultConsumerTest {
     @Test
     @DisplayName("Should rethrow when command not found (for DLQ)")
     void shouldRethrowWhenCommandNotFound() {
-        when(commandService.transitionCommand(eq(commandId), anyString(), any()))
+        when(commandService.transitionCommand(eq(commandId), anyString(), any(), any()))
                 .thenThrow(new IllegalArgumentException("Command not found: " + commandId));
 
         assertThrows(IllegalArgumentException.class, () ->
@@ -221,7 +248,7 @@ class CommandResultConsumerTest {
     @DisplayName("Should NOT rethrow when broadcast fails (secondary operation)")
     void shouldNotRethrowWhenBroadcastFails() {
         CommandResponse response = commandResponse("ON", "ACK");
-        when(commandService.transitionCommand(eq(commandId), eq("ACK"), any()))
+        when(commandService.transitionCommand(eq(commandId), eq("ACK"), any(), any()))
                 .thenReturn(response);
         doThrow(new RuntimeException("WebSocket connection failed"))
                 .when(commandBroadcastService).broadcastCommandStatus(
@@ -239,7 +266,7 @@ class CommandResultConsumerTest {
     @DisplayName("Should NOT rethrow when notification generation fails (secondary operation)")
     void shouldNotRethrowWhenNotificationFails() {
         CommandResponse response = commandResponse("ON", "ACK");
-        when(commandService.transitionCommand(eq(commandId), eq("ACK"), any()))
+        when(commandService.transitionCommand(eq(commandId), eq("ACK"), any(), any()))
                 .thenReturn(response);
         // Make jdbcTemplate.update throw to simulate outbox insert failure
         when(jdbcTemplate.update(anyString(), any(), any(), any(), any(), any(), any()))

@@ -24,7 +24,7 @@ public interface VehicleCommandService {
      * @param imei the device IMEI
      * @param success true if the command succeeded
      * @param resultText the result text from the device
-     * @param fuelCutOff true if the relay/fuel-cut is active
+     * @param fencingState device-reported relay state (ON, OFF, or UNKNOWN)
      */
-    void processCommandReply(String imei, boolean success, String resultText, boolean fuelCutOff);
+    void processCommandReply(String imei, boolean success, String resultText, String fencingState);
 }

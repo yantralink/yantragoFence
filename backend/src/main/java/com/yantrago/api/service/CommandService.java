@@ -5,12 +5,14 @@ import com.yantrago.api.dto.command.CommandResponse;
 import com.yantrago.api.dto.command.CommandStatusDto;
 import com.yantrago.api.model.CommandAttempt;
 import com.yantrago.api.model.Device;
+import com.yantrago.api.model.DeviceState;
 import com.yantrago.api.model.Machine;
 import com.yantrago.api.model.MachineCommand;
 import com.yantrago.api.queue.CommandProducer;
 import com.yantrago.api.repository.CommandAttemptRepository;
 import com.yantrago.api.repository.CommandRepository;
 import com.yantrago.api.repository.DeviceRepository;
+import com.yantrago.api.repository.DeviceStateRepository;
 import com.yantrago.api.repository.MachineRepository;
 import com.yantrago.api.security.MachineAccessPolicy;
 import com.yantrago.api.security.PermissionEvaluator;
@@ -49,6 +51,7 @@ public class CommandService {
     private final CommandAttemptRepository commandAttemptRepository;
     private final MachineRepository machineRepository;
     private final DeviceRepository deviceRepository;
+    private final DeviceStateRepository deviceStateRepository;
     private final CommandStateMachine stateMachine;
     private final OwnerContextService ownerContextService;
     private final TenantGuard tenantGuard;
@@ -60,6 +63,7 @@ public class CommandService {
                           CommandAttemptRepository commandAttemptRepository,
                           MachineRepository machineRepository,
                           DeviceRepository deviceRepository,
+                          DeviceStateRepository deviceStateRepository,
                           CommandStateMachine stateMachine,
                           OwnerContextService ownerContextService,
                           TenantGuard tenantGuard,
@@ -70,6 +74,7 @@ public class CommandService {
         this.commandAttemptRepository = commandAttemptRepository;
         this.machineRepository = machineRepository;
         this.deviceRepository = deviceRepository;
+        this.deviceStateRepository = deviceStateRepository;
         this.stateMachine = stateMachine;
         this.ownerContextService = ownerContextService;
         this.tenantGuard = tenantGuard;
@@ -213,6 +218,12 @@ public class CommandService {
      */
     @Transactional
     public CommandResponse transitionCommand(UUID commandId, String targetState, String error) {
+        return transitionCommand(commandId, targetState, error, null);
+    }
+
+    @Transactional
+    public CommandResponse transitionCommand(UUID commandId, String targetState,
+                                             String error, String fencingState) {
         MachineCommand command = commandRepository.findById(commandId)
                 .orElseThrow(() -> new IllegalArgumentException("Command not found: " + commandId));
 
@@ -230,6 +241,7 @@ public class CommandService {
         }
 
         command = commandRepository.save(command);
+        updateConfirmedRelayState(command, target, fencingState);
         log.info("Command {} transitioned: {} → {}", commandId, current, target);
         return toResponse(command);
     }
@@ -294,6 +306,26 @@ public class CommandService {
             commandAttemptRepository.save(attempt);
             log.info("Updated attempt {} for command {} status={}", attemptNumber, commandId, status);
         }
+    }
+
+
+    private void updateConfirmedRelayState(MachineCommand command,
+                                           CommandStateMachine.CommandState target,
+                                           String fencingState) {
+        if (target != CommandStateMachine.CommandState.DONE ||
+                command.getDeviceId() == null || fencingState == null) {
+            return;
+        }
+
+        DeviceState state = deviceStateRepository.findById(command.getDeviceId())
+                .orElseGet(DeviceState::new);
+        state.setDeviceId(command.getDeviceId());
+        state.setOrganizationId(command.getOrganizationId());
+        state.setOnline(true);
+        state.setRelayState("ON".equals(fencingState) || "OFF".equals(fencingState)
+                ? fencingState : "UNKNOWN");
+        state.setLastSeenAt(LocalDateTime.now());
+        deviceStateRepository.save(state);
     }
 
     private CommandResponse toResponse(MachineCommand c) {

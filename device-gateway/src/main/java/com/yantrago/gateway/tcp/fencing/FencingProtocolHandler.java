@@ -272,8 +272,18 @@ public class FencingProtocolHandler implements ProtocolHandler {
                 imei, FencingParser.stateName(state.state()),
                 state.outputVoltage(), state.current(), state.energyPulses());
 
-        // Update relay state in Redis
-        deviceStateService.updateRelayState(imei, state.state() == FencingConstants.FENCING_ON);
+        String fencingState = switch (state.state()) {
+            case FencingConstants.FENCING_ON -> "ON";
+            case FencingConstants.FENCING_OFF -> "OFF";
+            default -> "UNKNOWN";
+        };
+        if (!"UNKNOWN".equals(fencingState)) {
+            deviceStateService.updateRelayState(imei, "ON".equals(fencingState));
+        }
+        UUID deviceId = resolveDeviceId(imei);
+        if (deviceId != null) {
+            telemetryForwardService.forwardFencingState(deviceId, imei, fencingState);
+        }
 
         return encoder.buildAck(FencingConstants.OP_FENCING_STATE);
     }
@@ -294,9 +304,14 @@ public class FencingProtocolHandler implements ProtocolHandler {
                 imei, reply.success(), FencingParser.stateName(reply.fencingState()));
 
         // Process the reply via VehicleCommandService (publishes CommandResultMessage)
+        String fencingState = switch (reply.fencingState()) {
+            case FencingConstants.FENCING_ON -> "ON";
+            case FencingConstants.FENCING_OFF -> "OFF";
+            default -> "UNKNOWN";
+        };
         try {
             vehicleCommandService.processCommandReply(imei, reply.success(),
-                    "fencing_state=" + reply.fencingState(), reply.fencingState() == FencingConstants.FENCING_ON);
+                    "fencing_state=" + reply.fencingState(), fencingState);
         } catch (Exception e) {
             log.error("[Fencing] Failed to process command reply: {}", e.getMessage());
         }

@@ -29,6 +29,7 @@ public class MachineDto {
     private Double voltage;           // external power voltage in volts, null if no 0x94 packet
     private Boolean ignitionOn;       // true = ACC high (engine on), null = unknown
     private LocalDateTime lastTelemetryAt;
+    private String fencingState = "UNKNOWN"; // ON | OFF | UNKNOWN, from device_states
     // Resolved names for display
     private String organizationName;
     private String customerName;
@@ -96,6 +97,8 @@ public class MachineDto {
     public void setGsmSignal(Integer gsmSignal) { this.gsmSignal = gsmSignal; }
     public LocalDateTime getLastTelemetryAt() { return lastTelemetryAt; }
     public void setLastTelemetryAt(LocalDateTime lastTelemetryAt) { this.lastTelemetryAt = lastTelemetryAt; }
+    public String getFencingState() { return fencingState; }
+    public void setFencingState(String fencingState) { this.fencingState = fencingState; }
     public Double getVoltage() { return voltage; }
     public void setVoltage(Double voltage) { this.voltage = voltage; }
     public Boolean getIgnitionOn() { return ignitionOn; }

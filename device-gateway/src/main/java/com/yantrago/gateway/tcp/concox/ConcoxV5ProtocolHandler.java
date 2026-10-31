@@ -260,7 +260,8 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
             String imei = clientImeiMap.get(clientId);
             if (imei != null) {
                 try {
-                    vehicleCommandService.processCommandReply(imei, success, text, fuelCutOff);
+                    vehicleCommandService.processCommandReply(imei, success, text,
+                            fuelCutOff ? "ON" : null);
                 } catch (Exception e) {
                     log.error("[V5] Failed to process command reply: {}", e.getMessage());
                 }

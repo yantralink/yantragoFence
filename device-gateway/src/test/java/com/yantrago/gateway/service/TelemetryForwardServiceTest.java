@@ -229,4 +229,27 @@ class TelemetryForwardServiceTest {
 
         verify(telemetryProducer, never()).publishTelemetry(any());
     }
+
+    @Test
+    @DisplayName("forwardFencingState should publish confirmed fence state only")
+    void forwardFencingState_shouldPublishConfirmedStateOnly() {
+        telemetryForwardService.forwardFencingState(deviceId, imei, "ON");
+
+        ArgumentCaptor<TelemetryMessage> captor = ArgumentCaptor.forClass(TelemetryMessage.class);
+        verify(telemetryProducer).publishTelemetry(captor.capture());
+        assertEquals(deviceId, captor.getValue().getDeviceId());
+        assertEquals(imei, captor.getValue().getImei());
+        assertEquals("ON", captor.getValue().getFencingState());
+        assertNull(captor.getValue().getBattery());
+        assertNull(captor.getValue().getGsmSignal());
+        assertNull(captor.getValue().getIgnitionOn());
+    }
+
+    @Test
+    @DisplayName("forwardFencingState should skip when deviceId is null")
+    void forwardFencingState_shouldSkipWhenDeviceIdIsNull() {
+        telemetryForwardService.forwardFencingState(null, imei, "OFF");
+
+        verify(telemetryProducer, never()).publishTelemetry(any());
+    }
 }

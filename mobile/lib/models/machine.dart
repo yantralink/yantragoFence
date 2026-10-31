@@ -27,6 +27,9 @@ class Machine {
   final bool? ignitionOn; // true = ACC high (engine on), null = unknown
   final DateTime? lastTelemetryAt;
 
+  /// Device-confirmed fence relay state: ON, OFF, or UNKNOWN.
+  final String? fencingState;
+
   const Machine({
     required this.id,
     required this.machineId,
@@ -51,6 +54,7 @@ class Machine {
     this.voltage,
     this.ignitionOn,
     this.lastTelemetryAt,
+    this.fencingState,
   });
 
   factory Machine.fromJson(Map<String, dynamic> json) {
@@ -81,13 +85,16 @@ class Machine {
       voltage: (json['voltage'] as num?)?.toDouble(),
       ignitionOn: json['ignitionOn'] as bool?,
       lastTelemetryAt: AppDateUtils.parse(json['lastTelemetryAt'] as String?),
+      fencingState: json['fencingState'] as String?,
     );
   }
 
   bool get isOnlineStatus => isOnline;
-  bool get isFencingOn => status == 'FENCING_ON';
+  bool get isFencingOn => fencingState == 'ON';
+  bool get isFencingOff => fencingState == 'OFF';
   bool get isFault => status == 'FAULT';
   bool get isInStock => status == 'IN_STOCK';
+
   /// Engine on/off from ACC. Null means the device has not reported ACC yet.
   bool? get isIgnitionOn => ignitionOn;
 }

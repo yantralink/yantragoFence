@@ -4,8 +4,8 @@ import 'package:yantrago/models/machine.dart';
 /// Localized machine status/state labels shared by the machine list card
 /// and the machine info card on the detail page.
 ///
-/// Widget layer helper — the [Machine] model keeps the raw status code
-/// (e.g. 'FENCING_ON'); only the user-facing badge/label is translated.
+/// Widget layer helper — the [Machine] model keeps raw status/fencingState
+/// codes; only the user-facing badge/label is translated.
 
 /// Badge label for the machine's connectivity/status.
 String machineStatusLabel(AppLocalizations l10n, Machine m) {
@@ -19,8 +19,7 @@ String machineStatusLabel(AppLocalizations l10n, Machine m) {
 String machineStateLabel(AppLocalizations l10n, Machine m) {
   if (m.isFault) return l10n.stateFaultReported;
   if (m.isFencingOn) return l10n.stateFenceOnConfirmed;
-  // Connectivity is not evidence that a fence is de-energized.
-  if (m.status == 'FENCING_OFF') return l10n.stateFenceOffConfirmed;
+  if (m.isFencingOff) return l10n.stateFenceOffConfirmed;
   if (m.isInStock) return l10n.statusInStock;
   return l10n.stateUnknown;
 }

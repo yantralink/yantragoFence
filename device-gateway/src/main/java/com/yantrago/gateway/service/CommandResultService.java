@@ -43,9 +43,9 @@ public class CommandResultService implements VehicleCommandService {
     }
 
     @Override
-    public void processCommandReply(String imei, boolean success, String resultText, boolean fuelCutOff) {
-        log.info("Command reply: imei={} success={} resultText={} fuelCutOff={}",
-                imei, success, resultText, fuelCutOff);
+    public void processCommandReply(String imei, boolean success, String resultText, String fencingState) {
+        log.info("Command reply: imei={} success={} resultText={} fencingState={}",
+                imei, success, resultText, fencingState);
 
         String status = success ? CommandResultMessage.STATUS_ACK : CommandResultMessage.STATUS_FAILED;
         String error = success ? null : "Device reported command failure: " + resultText;
@@ -59,7 +59,7 @@ public class CommandResultService implements VehicleCommandService {
         }
 
         // Publish the ACK/FAILED result to the backend via RabbitMQ
-        publishResult(commandId, status, error);
+        publishResult(commandId, status, error, fencingState);
         log.info("Command reply processed: imei={} commandId={} status={} error={}", imei, commandId, status, error);
 
         // When the device acknowledges success, also publish DONE.
@@ -68,7 +68,7 @@ public class CommandResultService implements VehicleCommandService {
         // forever (the state machine requires ACK → DONE), and the mobile
         // timeout fires showing "Command failed."
         if (success) {
-            publishResult(commandId, CommandResultMessage.STATUS_DONE, null);
+            publishResult(commandId, CommandResultMessage.STATUS_DONE, null, fencingState);
             log.info("Command completed: imei={} commandId={} status=DONE", imei, commandId);
         }
     }
@@ -78,9 +78,14 @@ public class CommandResultService implements VehicleCommandService {
      * Called when the commandId is known (e.g. from a pending command map).
      */
     public void publishResult(UUID commandId, String status, String error) {
+        publishResult(commandId, status, error, null);
+    }
+
+    private void publishResult(UUID commandId, String status, String error, String fencingState) {
         CommandResultMessage message = new CommandResultMessage(
                 commandId, status, 1, error, Instant.now()
         );
+        message.setFencingState(fencingState);
         commandResultProducer.publishCommandResult(message);
         log.info("Published command result: commandId={} status={}", commandId, status);
     }

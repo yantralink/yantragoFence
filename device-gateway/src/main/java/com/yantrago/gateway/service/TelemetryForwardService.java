@@ -159,6 +159,21 @@ public class TelemetryForwardService implements GpsIngestService {
     }
 
     /**
+     * Forwards a device-reported fencing state to the backend.
+     */
+    public void forwardFencingState(UUID deviceId, String imei, String fencingState) {
+        if (deviceId == null) {
+            log.warn("Skipping fencing-state forward: deviceId is null");
+            return;
+        }
+        TelemetryMessage message = new TelemetryMessage(
+                deviceId, imei, null, null, null, Instant.now()
+        );
+        message.setFencingState(fencingState);
+        telemetryProducer.publishTelemetry(message);
+    }
+
+    /**
      * Forwards a location reading directly (used by fencing protocol handler).
      */
     public void forwardLocation(UUID deviceId, String imei,
