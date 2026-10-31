@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,13 +13,16 @@ import 'package:go_router/go_router.dart';
 
 import 'package:yantrago/core/config/theme.dart';
 import 'package:yantrago/core/services/map_consent_service.dart';
+import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/machines/pages/machine_location_map_page.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
+import 'package:yantrago/features/machines/providers/theft_protection_provider.dart';
 import 'package:yantrago/features/machines/widgets/location_card.dart';
 import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/machine_location.dart';
+import 'package:yantrago/models/user.dart';
 
 Machine _machine({String name = 'North Field Fence'}) {
   return Machine(
@@ -78,7 +82,16 @@ Widget _wrapped(
     ],
   );
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      theftProtectionNotifierProvider.overrideWith(
+        (ref, id) => TheftProtectionNotifier(Dio(), id),
+      ),
+      currentUserProvider.overrideWith((ref) => const User(
+        id: 'u1', organizationId: 'o1', email: 'a@example.invalid',
+        fullName: 'Test User', role: 'CUSTOMER', active: true,
+      )),
+      ...overrides,
+    ],
     child: MaterialApp.router(
       theme: brightness == Brightness.light ? AppTheme.lightTheme : AppTheme.darkTheme,
       routerConfig: router,

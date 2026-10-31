@@ -19,7 +19,10 @@ import 'package:yantrago/features/dashboard/widgets/gsm_status_widget.dart';
 import 'package:yantrago/features/dashboard/widgets/voltage_widget.dart';
 import 'package:yantrago/features/machines/pages/machine_list_page.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
+import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
+import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/models/machine.dart';
+import 'package:yantrago/models/machine_location.dart';
 import 'package:yantrago/models/user.dart';
 
 Machine _machine({
@@ -95,7 +98,11 @@ Future<void> _pumpList(
   await tester.binding.setSurfaceSize(surface);
   await tester.pumpWidget(
     ProviderScope(
-      overrides: overrides,
+      overrides: [
+        machineLocationProvider.overrideWith((ref, id) async => null),
+        machineAddressProvider.overrideWith((ref, id) async => null),
+        ...overrides,
+      ],
       child: _wrapped(
         const MachineListPage(),
         brightness: brightness,
@@ -213,21 +220,33 @@ void main() {
     });
 
     testWidgets('pull-to-refresh triggers provider refresh', (tester) async {
+      var listReads = 0;
+      var locationReads = 0;
       await _pumpList(
         tester,
         [
-          machineListProvider.overrideWith((ref) async => [_machine()]),
+          machineListProvider.overrideWith((ref) async {
+            listReads++;
+            return [_machine()];
+          }),
+          machineLocationProvider('m1').overrideWith((ref) async {
+            locationReads++;
+            return MachineLocation(latitude: locationReads.toDouble(), longitude: 77);
+          }),
           currentUserProvider.overrideWith((ref) => _user),
         ],
       );
+      expect(find.textContaining('1.000000, 77.000000'), findsOneWidget);
       expect(find.byType(RefreshIndicator), findsOneWidget);
       expect(find.text('North Field Fence'), findsOneWidget);
       // Drag down to trigger refresh
-      await tester.fling(find.text('North Field Fence'), const Offset(0, 300), 1000);
+      await tester.drag(find.byType(ListView), const Offset(0, 500));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      // RefreshIndicator should be visible during refresh
-      expect(find.byType(RefreshIndicator), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(listReads, 2);
+      expect(locationReads, 2);
+      expect(find.textContaining('2.000000, 77.000000'), findsOneWidget);
     });
   });
 

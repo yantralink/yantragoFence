@@ -125,6 +125,8 @@
   "loadingLocation": "Loading location…",
   "@loadingLocation": {"description": "Loading state message on the map page."},
   "noLocationData": "No location data available",
+  "lastKnownLocation": "Last known location: {address}",
+  "@lastKnownLocation": {"description": "Machine card location when the device is offline; this is not a live fix.", "placeholders": {"address": {"type": "String"}}},
   "@noLocationData": {"description": "Title/message when the machine has not reported GPS coordinates."},
   "noLocationMessage": "This machine has not reported its GPS coordinates yet.",
   "@noLocationMessage": {"description": "Body message when no GPS data is available."},

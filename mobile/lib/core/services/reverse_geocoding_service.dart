@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/network/api_client.dart';
+import 'package:yantrago/features/auth/providers/auth_provider.dart';
 
 /// Reverse geocoding service — resolves a machine's location to a
 /// human-readable address.
@@ -10,7 +11,8 @@ import 'package:yantrago/core/network/api_client.dart';
 /// coordinates to a third party directly — the backend applies machine
 /// access validation, a bounded cache, and provider rate limiting, and
 /// the external provider only ever sees the backend server. Results are
-/// cached per machine+language to avoid repeated lookups.
+/// coalesced per machine+language while in flight. Address caching by
+/// coordinates remains on the backend, so a refresh can follow a moved device.
 
 /// A resolved address with structured fields for detailed display.
 class ResolvedAddress {
@@ -98,8 +100,15 @@ class ResolvedAddress {
   }
 }
 
-final reverseGeocodingProvider = Provider<ReverseGeocodingService>(
-    (ref) => ReverseGeocodingService(ref.watch(apiClientProvider)));
+final reverseGeocodingProvider = Provider<ReverseGeocodingService>((ref) {
+  // Recreate on account/tenant changes; old requests must not reach a new user.
+  ref.watch(
+    currentUserProvider.select((user) => (user?.id, user?.organizationId)),
+  );
+  final service = ReverseGeocodingService(ref.watch(apiClientProvider));
+  ref.onDispose(service.dispose);
+  return service;
+});
 
 class ReverseGeocodingService {
   ReverseGeocodingService(this._dio);
@@ -108,11 +117,8 @@ class ReverseGeocodingService {
   /// validate machine access before any provider call is made.
   final Dio _dio;
 
-  /// Cache: "<language>|<machineId>" → address.
-  ///
-  /// The language code is part of the cache identity: a localized address
-  /// must never be served for a different UI language.
-  final Map<String, ResolvedAddress> _cache = {};
+  final Map<String, Future<ResolvedAddress?>> _pending = {};
+  final CancelToken _cancelToken = CancelToken();
 
   /// Resolves the current location of [machineId] to an address via the
   /// backend geocoding proxy. Returns null when the machine has no
@@ -121,28 +127,40 @@ class ReverseGeocodingService {
   Future<ResolvedAddress?> reverseGeocodeMachine(
     String machineId, {
     String languageCode = 'en',
-  }) async {
-    final cacheKey = '$languageCode|$machineId';
-    if (_cache.containsKey(cacheKey)) {
-      return _cache[cacheKey];
-    }
+    String? locationKey,
+  }) {
+    if (_cancelToken.isCancelled) return Future.value(null);
+    // Different coordinate snapshots must not share an old in-flight lookup.
+    // This key is local only; the backend resolves authorized coordinates.
+    final key = '$languageCode|$machineId|${locationKey ?? ''}';
+    return _pending.putIfAbsent(
+      key,
+      () => _fetch(machineId, languageCode).whenComplete(() {
+        _pending.remove(key);
+      }),
+    );
+  }
 
+  Future<ResolvedAddress?> _fetch(String machineId, String languageCode) async {
     try {
       final response = await _dio.get(
         '/api/v1/geocoding/reverse',
         queryParameters: {'machineId': machineId, 'lang': languageCode},
+        cancelToken: _cancelToken,
       );
 
       if (response.statusCode == 200 && response.data != null) {
-        final resolved = ResolvedAddress.fromJson(
-            response.data as Map<String, dynamic>);
-        _cache[cacheKey] = resolved;
-        return resolved;
+        return ResolvedAddress.fromJson(response.data as Map<String, dynamic>);
       }
     } on DioException {
       // 404 (no location), 502 (provider down), network error — all fall
       // back to coordinates-only display.
     }
     return null;
+  }
+
+  void dispose() {
+    _cancelToken.cancel();
+    _pending.clear();
   }
 }

@@ -89,7 +89,7 @@ class SecureStorage {
         key: _keyFcmTokenRegistered, value: registered ? 'true' : 'false');
   }
 
-  // SEC-15: map/geocoding third-party consent ('granted' | 'declined' | null)
+  // SEC-15: account-scoped map/geocoding consent, encoded by MapConsentController.
   static Future<String?> getMapConsent() => _storage.read(key: _keyMapConsent);
   static Future<void> setMapConsent(String? value) async {
     if (value == null) {

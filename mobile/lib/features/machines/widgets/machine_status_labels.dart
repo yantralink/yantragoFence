@@ -19,7 +19,8 @@ String machineStatusLabel(AppLocalizations l10n, Machine m) {
 String machineStateLabel(AppLocalizations l10n, Machine m) {
   if (m.isFault) return l10n.stateFaultReported;
   if (m.isFencingOn) return l10n.stateFenceOnConfirmed;
-  if (m.isOnlineStatus) return l10n.stateFenceOffConfirmed;
+  // Connectivity is not evidence that a fence is de-energized.
+  if (m.status == 'FENCING_OFF') return l10n.stateFenceOffConfirmed;
   if (m.isInStock) return l10n.statusInStock;
   return l10n.stateUnknown;
 }

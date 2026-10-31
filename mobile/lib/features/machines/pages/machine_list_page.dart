@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:yantrago/core/widgets/app_page_body.dart';
+import 'package:yantrago/core/theme/app_spacing.dart';
 import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
+import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/widgets/machine_card.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
@@ -42,27 +43,40 @@ class MachineListPage extends ConsumerWidget {
             );
           }
           return RefreshIndicator(
-            onRefresh: () => ref.refresh(machineListProvider.future),
-            child: AppPageBody(
-              scrollable: true,
-              safeArea: false,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  AppSectionHeader(
+            onRefresh: () async {
+              // Address providers depend on location, so both refresh together.
+              ref.invalidate(machineLocationProvider);
+              ref.invalidate(machineListProvider);
+              await ref.read(machineListProvider.future);
+            },
+            // Build only nearby cards: adding addresses must not geocode the
+            // entire fetched fleet when the first screenful is displayed.
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.xxl,
+              ),
+              itemCount: list.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return AppSectionHeader(
                     title: l10n.machinesTitle,
                     aside: l10n.machinesAssignedCount(list.length),
+                  );
+                }
+                final machine = list[index - 1];
+                return Padding(
+                  key: ValueKey(machine.id),
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: MachineCard(
+                    machine: machine,
+                    onTap: () => context.push('/app/machines/${machine.id}'),
                   ),
-                  ...list.map((m) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: MachineCard(
-                          machine: m,
-                          onTap: () => context.push('/app/machines/${m.id}'),
-                        ),
-                      )),
-                ],
-              ),
+                );
+              },
             ),
           );
         },

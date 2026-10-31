@@ -250,6 +250,8 @@
     "description": "Loading state message on the map page."
   },
   "noLocationData": "कोई लोकेशन डेटा उपलब्ध नहीं",
+  "lastKnownLocation": "अंतिम ज्ञात स्थान: {address}",
+  "@lastKnownLocation": {"description": "Machine card location when the device is offline; this is not a live fix.", "placeholders": {"address": {"type": "String"}}},
   "@noLocationData": {
     "description": "Title/message when the machine has not reported GPS coordinates."
   },

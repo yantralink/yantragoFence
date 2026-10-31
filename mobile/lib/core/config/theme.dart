@@ -4,6 +4,7 @@ import '../theme/app_palette.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_semantic_colors.dart';
 import '../theme/app_spacing.dart';
+import '../theme/machine_card_theme.dart';
 
 /// App theme — colors, typography, and component styles for YantraGO.
 ///
@@ -77,7 +78,10 @@ class AppTheme {
       scaffoldBackgroundColor: canvas,
       canvasColor: canvas,
       dividerColor: divider,
-      extensions: <ThemeExtension<dynamic>>[semantic],
+      extensions: <ThemeExtension<dynamic>>[
+        semantic,
+        isLight ? MachineCardTheme.light : MachineCardTheme.dark,
+      ],
       textTheme: _buildTextTheme(colorScheme, textPrimary, textBody, textSecondary),
       appBarTheme: AppBarTheme(
         backgroundColor: canvas,
