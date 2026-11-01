@@ -75,6 +75,42 @@ jobs:
           target: /opt/yantrago/gateway/
           strip_components: 2
 
+      - name: Inject WEATHER_API_KEY into backend env
+        # SEC-12: key arrives via GitHub Actions secret (repo Settings →
+        # Secrets), never committed. Discovers the service's
+        # EnvironmentFile on the server at deploy time so the step does
+        # not hardcode a path; skips cleanly when the secret is unset or
+        # the file is not writable so deploys never break on it.
+        env:
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          envs: WEATHER_API_KEY
+          script: |
+            set -e
+            if [ -z "$WEATHER_API_KEY" ]; then
+              echo "WEATHER_API_KEY secret not set — skipping injection"
+              exit 0
+            fi
+            ENV_FILE=$(systemctl cat yantrago-backend | sed -n 's/^EnvironmentFile=//p' | head -1)
+            if [ -z "$ENV_FILE" ]; then
+              echo "::warning::No EnvironmentFile in yantrago-backend unit — set WEATHER_API_KEY manually"
+              exit 0
+            fi
+            if grep -q "^WEATHER_API_KEY=" "$ENV_FILE" 2>/dev/null; then
+              sed -i "s|^WEATHER_API_KEY=.*|WEATHER_API_KEY=$WEATHER_API_KEY|" "$ENV_FILE" 2>/dev/null \
+                || sudo -n sed -i "s|^WEATHER_API_KEY=.*|WEATHER_API_KEY=$WEATHER_API_KEY|" "$ENV_FILE" 2>/dev/null \
+                || { echo "::warning::Cannot write $ENV_FILE — set WEATHER_API_KEY manually"; exit 0; }
+            else
+              (echo "WEATHER_API_KEY=$WEATHER_API_KEY" >> "$ENV_FILE") 2>/dev/null \
+                || (echo "WEATHER_API_KEY=$WEATHER_API_KEY" | sudo -n tee -a "$ENV_FILE" >/dev/null) 2>/dev/null \
+                || { echo "::warning::Cannot write $ENV_FILE — set WEATHER_API_KEY manually"; exit 0; }
+            fi
+            echo "WEATHER_API_KEY injected into $ENV_FILE"
+
       - name: Restart services and verify
         # SEC-12: Pinned to immutable commit SHA (not @v1.0.3 tag).
         uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
