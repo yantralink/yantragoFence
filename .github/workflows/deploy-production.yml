@@ -74,7 +74,7 @@ jobs:
               echo "WEATHER_API_KEY secret not set — skipping injection"
               exit 0
             fi
-            ENV_FILE=$(systemctl cat yantrago-backend | sed -n 's/^EnvironmentFile=//p' | head -1)
+            ENV_FILE=$( (systemctl cat yantrago-backend 2>/dev/null || true) | sed -n 's/^EnvironmentFile=//p' | head -1)
             if [ -z "$ENV_FILE" ]; then
               echo "::warning::No EnvironmentFile in yantrago-backend unit — set WEATHER_API_KEY manually"
               exit 0
