@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
-import 'package:yantrago/core/widgets/app_section_header.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
+import 'package:yantrago/core/widgets/app_status_badge.dart';
+import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
 import 'package:yantrago/features/machines/providers/telemetry_socket_provider.dart';
 import 'package:yantrago/features/machines/widgets/location_card.dart';
-import 'package:yantrago/features/machines/widgets/machine_info_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_telemetry_grid.dart';
 import 'package:yantrago/features/machines/widgets/on_off_button.dart';
 import 'package:yantrago/features/schedules/providers/schedule_provider.dart';
@@ -70,20 +71,15 @@ class MachineDetailPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                MachineInfoCard(
-                  machine: m,
-                  // Live ACC override from the telemetry socket — the info
-                  // card's Machine Running chip updates without pull-to-refresh.
-                  liveIgnitionOn: ref.watch(telemetrySocketProvider(m.id))?.ignitionOn,
+                // Small chip card with the machine's confirmed running
+                // state — live ACC override from the telemetry socket.
+                _MachineRunningCard(
+                  ignitionOn: ref.watch(
+                          telemetrySocketProvider(m.id))
+                      ?.ignitionOn ??
+                      m.ignitionOn,
                 ),
                 const SizedBox(height: 8),
-                // Compact telemetry section marker with a leading icon —
-                // keeps the page short while giving the grid an identity.
-                AppSectionHeader(
-                  title: l10n.telemetrySection,
-                  icon: Icons.monitor_heart,
-                  compact: true,
-                ),
                 MachineTelemetryGrid(machine: m),
                 const SizedBox(height: 16),
                 OnOffButton(machineId: m.id, imei: m.imei ?? ''),
@@ -102,6 +98,33 @@ class MachineDetailPage extends ConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Small card with a single chip showing the machine's confirmed
+/// running state (ACC). Hidden until the device has reported ignition.
+class _MachineRunningCard extends StatelessWidget {
+  final bool? ignitionOn;
+
+  const _MachineRunningCard({required this.ignitionOn});
+
+  @override
+  Widget build(BuildContext context) {
+    final on = ignitionOn;
+    if (on == null) return const SizedBox.shrink();
+    final l10n = context.l10n;
+    return AppSurfaceCard(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: <Widget>[
+          AppStatusBadge(
+            label: on ? l10n.machineRunning : l10n.machineStopped,
+            tone: on ? StatusTone.success : StatusTone.neutral,
+            dot: on,
+          ),
+        ],
       ),
     );
   }
