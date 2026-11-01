@@ -3,6 +3,7 @@ package com.yantrago.api.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.yantrago.api.exception.GeocodingProviderException;
+import com.yantrago.api.exception.WeatherProviderException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,6 +62,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleGeocodingProvider(GeocodingProviderException ex) {
         log.warn("Geocoding provider failure: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.BAD_GATEWAY, "Address lookup is temporarily unavailable");
+    }
+
+    @ExceptionHandler(WeatherProviderException.class)
+    public ResponseEntity<Map<String, Object>> handleWeatherProvider(WeatherProviderException ex) {
+        log.warn("Weather provider failure: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_GATEWAY, "Weather lookup is temporarily unavailable");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

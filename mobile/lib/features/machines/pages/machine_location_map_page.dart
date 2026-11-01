@@ -11,11 +11,13 @@ import 'package:yantrago/features/machines/providers/location_socket_provider.da
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
+import 'package:yantrago/features/machines/providers/machine_weather_provider.dart';
 import 'package:yantrago/features/machines/providers/telemetry_socket_provider.dart';
 import 'package:yantrago/features/machines/providers/theft_protection_provider.dart';
 import 'package:yantrago/features/machines/widgets/machine_map_canvas.dart';
 import 'package:yantrago/features/machines/widgets/map_consent_views.dart';
 import 'package:yantrago/features/machines/widgets/map_info_panel.dart';
+import 'package:yantrago/features/machines/widgets/weather_details_sheet.dart';
 import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/machine_location.dart';
 
@@ -53,10 +55,6 @@ class _MachineLocationMapPageState
   // STUB — static placeholder values until the backend weather feature
   // lands (docs/WEATHER_FEATURE_PLAN.md). Swap this source for the real
   // weather provider; EnvironmentalStrip itself does not change.
-  static const String _stubConditionLabel = 'Good operating condition';
-  static const String _stubWeatherLabel = '24°C Clear';
-  static const String _stubWindLabel = 'Wind 11.9 km/h';
-
   WebViewController? _mapController;
   bool _mapPageLoaded = false;
   Map<String, Object?>? _pendingMapConfig;
@@ -93,6 +91,7 @@ class _MachineLocationMapPageState
   Widget _buildMapBody(BuildContext context) {
     final location = ref.watch(machineLocationProvider(widget.machineId));
     final address = ref.watch(machineAddressProvider(widget.machineId));
+    final weatherAsync = ref.watch(machineWeatherProvider(widget.machineId));
     final machine = ref.watch(machineDetailProvider(widget.machineId));
     final protection =
         ref.watch(theftProtectionNotifierProvider(widget.machineId));
@@ -180,9 +179,12 @@ class _MachineLocationMapPageState
                   l10n, effectiveLoc.recordedAt ?? effectiveLoc.updatedAt)),
               latitude: effectiveLoc.latitude,
               longitude: effectiveLoc.longitude,
-              conditionLabel: _stubConditionLabel,
-              weatherLabel: _stubWeatherLabel,
-              windLabel: _stubWindLabel,
+              weather: weatherAsync.valueOrNull,
+              weatherLoading: weatherAsync.isLoading,
+              onWeatherTap: weatherAsync.valueOrNull == null
+                  ? null
+                  : () => showWeatherDetailsSheet(
+                      context, weatherAsync.valueOrNull!),
             ),
           ],
         );

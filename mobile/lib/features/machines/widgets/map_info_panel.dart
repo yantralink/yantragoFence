@@ -7,6 +7,7 @@ import 'package:yantrago/features/machines/widgets/map_location_card.dart';
 import 'package:yantrago/features/machines/widgets/theft_protection_card.dart';
 import 'package:yantrago/l10n/l10n.dart';
 import 'package:yantrago/models/machine.dart';
+import 'package:yantrago/models/weather.dart';
 
 /// Below-map info panel for the machine location map screen —
 /// environmental strip, machine/fence status pills + Set Schedule,
@@ -23,9 +24,13 @@ class MapInfoPanel extends StatelessWidget {
   final String updatedLabel;
   final double latitude;
   final double longitude;
-  final String conditionLabel;
-  final String weatherLabel;
-  final String windLabel;
+  /// Real weather for the strip — null renders the unavailable state.
+  final Weather? weather;
+  final bool weatherLoading;
+
+  /// Strip tap handler (opens the weather details sheet). Null =
+  /// non-interactive strip.
+  final VoidCallback? onWeatherTap;
 
   const MapInfoPanel({
     super.key,
@@ -36,9 +41,9 @@ class MapInfoPanel extends StatelessWidget {
     required this.updatedLabel,
     required this.latitude,
     required this.longitude,
-    required this.conditionLabel,
-    required this.weatherLabel,
-    required this.windLabel,
+    required this.weather,
+    required this.weatherLoading,
+    this.onWeatherTap,
   });
 
   @override
@@ -58,10 +63,9 @@ class MapInfoPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           EnvironmentalStrip(
-            conditionLabel: conditionLabel,
-            conditionIcon: Icons.check_circle,
-            weatherLabel: weatherLabel,
-            windLabel: windLabel,
+            weather: weather,
+            isLoading: weatherLoading,
+            onTap: onWeatherTap,
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(AppSpacing.lg,

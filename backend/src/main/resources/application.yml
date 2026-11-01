@@ -196,6 +196,27 @@ geocoding:
   # decimals sent to the provider — 4 ≈ 11m precision, enough for an address
   coordinate-precision: ${GEOCODING_COORDINATE_PRECISION:4}
 
+# WEATHER: server-side weather proxy (SEC-15, mirrors geocoding). The
+# provider is OpenWeatherMap by default; substitute WEATHER_PROVIDER_URL
+# for an approved provider under a data-processing agreement. The API
+# key is supplied at runtime via WEATHER_API_KEY (env / secret manager /
+# gitignored .env for local dev) — never committed. Empty key = the
+# service fails closed and never calls the provider.
+weather:
+  enabled: ${WEATHER_ENABLED:true}
+  provider:
+    base-url: ${WEATHER_PROVIDER_URL:https://api.openweathermap.org}
+    api-key: ${WEATHER_API_KEY:}
+  # result cache TTL — provider observation freshness is ~10min; 30min
+  # buckets keep volume far under the free-tier limit
+  cache-ttl-seconds: ${WEATHER_CACHE_TTL_SECONDS:1800}
+  cache-max-entries: ${WEATHER_CACHE_MAX_ENTRIES:1000}
+  min-request-interval-ms: ${WEATHER_MIN_REQUEST_INTERVAL_MS:500}
+  max-wait-ms: ${WEATHER_MAX_WAIT_MS:15000}
+  # decimals sent to the provider — 2 ≈ 1.1km, plenty for weather and
+  # maximizes cache sharing across nearby machines
+  coordinate-precision: ${WEATHER_COORDINATE_PRECISION:2}
+
 # Privacy / erasure (PLAY-06)
 # Mailbox that receives account-deletion-request notifications. Empty =
 # notification disabled (requests are still recorded in audit_logs).

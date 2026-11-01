@@ -8,6 +8,7 @@ import 'package:yantrago/features/machines/widgets/map_location_card.dart';
 import 'package:yantrago/features/machines/widgets/map_overlay_widgets.dart';
 import 'package:yantrago/features/machines/widgets/map_speed_gauge.dart';
 import 'package:yantrago/models/machine.dart';
+import 'package:yantrago/models/weather.dart';
 
 Machine _machine({String? fencingState = 'OFF'}) => Machine(
       id: 'm1',
@@ -69,14 +70,17 @@ void main() {
       await _pump(
           tester,
           const EnvironmentalStrip(
-            conditionLabel: 'Good operating condition',
-            conditionIcon: Icons.check_circle,
-            weatherLabel: '24°C Clear',
-            windLabel: 'Wind 11.9 km/h',
+            weather: Weather(
+              conditionCode: 800,
+              conditionIcon: '01d',
+              temperatureCelsius: 24,
+              windSpeedKph: 11.9,
+            ),
+            isLoading: false,
           ));
-      expect(find.text('Good operating condition'), findsOneWidget);
-      expect(find.text('24°C Clear'), findsOneWidget);
-      expect(find.text('Wind 11.9 km/h'), findsOneWidget);
+      expect(find.text('Clear'), findsOneWidget);
+      expect(find.text('24°C'), findsOneWidget);
+      expect(find.text('11.9 km/h'), findsOneWidget);
     });
   });
 

@@ -1,113 +1,137 @@
 import 'package:flutter/material.dart';
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/theme/app_spacing.dart';
+import 'package:yantrago/l10n/l10n.dart';
+import 'package:yantrago/models/weather.dart';
 
-/// Environmental strip below the map — operating condition, weather,
-/// and wind separated by thin dividers.
+/// Environmental strip below the map — shows real weather for the
+/// machine's location: condition icon + localized label, temperature,
+/// and wind. Tap opens the weather details sheet.
 ///
-/// All values are injected by the caller. Until the backend weather
-/// feature (docs/WEATHER_FEATURE_PLAN.md) lands, the map page passes
-/// clearly-marked stub values — swap the source, not this widget.
+/// States: loading (subtle dots — never blank), unavailable (weather
+/// null — honest label, never fabricated), data (real WeatherDto
+/// fields only).
 class EnvironmentalStrip extends StatelessWidget {
-  final String conditionLabel;
-  final IconData conditionIcon;
-  final String weatherLabel;
-  final String windLabel;
+  /// Real weather from machineWeatherProvider — null renders the
+  /// unavailable state.
+  final Weather? weather;
+
+  /// Whether the weather request is in flight.
+  final bool isLoading;
+
+  /// Tap handler (opens the weather details sheet upstream). Null
+  /// renders the strip non-interactive — e.g. no data to expand.
+  final VoidCallback? onTap;
 
   const EnvironmentalStrip({
     super.key,
-    required this.conditionLabel,
-    required this.conditionIcon,
-    required this.weatherLabel,
-    required this.windLabel,
+    required this.weather,
+    required this.isLoading,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final ColorScheme colors = Theme.of(context).colorScheme;
     final AppSemanticColors? semantic =
         Theme.of(context).extension<AppSemanticColors>();
 
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: colors.outlineVariant),
-        ),
-      ),
-      child: Row(
+    Widget content;
+    if (isLoading && weather == null) {
+      content = const SizedBox(
+        height: 18,
+        width: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (weather == null) {
+      content = _item(
+        icon: Icons.cloud_off_outlined,
+        label: l10n.weatherUnavailable,
+        color: semantic?.tone(StatusTone.neutral),
+        context: context,
+      );
+    } else {
+      final w = weather!;
+      final temp = w.temperatureCelsius == null
+          ? null
+          : '${w.temperatureCelsius!.toStringAsFixed(0)}°C';
+      final windParts = <String>[
+        if (w.windSpeedKph != null)
+          '${w.windSpeedKph!.toStringAsFixed(1)} km/h',
+        if (w.windCompass != null) w.windCompass!,
+      ];
+      content = Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: <Widget>[
-          Expanded(
-            child: _StripItem(
-              icon: conditionIcon,
-              iconColor: semantic?.tone(StatusTone.success) ??
-                  colors.primary,
-              label: conditionLabel,
+          Flexible(
+            child: _item(
+              icon: weatherConditionIcon(w.conditionCode,
+                  isDay: w.isDay),
+              label:
+                  weatherConditionLabel(l10n, w.conditionCode),
+              color: semantic?.tone(StatusTone.success),
+              context: context,
             ),
           ),
-          _StripDivider(color: colors.outlineVariant),
-          Expanded(
-            child: _StripItem(
-              icon: Icons.wb_sunny_outlined,
-              iconColor: semantic?.tone(StatusTone.warning) ??
-                  colors.tertiary,
-              label: weatherLabel,
+          if (temp != null)
+            Flexible(
+              child: _item(
+                icon: Icons.thermostat,
+                label: temp,
+                color: colors.onSurface,
+                context: context,
+              ),
             ),
-          ),
-          _StripDivider(color: colors.outlineVariant),
-          Expanded(
-            child: _StripItem(
-              icon: Icons.air,
-              iconColor: colors.onSurfaceVariant,
-              label: windLabel,
+          if (windParts.isNotEmpty)
+            Flexible(
+              child: _item(
+                icon: Icons.air,
+                label: windParts.join(' '),
+                color: colors.onSurface,
+                context: context,
+              ),
             ),
-          ),
         ],
+      );
+    }
+
+    return Material(
+      color: colors.surface,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.sm + 2),
+          child: Center(child: content),
+        ),
       ),
     );
   }
-}
 
-class _StripItem extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-
-  const _StripItem({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _item({
+    required IconData icon,
+    required String label,
+    required Color? color,
+    required BuildContext context,
+  }) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Icon(icon, size: 16, color: iconColor),
-        const SizedBox(width: AppSpacing.xs),
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
         Flexible(
           child: Text(
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+            style: Theme.of(context)
+                .textTheme
+                .labelMedium
+                ?.copyWith(color: color),
           ),
         ),
       ],
     );
-  }
-}
-
-class _StripDivider extends StatelessWidget {
-  final Color color;
-
-  const _StripDivider({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 20, color: color);
   }
 }

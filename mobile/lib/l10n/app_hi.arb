@@ -288,7 +288,7 @@
   "@mapConsentTitle": {
     "description": "Title of the consent prompt shown before any third-party map/geocoding transfer."
   },
-  "mapConsentMessage": "इस मशीन को नक्शे पर दिखाने के लिए, YantraGO OpenStreetMap से नक्शा टाइलें और Esri से सैटेलाइट चित्र लोड करता है और पता जानने के लिए हमारे सुरक्षित सर्वर के माध्यम से मशीन के निर्देशांक एक मैप प्रदाता को भेज सकता है। केवल मशीन की स्थिति साझा होती है — आपका व्यक्तिगत स्थान कभी नहीं।",
+  "mapConsentMessage": "इस मशीन को नक्शे पर दिखाने के लिए, YantraGO OpenStreetMap से नक्शा टाइलें, Esri से सैटेलाइट चित्र और OpenWeatherMap से मौसम डेटा लोड करता है और पता जानने के लिए हमारे सुरक्षित सर्वर के माध्यम से मशीन के निर्देशांक एक मैप प्रदाता को भेज सकता है। केवल मशीन की स्थिति साझा होती है — आपका व्यक्तिगत स्थान कभी नहीं।",
   "@mapConsentMessage": {
     "description": "Disclosure text for the map/geocoding third-party consent prompt."
   },
@@ -1413,5 +1413,31 @@
   "@mapZoomIn": {"description": "Tooltip for the map zoom-in control."},
   "mapZoomOut": "ज़ूम आउट",
   "@mapZoomOut": {"description": "Tooltip for the map zoom-out control."},
-  "@mapLayers": {"description": "Tooltip for the map layers toggle button (standard/satellite view)."}
+  "@mapLayers": {"description": "Tooltip for the map layers toggle button (standard/satellite view)."},
+  "weatherThunderstorm": "गरज-चमक",
+  "@weatherThunderstorm": {"description": "Weather condition label (OWM 2xx)."},
+  "weatherDrizzle": "बूंदाबांदी",
+  "@weatherDrizzle": {"description": "Weather condition label (OWM 3xx)."},
+  "weatherRain": "बारिश",
+  "@weatherRain": {"description": "Weather condition label (OWM 5xx)."},
+  "weatherSnow": "बर्फबारी",
+  "@weatherSnow": {"description": "Weather condition label (OWM 6xx)."},
+  "weatherFog": "कोहरा",
+  "@weatherFog": {"description": "Weather condition label (OWM 7xx atmosphere)."},
+  "weatherClear": "साफ़ आसमान",
+  "@weatherClear": {"description": "Weather condition label (OWM 800)."},
+  "weatherClouds": "बादल छाए हुए",
+  "@weatherClouds": {"description": "Weather condition label (OWM 80x)."},
+  "weatherUnavailable": "मौसम उपलब्ध नहीं",
+  "@weatherUnavailable": {"description": "Fallback label when weather cannot be resolved."},
+  "weatherFeelsLike": "अनुभव तापमान",
+  "@weatherFeelsLike": {"description": "Feels-like temperature label in weather details."},
+  "weatherHumidity": "आर्द्रता",
+  "@weatherHumidity": {"description": "Humidity label in weather details."},
+  "weatherWind": "हवा",
+  "@weatherWind": {"description": "Wind label in weather details."},
+  "weatherGusts": "झोंके",
+  "@weatherGusts": {"description": "Wind gusts label in weather details."},
+  "weatherPrecipitation": "वर्षा",
+  "@weatherPrecipitation": {"description": "Precipitation label in weather details."}
 }
