@@ -53,34 +53,13 @@ jobs:
           cp device-gateway/build/libs/device-gateway-1.0.0.jar deploy/gateway/app.jar
           ls -la deploy/backend deploy/gateway
 
-      - name: Upload backend JAR
-        # SEC-12: Pinned to immutable commit SHA (not @v0.1.7 tag).
-        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.PRODUCTION_USER }}
-          key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          source: deploy/backend/app.jar
-          target: /opt/yantrago/backend/
-          strip_components: 2
-
-      - name: Upload gateway JAR
-        # SEC-12: Pinned to immutable commit SHA (not @v0.1.7 tag).
-        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: ${{ secrets.PRODUCTION_USER }}
-          key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          source: deploy/gateway/app.jar
-          target: /opt/yantrago/gateway/
-          strip_components: 2
-
       - name: Inject WEATHER_API_KEY into backend env
         # SEC-12: key arrives via GitHub Actions secret (repo Settings →
-        # Secrets), never committed. Discovers the service's
-        # EnvironmentFile on the server at deploy time so the step does
-        # not hardcode a path; skips cleanly when the secret is unset or
-        # the file is not writable so deploys never break on it.
+        # Secrets), never committed. Runs BEFORE jar upload so a failed
+        # upload can't block env config (the deployed backend already
+        # ships the weather endpoint). Discovers the service's
+        # EnvironmentFile on the server at deploy time; skips cleanly
+        # when the secret is unset or the file is not writable.
         env:
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
         uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
@@ -110,6 +89,28 @@ jobs:
                 || { echo "::warning::Cannot write $ENV_FILE — set WEATHER_API_KEY manually"; exit 0; }
             fi
             echo "WEATHER_API_KEY injected into $ENV_FILE"
+
+      - name: Upload backend JAR
+        # SEC-12: Pinned to immutable commit SHA (not @v0.1.7 tag).
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          source: deploy/backend/app.jar
+          target: /opt/yantrago/backend/
+          strip_components: 2
+
+      - name: Upload gateway JAR
+        # SEC-12: Pinned to immutable commit SHA (not @v0.1.7 tag).
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          source: deploy/gateway/app.jar
+          target: /opt/yantrago/gateway/
+          strip_components: 2
 
       - name: Restart services and verify
         # SEC-12: Pinned to immutable commit SHA (not @v1.0.3 tag).
