@@ -54,6 +54,10 @@ jobs:
           ls -la deploy/backend deploy/gateway
 
       - name: Inject WEATHER_API_KEY into backend env
+        # Best-effort: never blocks the deploy. If SSH/env injection
+        # fails, JAR upload still proceeds and the key can be set
+        # manually on the server.
+        continue-on-error: true
         # SEC-12: key arrives via GitHub Actions secret (repo Settings →
         # Secrets), never committed. Runs BEFORE jar upload so a failed
         # upload can't block env config (the deployed backend already
