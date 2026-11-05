@@ -9,6 +9,7 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -58,6 +59,9 @@ public class WeatherProviderClient {
             new ConcurrentHashMap<>();
     private volatile long backoffUntilEpochMilli;
 
+    // @Autowired is required — the package-private test overload below
+    // would otherwise leave Spring without a unique constructor.
+    @Autowired
     public WeatherProviderClient(
             RestClient.Builder restClientBuilder,
             @Value("${weather.provider.base-url:https://api.openweathermap.org}") String providerBaseUrl,
