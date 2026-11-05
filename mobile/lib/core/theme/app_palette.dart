@@ -36,6 +36,11 @@ class AppPalette {
 
   // ---- Light semantic soft backgrounds -------------------------------
   static const Color lightPrimarySoft = Color(0xFFEFF6FF);
+  /// Subtle highlight for the "today" forecast row — lighter than
+  /// [lightPrimarySoft] so the row reads as selected, not dominant.
+  static const Color lightTodayHighlight = Color(0xFFEAF2FF);
+  /// Dark navy for primary forecast text (day names, temperatures).
+  static const Color lightTextNavy = Color(0xFF172554);
   static const Color lightSuccessSoft = Color(0xFFF0FDF4);
   static const Color lightWarningSoft = Color(0xFFFFFBEB);
   static const Color lightDangerSoft = Color(0xFFFEF2F2);

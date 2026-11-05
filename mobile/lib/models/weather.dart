@@ -106,5 +106,9 @@ IconData weatherConditionIcon(int? code, {bool isDay = true}) {
   if (code == 800) {
     return isDay ? Icons.wb_sunny_outlined : Icons.nightlight_outlined;
   }
+  if (code == 801 || code == 802) {
+    // Few/scattered clouds — sun partially behind cloud.
+    return isDay ? Icons.wb_twilight : Icons.nights_stay_outlined;
+  }
   return isDay ? Icons.wb_cloudy_outlined : Icons.nights_stay_outlined;
 }

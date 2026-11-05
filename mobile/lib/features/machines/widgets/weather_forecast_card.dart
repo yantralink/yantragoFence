@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:yantrago/core/theme/app_semantic_colors.dart';
+import 'package:yantrago/core/theme/app_palette.dart';
 import 'package:yantrago/core/theme/app_spacing.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/l10n/l10n.dart';
@@ -108,7 +108,11 @@ class _WeatherForecastCardState extends State<WeatherForecastCard> {
                         child: Text(
                           l10n.weatherForecastTitle,
                           style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700),
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppPalette.darkTextBody
+                                  : AppPalette.lightTextNavy),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -120,7 +124,10 @@ class _WeatherForecastCardState extends State<WeatherForecastCard> {
                         duration: _animDuration,
                         curve: Curves.easeInOut,
                         child: Icon(Icons.expand_more,
-                            color: colors.onSurfaceVariant),
+                            color: Theme.of(context).brightness ==
+                                    Brightness.dark
+                                ? AppPalette.darkTextBody
+                                : AppPalette.lightTextNavy),
                       ),
                     ],
                   ),
@@ -203,7 +210,9 @@ class _WeatherForecastCardState extends State<WeatherForecastCard> {
           if (i > 0)
             Divider(
               height: 1,
-              color: theme.colorScheme.outlineVariant,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppPalette.darkDivider
+                  : AppPalette.lightDivider,
             ),
           _ForecastRow(
             day: widget.days[i],
@@ -256,8 +265,8 @@ class _ForecastRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final AppSemanticColors? semantic =
-        Theme.of(context).extension<AppSemanticColors>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navy = isDark ? AppPalette.darkTextBody : AppPalette.lightTextNavy;
     final l10n = context.l10n;
 
     final row = Padding(
@@ -275,6 +284,7 @@ class _ForecastRow extends StatelessWidget {
                   dayLabel,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
+                    color: navy,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -317,6 +327,7 @@ class _ForecastRow extends StatelessWidget {
               _tempRange()!,
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w700,
+                color: navy,
               ),
             ),
         ],
@@ -326,7 +337,12 @@ class _ForecastRow extends StatelessWidget {
     return Semantics(
       label: _semanticsLabel(context),
       child: Container(
-        color: isToday ? semantic?.tone(StatusTone.info) : null,
+        // Subtle light-blue highlight — never a solid brand fill.
+        color: isToday
+            ? (Theme.of(context).brightness == Brightness.dark
+                ? AppPalette.darkPrimarySoft
+                : AppPalette.lightTodayHighlight)
+            : null,
         child: row,
       ),
     );
