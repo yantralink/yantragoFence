@@ -248,6 +248,18 @@ class _ForecastRow extends StatelessWidget {
     return '${max.round()}° / ${min.round()}°'; // high / low
   }
 
+  /// Condition-tinted icon color: sun amber by day / moon blue at
+  /// night, fog grey, everything else primary blue.
+  Color _iconColor(Color neutral, Color primary) {
+    final code = day.conditionCode;
+    if (code == null) return neutral;
+    if (code == 800 || code == 801 || code == 802) {
+      return day.isDay ? const Color(0xFFF59E0B) : primary;
+    }
+    if (code >= 700 && code < 800) return neutral;
+    return primary;
+  }
+
   String _semanticsLabel(BuildContext context) {
     final l10n = context.l10n;
     final parts = <String>[
@@ -256,7 +268,6 @@ class _ForecastRow extends StatelessWidget {
       if (_tempRange() != null)
         '${l10n.weatherForecastHigh} ${day.tempMaxCelsius?.round()}°C, '
             '${l10n.weatherForecastLow} ${day.tempMinCelsius?.round()}°C',
-      if (day.isPartial) l10n.weatherForecastPartial,
     ];
     return parts.join('. ');
   }
@@ -271,7 +282,7 @@ class _ForecastRow extends StatelessWidget {
 
     final row = Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+          horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
       child: Row(
         children: <Widget>[
           // Day + date (+ partial caption) on the left.
@@ -295,22 +306,14 @@ class _ForecastRow extends StatelessWidget {
                     color: colors.onSurfaceVariant,
                   ),
                 ),
-                if (day.isPartial)
-                  Text(
-                    l10n.weatherForecastPartial,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
               ],
             ),
           ),
-          // Condition icon + text in the middle.
+          // Condition icon + text in the middle — tinted by condition.
           Icon(
             weatherConditionIcon(day.conditionCode, isDay: day.isDay),
             size: 24,
-            color: colors.primary,
+            color: _iconColor(colors.onSurfaceVariant, colors.primary),
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(

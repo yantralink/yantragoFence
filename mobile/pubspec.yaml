@@ -44,7 +44,6 @@ dependencies:
   url_launcher: ^6.3.2
   package_info_plus: ^9.0.1
   fl_chart: ^1.2.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -79,6 +78,14 @@ flutter_native_splash:
 flutter:
   uses-material-design: true
   generate: true
+
+  fonts:
+    # WeatherIcons font (erikflowers/weather-icons, MIT) — vendored for
+    # forecast glyphs; the weather_icons package is unmaintained and
+    # fails on current Flutter (IconData is final).
+    - family: WeatherIcons
+      fonts:
+        - asset: assets/fonts/weathericons-regular-webfont.ttf
 
   assets:
     - assets/icons/

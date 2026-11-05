@@ -96,19 +96,40 @@ String weatherForecastConditionLabel(AppLocalizations l10n, int? code) {
 }
 
 /// Maps an OWM condition id + day/night flag to a Material glyph.
+/// Vendored WeatherIcons font family (erikflowers/weather-icons, MIT) —
+/// declared in pubspec.yaml; codepoints match weather_icons_g.dart.
+const String _wiFont = 'WeatherIcons';
+
+IconData _wi(int dayCode, int nightCode, {required bool isDay}) =>
+    IconData(isDay ? dayCode : nightCode, fontFamily: _wiFont);
+
 IconData weatherConditionIcon(int? code, {bool isDay = true}) {
   if (code == null) return Icons.cloud_off_outlined;
-  if (code >= 200 && code < 300) return Icons.thunderstorm_outlined;
-  if (code >= 300 && code < 400) return Icons.grain;
-  if (code >= 500 && code < 600) return Icons.umbrella_outlined;
-  if (code >= 600 && code < 700) return Icons.ac_unit;
-  if (code >= 700 && code < 800) return Icons.foggy;
-  if (code == 800) {
-    return isDay ? Icons.wb_sunny_outlined : Icons.nightlight_outlined;
+  if (code >= 200 && code < 300) {
+    return (code >= 230 && code < 240)
+        ? _wi(0xf00e, 0xf03a, isDay: isDay) // storm showers
+        : _wi(0xf010, 0xf03b, isDay: isDay); // thunderstorm
   }
-  if (code == 801 || code == 802) {
-    // Few/scattered clouds — sun partially behind cloud.
-    return isDay ? Icons.wb_twilight : Icons.nights_stay_outlined;
+  if (code >= 300 && code < 400) {
+    return _wi(0xf00b, 0xf039, isDay: isDay); // drizzle
   }
-  return isDay ? Icons.wb_cloudy_outlined : Icons.nights_stay_outlined;
+  if (code >= 500 && code < 600) {
+    return (code >= 520 && code < 600)
+        ? _wi(0xf009, 0xf037, isDay: isDay) // showers
+        : _wi(0xf008, 0xf036, isDay: isDay); // rain
+  }
+  if (code >= 600 && code < 700) {
+    if (code == 612) return _wi(0xf068, 0xf069, isDay: isDay); // sleet storm
+    if (code == 611) return _wi(0xf0b2, 0xf0b3, isDay: isDay); // sleet
+    return (code >= 622 && code < 700)
+        ? _wi(0xf065, 0xf066, isDay: isDay) // heavy snow
+        : _wi(0xf00a, 0xf038, isDay: isDay); // snow
+  }
+  if (code >= 700 && code < 800) return _wi(0xf003, 0xf04a, isDay: isDay); // fog
+  if (code == 800) return _wi(0xf00d, 0xf02e, isDay: isDay); // clear
+  if (code == 801) {
+    return _wi(0xf00c, 0xf083, isDay: isDay); // few clouds (sun + cloud)
+  }
+  if (code == 802) return _wi(0xf002, 0xf031, isDay: isDay); // scattered
+  return _wi(0xf000, 0xf02f, isDay: isDay); // broken/overcast
 }

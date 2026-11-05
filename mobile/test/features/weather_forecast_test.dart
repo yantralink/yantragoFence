@@ -47,23 +47,23 @@ void main() {
 
   testWidgets('collapsed by default shows header only', (tester) async {
     await pumpCard(tester);
-    expect(find.text('5-Day Forecast'), findsOneWidget);
+    expect(find.text('Weather Forecast'), findsOneWidget);
     expect(find.text('Today'), findsNothing);
     expect(find.text('29° / 19°'), findsNothing);
   });
 
   testWidgets('tap expands rows, tap again collapses', (tester) async {
     await pumpCard(tester);
-    await tester.tap(find.text('5-Day Forecast'));
+    await tester.tap(find.text('Weather Forecast'));
     await tester.pumpAndSettle();
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('29° / 19°'), findsOneWidget);
-    expect(find.text('Partial forecast'), findsOneWidget);
+    expect(find.text('Partial forecast'), findsNothing);
     // Finer forecast labels: 801 → Partly Cloudy, 500 → Light Rain.
     expect(find.text('Partly Cloudy'), findsOneWidget);
     expect(find.text('Light Rain'), findsOneWidget);
 
-    await tester.tap(find.text('5-Day Forecast'));
+    await tester.tap(find.text('Weather Forecast'));
     await tester.pumpAndSettle();
     expect(find.text('Today'), findsNothing);
   });
@@ -78,7 +78,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.text('Weather forecast unavailable'), findsOneWidget);
-    await tester.tap(find.text('5-Day Forecast'));
+    await tester.tap(find.text('Weather Forecast'));
     await tester.pumpAndSettle();
     // Unavailable is non-expandable — still no rows.
     expect(find.text('Today'), findsNothing);
