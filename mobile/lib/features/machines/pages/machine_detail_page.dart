@@ -70,13 +70,14 @@ class MachineDetailPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                // Small chip card with the machine's confirmed running
-                // state — live ACC override from the telemetry socket.
+                // Small chip with the machine's confirmed running state.
+                // fencingState is authoritative (Turn ON/OFF drives it);
+                // ACC ignition is only a fallback for legacy trackers.
                 _MachineRunningCard(
-                  ignitionOn: ref.watch(
-                          telemetrySocketProvider(m.id))
-                      ?.ignitionOn ??
-                      m.ignitionOn,
+                  fencingState: m.fencingState,
+                  ignitionOn:
+                      ref.watch(telemetrySocketProvider(m.id))?.ignitionOn ??
+                          m.ignitionOn,
                 ),
                 const SizedBox(height: 8),
                 MachineTelemetryGrid(machine: m),
@@ -105,13 +106,21 @@ class MachineDetailPage extends ConsumerWidget {
 /// Small card with a single chip showing the machine's confirmed
 /// running state (ACC). Hidden until the device has reported ignition.
 class _MachineRunningCard extends StatelessWidget {
+  final String? fencingState;
   final bool? ignitionOn;
 
-  const _MachineRunningCard({required this.ignitionOn});
+  const _MachineRunningCard({this.fencingState, this.ignitionOn});
 
   @override
   Widget build(BuildContext context) {
-    final on = ignitionOn;
+    // Fence state wins; ACC only matters when fencingState is unknown.
+    final on = fencingState == 'ON'
+        ? true
+        : fencingState == 'OFF'
+            ? false
+            : ignitionOn == true
+                ? true
+                : null;
     if (on == null) return const SizedBox.shrink();
     final l10n = context.l10n;
     return Padding(
