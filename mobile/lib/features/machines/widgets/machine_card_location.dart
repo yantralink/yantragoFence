@@ -40,11 +40,11 @@ class MachineCardLocation extends ConsumerWidget {
         ? null
         : address.valueOrNull;
     final lines = resolved?.toShortLines() ?? const <String>[];
-    // With no consent or no geocoding result, coordinates stay on-device.
+    // Never surface raw coordinates — show the resolving hint until the
+    // geocoded address arrives (same UX as the detail page).
     final value = lines.isNotEmpty
         ? lines.join(', ')
-        : '${location.latitude.toStringAsFixed(6)}, '
-              '${location.longitude.toStringAsFixed(6)}'; // always-en: coordinates
+        : context.l10n.resolvingAddress;
     final label = machine.isOnlineStatus
         ? value
         : context.l10n.lastKnownLocation(value);

@@ -123,14 +123,17 @@ class _MachineIdentity extends StatelessWidget {
     );
   }
 
-  Widget _badge(BuildContext context) => AppStatusBadge(
-    // Connectivity stays independent of both fence state and decoration.
-    label: machine.isOnlineStatus
-        ? context.l10n.statusOnline
-        : context.l10n.statusOffline,
-    tone: machine.isOnlineStatus ? StatusTone.info : StatusTone.neutral,
-    dot: true,
-  );
+  Widget _badge(BuildContext context) {
+    // Ignition-based state: green Running, red Stopped. Hidden when the
+    // device has never reported ACC — never shows "unknown".
+    final on = machine.ignitionOn;
+    if (on == null) return const SizedBox.shrink();
+    return AppStatusBadge(
+      label: on ? context.l10n.machineRunning : context.l10n.machineStopped,
+      tone: on ? StatusTone.success : StatusTone.danger,
+      dot: on,
+    );
+  }
 }
 
 class _MachineState extends StatelessWidget {
@@ -154,11 +157,14 @@ class _MachineState extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                machineStateLabel(context.l10n, machine),
-                style: theme.textTheme.bodyLarge,
-              ),
-              const SizedBox(height: AppSpacing.xs),
+              if (machineStateLabel(context.l10n, machine) !=
+                  context.l10n.stateUnknown) ...[
+                Text(
+                  machineStateLabel(context.l10n, machine),
+                  style: theme.textTheme.bodyLarge,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+              ],
               _lastSeen(context),
             ],
           ),
