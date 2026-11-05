@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/core/theme/app_palette.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
 import 'external_battery_mapper.dart';
@@ -29,12 +30,16 @@ class ExternalBatteryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).brightness == Brightness.dark
+        ? AppPalette.darkPrimary
+        : AppPalette.lightPrimary;
     final l10n = context.l10n;
     final int? pct = voltageToExternalBatteryPct(voltage);
     if (pct == null) {
       return AppMetricCard(
         label: l10n.metricLabelBattery,
         icon: Icons.battery_5_bar,
+        iconColor: iconColor,
         state: AppMetricState.unavailable,
         statusText: l10n.metricNoVoltageReport,
       );
@@ -85,6 +90,7 @@ class ExternalBatteryWidget extends StatelessWidget {
     return AppMetricCard(
       label: l10n.metricLabelBattery,
       icon: icon,
+      iconColor: iconColor,
       state: AppMetricState.available,
       value: '$pct', // always-en: numeric value, Latin digits
       unit: '%', // always-en: unit

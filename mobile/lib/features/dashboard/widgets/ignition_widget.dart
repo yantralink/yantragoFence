@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/core/theme/app_palette.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
 /// Machine status widget — displays engine on/off status (device ACC)
@@ -17,11 +18,15 @@ class IgnitionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).brightness == Brightness.dark
+        ? AppPalette.darkSuccess
+        : AppPalette.lightSuccess;
     final l10n = context.l10n;
     if (ignitionOn == null) {
       return AppMetricCard(
         label: l10n.metricLabelMachineStatus,
         icon: Icons.power_settings_new,
+        iconColor: iconColor,
         state: AppMetricState.unavailable,
         statusText: l10n.metricNoAccReport,
       );
@@ -29,11 +34,11 @@ class IgnitionWidget extends StatelessWidget {
     return AppMetricCard(
       label: l10n.metricLabelMachineStatus,
       icon: Icons.power_settings_new,
+      iconColor: iconColor,
       state: AppMetricState.available,
       statusTone: ignitionOn! ? StatusTone.success : StatusTone.neutral,
       value: ignitionOn! ? 'ON' : 'OFF', // always-en: raw state code
-      statusText:
-          ignitionOn! ? l10n.machineRunning : l10n.machineStopped,
+      statusText: ignitionOn! ? l10n.machineRunning : l10n.machineStopped,
     );
   }
 }

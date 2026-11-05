@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/core/theme/app_palette.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
 /// Charging Status widget — bulb indicator based on internal battery.
@@ -21,23 +22,27 @@ class BatteryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).brightness == Brightness.dark
+        ? AppPalette.darkTeal
+        : AppPalette.lightTeal;
     final l10n = context.l10n;
     if (battery == null) {
       return AppMetricCard(
         label: l10n.metricLabelChargingStatus,
         icon: Icons.electrical_services,
+        iconColor: iconColor,
         state: AppMetricState.unavailable,
       );
     }
 
     final bool isOn = battery == 10;
-    final IconData bodyIcon =
-        isOn ? Icons.lightbulb : Icons.lightbulb_outline;
+    final IconData bodyIcon = isOn ? Icons.lightbulb : Icons.lightbulb_outline;
     final Color bodyColor = isOn ? Colors.green : Colors.grey;
 
     return AppMetricCard(
       label: l10n.metricLabelChargingStatus,
       icon: Icons.electrical_services,
+      iconColor: iconColor,
       bodyIcon: bodyIcon,
       bodyIconColor: bodyColor,
       bodyIconSize: 48,

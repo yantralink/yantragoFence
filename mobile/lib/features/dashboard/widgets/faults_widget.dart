@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:yantrago/core/widgets/app_metric_card.dart';
+import 'package:yantrago/core/theme/app_palette.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
 /// Fence Fault widget — bulb indicator based on internal battery.
@@ -20,23 +21,29 @@ class FaultsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).brightness == Brightness.dark
+        ? AppPalette.darkDanger
+        : AppPalette.lightDanger;
     final l10n = context.l10n;
     if (batteryPct == null) {
       return AppMetricCard(
         label: l10n.metricLabelFenceFault,
         icon: Icons.fence,
+        iconColor: iconColor,
         state: AppMetricState.unavailable,
       );
     }
 
     final bool isFault = batteryPct == 100;
-    final IconData bodyIcon =
-        isFault ? Icons.lightbulb : Icons.lightbulb_outline;
+    final IconData bodyIcon = isFault
+        ? Icons.lightbulb
+        : Icons.lightbulb_outline;
     final Color bodyColor = isFault ? Colors.red : Colors.grey;
 
     return AppMetricCard(
       label: l10n.metricLabelFenceFault,
       icon: Icons.fence,
+      iconColor: iconColor,
       bodyIcon: bodyIcon,
       bodyIconColor: bodyColor,
       bodyIconSize: 48,

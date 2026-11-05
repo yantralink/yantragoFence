@@ -36,6 +36,11 @@ class AppPalette {
 
   // ---- Light semantic soft backgrounds -------------------------------
   static const Color lightPrimarySoft = Color(0xFFEFF6FF);
+  /// Telemetry tile accents — one unique hue per metric so tiles are
+  /// scannable at a glance.
+  static const Color lightTeal = Color(0xFF0D9488);
+  static const Color lightViolet = Color(0xFF7C3AED);
+  static const Color lightAmber = Color(0xFFF59E0B);
   /// Subtle highlight for the "today" forecast row — lighter than
   /// [lightPrimarySoft] so the row reads as selected, not dominant.
   static const Color lightTodayHighlight = Color(0xFFEAF2FF);
@@ -71,4 +76,7 @@ class AppPalette {
   static const Color darkWarningSoft = Color(0xFF3B2E1D);
   static const Color darkDangerSoft = Color(0xFF40242E);
   static const Color darkNeutralSoft = Color(0xFF334155);
+  static const Color darkTeal = Color(0xFF2DD4BF);
+  static const Color darkViolet = Color(0xFFA78BFA);
+  static const Color darkAmber = Color(0xFFFBBF24);
 }
