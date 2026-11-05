@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/network/api_client.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/models/weather.dart';
+import 'package:yantrago/models/weather_forecast.dart';
 
 /// Weather service — resolves a machine's location weather via the
 /// backend proxy, mirroring ReverseGeocodingService.
@@ -31,6 +32,7 @@ class WeatherService {
   final Dio _dio;
 
   final Map<String, Future<Weather?>> _pending = {};
+  final Map<String, Future<WeatherForecast?>> _forecastPending = {};
   final CancelToken _cancelToken = CancelToken();
 
   /// Fetches current weather for [machineId] via the backend weather
@@ -69,8 +71,44 @@ class WeatherService {
     return null;
   }
 
+  /// Fetches the normalized forecast slots for [machineId] via the
+  /// backend forecast proxy. Returns null on 404/502/network errors —
+  /// the UI shows its unavailable state. Coalesced per
+  /// machine+locationKey while in flight.
+  Future<WeatherForecast?> getMachineForecast(
+    String machineId, {
+    String? locationKey,
+  }) {
+    if (_cancelToken.isCancelled) return Future.value(null);
+    final key = 'forecast|$machineId|${locationKey ?? ''}';
+    return _forecastPending.putIfAbsent(
+      key,
+      () => _fetchForecast(machineId).whenComplete(() {
+        _forecastPending.remove(key);
+      }),
+    );
+  }
+
+  Future<WeatherForecast?> _fetchForecast(String machineId) async {
+    try {
+      final response = await _dio.get(
+        '/api/v1/machines/$machineId/weather/forecast',
+        cancelToken: _cancelToken,
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        return WeatherForecast.fromJson(
+            response.data as Map<String, dynamic>);
+      }
+    } on DioException {
+      // 404 (no location), 502 (provider down), network error — all
+      // fall back to the unavailable state.
+    }
+    return null;
+  }
+
   void dispose() {
     _cancelToken.cancel();
     _pending.clear();
+    _forecastPending.clear();
   }
 }

@@ -92,6 +92,8 @@ class _MachineLocationMapPageState
     final location = ref.watch(machineLocationProvider(widget.machineId));
     final address = ref.watch(machineAddressProvider(widget.machineId));
     final weatherAsync = ref.watch(machineWeatherProvider(widget.machineId));
+    final forecastAsync =
+        ref.watch(machineWeatherForecastProvider(widget.machineId));
     final machine = ref.watch(machineDetailProvider(widget.machineId));
     final protection =
         ref.watch(theftProtectionNotifierProvider(widget.machineId));
@@ -167,24 +169,35 @@ class _MachineLocationMapPageState
               ),
             ),
 
-            // Below-map info panel.
-            MapInfoPanel(
-              machineId: widget.machineId,
-              machine: m,
-              machineOn: machineOn,
-              address: address.valueOrNull?.displayName ??
-                  '${effectiveLoc.latitude.toStringAsFixed(6)}, '
-                      '${effectiveLoc.longitude.toStringAsFixed(6)}',
-              updatedLabel: l10n.updatedAt(relativeTime(
-                  l10n, effectiveLoc.recordedAt ?? effectiveLoc.updatedAt)),
-              latitude: effectiveLoc.latitude,
-              longitude: effectiveLoc.longitude,
-              weather: weatherAsync.valueOrNull,
-              weatherLoading: weatherAsync.isLoading,
-              onWeatherTap: weatherAsync.valueOrNull == null
-                  ? null
-                  : () => showWeatherDetailsSheet(
-                      context, weatherAsync.valueOrNull!),
+            // Below-map info panel — scrollable and height-bounded so
+            // the expanded forecast card can never overlap the map or
+            // push controls off-screen; the map itself never scrolls.
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+              ),
+              child: SingleChildScrollView(
+                child: MapInfoPanel(
+                  machineId: widget.machineId,
+                  machine: m,
+                  machineOn: machineOn,
+                  address: address.valueOrNull?.displayName ??
+                      '${effectiveLoc.latitude.toStringAsFixed(6)}, '
+                          '${effectiveLoc.longitude.toStringAsFixed(6)}',
+                  updatedLabel: l10n.updatedAt(relativeTime(
+                      l10n, effectiveLoc.recordedAt ?? effectiveLoc.updatedAt)),
+                  latitude: effectiveLoc.latitude,
+                  longitude: effectiveLoc.longitude,
+                  weather: weatherAsync.valueOrNull,
+                  weatherLoading: weatherAsync.isLoading,
+                  onWeatherTap: weatherAsync.valueOrNull == null
+                      ? null
+                      : () => showWeatherDetailsSheet(
+                          context, weatherAsync.valueOrNull!),
+                  forecastDays: forecastAsync.valueOrNull ?? const [],
+                  forecastLoading: forecastAsync.isLoading,
+                ),
+              ),
             ),
           ],
         );

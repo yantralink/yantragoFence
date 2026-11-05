@@ -60,10 +60,14 @@ class WeatherServiceTest {
     }
 
     private WeatherService serviceWith(String apiKey) {
-        return new WeatherService(
-                locationService, restClientBuilder,
-                "https://provider.test", apiKey,
-                true, 1800, 100, 1, 10_000, 2);
+        return new WeatherService(locationService, clientWith(apiKey),
+                true, 1800, 100, 2);
+    }
+
+    private WeatherProviderClient clientWith(String apiKey) {
+        return new WeatherProviderClient(
+                restClientBuilder, "https://provider.test", apiKey,
+                1, 10_000, 5_000, 10_000, 0, false);
     }
 
     private LocationDto location(double lat, double lon) {
@@ -168,9 +172,8 @@ class WeatherServiceTest {
     @Test
     void getCurrentWeather_disabled_throwsWeatherProviderException() {
         service = new WeatherService(
-                locationService, restClientBuilder,
-                "https://provider.test", API_KEY,
-                false, 1800, 100, 1, 10_000, 2);
+                locationService, clientWith(API_KEY),
+                false, 1800, 100, 2);
         assertThrows(WeatherProviderException.class,
                 () -> service.getCurrentWeather(MACHINE_ID));
         verifyNoInteractions(locationService);

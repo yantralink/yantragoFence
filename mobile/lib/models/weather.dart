@@ -82,6 +82,19 @@ String weatherConditionLabel(AppLocalizations l10n, int? code) {
   return l10n.weatherClouds;
 }
 
+/// Forecast-specific label — finer distinctions than the broad
+/// [weatherConditionLabel] groups (801/802 partly cloudy, light-rain
+/// codes vs heavier rain). Everything else delegates to the shared
+/// mapping so labels stay consistent with the current-weather strip.
+String weatherForecastConditionLabel(AppLocalizations l10n, int? code) {
+  if (code == 801 || code == 802) return l10n.weatherConditionPartlyCloudy;
+  if (code != null &&
+      ((code >= 500 && code <= 501) || (code >= 520 && code <= 522))) {
+    return l10n.weatherConditionLightRain;
+  }
+  return weatherConditionLabel(l10n, code);
+}
+
 /// Maps an OWM condition id + day/night flag to a Material glyph.
 IconData weatherConditionIcon(int? code, {bool isDay = true}) {
   if (code == null) return Icons.cloud_off_outlined;

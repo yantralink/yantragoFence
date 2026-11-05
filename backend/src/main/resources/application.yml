@@ -210,9 +210,21 @@ weather:
   # result cache TTL — provider observation freshness is ~10min; 30min
   # buckets keep volume far under the free-tier limit
   cache-ttl-seconds: ${WEATHER_CACHE_TTL_SECONDS:1800}
+  # forecast: normalized 3-hour slots over ~5 days; cached longer since
+  # model output changes slowly. WEATHER_FORECAST_ENABLED=false rolls
+  # the forecast endpoint back without affecting current weather.
+  forecast-enabled: ${WEATHER_FORECAST_ENABLED:true}
+  forecast-cache-ttl-seconds: ${WEATHER_FORECAST_CACHE_TTL_SECONDS:10800}
   cache-max-entries: ${WEATHER_CACHE_MAX_ENTRIES:1000}
-  min-request-interval-ms: ${WEATHER_MIN_REQUEST_INTERVAL_MS:500}
+  # one shared provider budget across current + forecast calls — 1100ms
+  # stays under the OWM 60 calls/min free-tier limit
+  min-request-interval-ms: ${WEATHER_MIN_REQUEST_INTERVAL_MS:1100}
   max-wait-ms: ${WEATHER_MAX_WAIT_MS:15000}
+  connect-timeout-ms: ${WEATHER_CONNECT_TIMEOUT_MS:5000}
+  read-timeout-ms: ${WEATHER_READ_TIMEOUT_MS:10000}
+  # after a provider failure, skip outbound calls for this long so a
+  # struggling provider is not hammered
+  failure-backoff-seconds: ${WEATHER_FAILURE_BACKOFF_SECONDS:30}
   # decimals sent to the provider — 2 ≈ 1.1km, plenty for weather and
   # maximizes cache sharing across nearby machines
   coordinate-precision: ${WEATHER_COORDINATE_PRECISION:2}

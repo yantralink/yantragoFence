@@ -1,6 +1,8 @@
 package com.yantrago.api.controller;
 
 import com.yantrago.api.dto.weather.WeatherDto;
+import com.yantrago.api.dto.weather.WeatherForecastDto;
+import com.yantrago.api.service.WeatherForecastService;
 import com.yantrago.api.service.WeatherService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,9 +32,12 @@ import java.util.UUID;
 public class WeatherController {
 
     private final WeatherService weatherService;
+    private final WeatherForecastService weatherForecastService;
 
-    public WeatherController(WeatherService weatherService) {
+    public WeatherController(WeatherService weatherService,
+                             WeatherForecastService weatherForecastService) {
         this.weatherService = weatherService;
+        this.weatherForecastService = weatherForecastService;
     }
 
     @GetMapping("/{machineId}/weather")
@@ -43,5 +48,15 @@ public class WeatherController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(weather);
+    }
+
+    @GetMapping("/{machineId}/weather/forecast")
+    @PreAuthorize("hasAuthority('location:read') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<WeatherForecastDto> getForecast(@PathVariable UUID machineId) {
+        WeatherForecastDto forecast = weatherForecastService.getForecast(machineId);
+        if (forecast == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(forecast);
     }
 }

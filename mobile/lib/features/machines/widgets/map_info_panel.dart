@@ -5,7 +5,9 @@ import 'package:yantrago/features/machines/widgets/environmental_strip.dart';
 import 'package:yantrago/features/machines/widgets/machine_action_pills.dart';
 import 'package:yantrago/features/machines/widgets/map_location_card.dart';
 import 'package:yantrago/features/machines/widgets/theft_protection_card.dart';
+import 'package:yantrago/features/machines/widgets/weather_forecast_card.dart';
 import 'package:yantrago/l10n/l10n.dart';
+import 'package:yantrago/models/daily_forecast.dart';
 import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/weather.dart';
 
@@ -28,6 +30,11 @@ class MapInfoPanel extends StatelessWidget {
   final Weather? weather;
   final bool weatherLoading;
 
+  /// Grouped daily forecast rows (local calendar days). Empty +
+  /// [forecastLoading] false renders the card's unavailable state.
+  final List<DailyForecast> forecastDays;
+  final bool forecastLoading;
+
   /// Strip tap handler (opens the weather details sheet). Null =
   /// non-interactive strip.
   final VoidCallback? onWeatherTap;
@@ -43,6 +50,8 @@ class MapInfoPanel extends StatelessWidget {
     required this.longitude,
     required this.weather,
     required this.weatherLoading,
+    this.forecastDays = const <DailyForecast>[],
+    this.forecastLoading = false,
     this.onWeatherTap,
   });
 
@@ -66,6 +75,21 @@ class MapInfoPanel extends StatelessWidget {
             weather: weather,
             isLoading: weatherLoading,
             onTap: onWeatherTap,
+          ),
+          // Expandable 5-day forecast — sits directly below current
+          // weather and above machine controls. Expansion is local
+          // card state; it never triggers a fetch.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
+                AppSpacing.xs, AppSpacing.lg, AppSpacing.xs),
+            child: WeatherForecastCard(
+              status: forecastLoading
+                  ? WeatherForecastStatus.loading
+                  : forecastDays.isEmpty
+                      ? WeatherForecastStatus.unavailable
+                      : WeatherForecastStatus.ready,
+              days: forecastDays,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
