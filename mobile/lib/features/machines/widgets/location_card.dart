@@ -100,18 +100,15 @@ class _LocationContent extends StatelessWidget {
       onTap: () => _openInAppMap(context),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             // Location icon
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Icon(
-                Icons.location_on,
-                color: colors.primary,
-                size: 28,
-              ),
+            Icon(
+              Icons.location_on,
+              color: colors.primary,
+              size: 24,
             ),
             const SizedBox(width: 12),
             // Address text
@@ -125,7 +122,7 @@ class _LocationContent extends StatelessWidget {
                       color: colors.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   ...addressLines.map((line) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 1),
                         child: Text(
@@ -158,10 +155,7 @@ class _LocationContent extends StatelessWidget {
               ),
             ),
             // Chevron
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
-            ),
+            Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
           ],
         ),
       ),

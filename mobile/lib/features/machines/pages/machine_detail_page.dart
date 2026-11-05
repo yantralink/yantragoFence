@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/theme/app_semantic_colors.dart';
 import 'package:yantrago/core/widgets/app_page_body.dart';
 import 'package:yantrago/core/widgets/app_state_panel.dart';
-import 'package:yantrago/core/widgets/app_status_badge.dart';
-import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/machines/providers/machine_address_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
@@ -115,16 +113,17 @@ class _MachineRunningCard extends StatelessWidget {
     final on = ignitionOn;
     if (on == null) return const SizedBox.shrink();
     final l10n = context.l10n;
-    return AppSurfaceCard(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: <Widget>[
-          AppStatusBadge(
-            label: on ? l10n.machineRunning : l10n.machineStopped,
-            tone: on ? StatusTone.success : StatusTone.neutral,
-            dot: on,
-          ),
-        ],
+    final semantic = Theme.of(context).extension<AppSemanticColors>();
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 2),
+      child: Text(
+        on ? l10n.machineRunning : l10n.machineStopped,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: semantic?.tone(
+                      on ? StatusTone.success : StatusTone.neutral) ??
+                  Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
       ),
     );
   }

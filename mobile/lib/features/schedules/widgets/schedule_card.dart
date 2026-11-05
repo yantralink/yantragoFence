@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:yantrago/core/widgets/app_surface_card.dart';
 import 'package:yantrago/features/schedules/models/machine_schedule.dart';
 import 'package:yantrago/features/schedules/providers/schedule_provider.dart';
-import 'package:yantrago/features/schedules/widgets/schedule_run_status.dart';
 import 'package:yantrago/l10n/generated/app_localizations.dart';
 import 'package:yantrago/l10n/l10n.dart';
 
@@ -159,6 +158,17 @@ class _ConfiguredCard extends ConsumerWidget {
                     style: text.titleSmall
                         ?.copyWith(fontWeight: FontWeight.w600)),
               ),
+              // Edit sits directly left of the enable toggle.
+              TextButton.icon(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: Text(l10n.scheduleEdit),
+                onPressed: () =>
+                    context.push('/app/machines/$machineId/schedule'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+              ),
               Switch(
                 value: schedule.enabled,
                 onChanged: (v) => _toggle(context, ref, v),
@@ -174,45 +184,6 @@ class _ConfiguredCard extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(_daysSummary(), style: text.bodySmall),
-          const Divider(height: 16),
-          if (schedule.nextOnAt != null)
-            Text(l10n.scheduleNextOnAt(_fmtInstant(schedule.nextOnAt!)),
-                style: text.bodySmall),
-          if (schedule.nextOffAt != null)
-            Text(l10n.scheduleNextOffAt(_fmtInstant(schedule.nextOffAt!)),
-                style: text.bodySmall),
-          if (schedule.lastRun != null) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: <Widget>[
-                Icon(scheduleRunIcon(schedule.lastRun!),
-                    size: 16,
-                    color: scheduleRunColor(context, schedule.lastRun!)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    l10n.scheduleLastRun(
-                        scheduleRunLabel(l10n, schedule.lastRun!)),
-                    style: text.bodySmall?.copyWith(
-                      color: scheduleRunColor(context, schedule.lastRun!),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: Text(l10n.scheduleEdit),
-              onPressed: () =>
-                  context.push('/app/machines/$machineId/schedule'),
-            ),
-          ),
         ],
       ),
     );
@@ -231,9 +202,6 @@ class _ConfiguredCard extends ConsumerWidget {
       ref.invalidate(machineScheduleProvider(machineId));
     }
   }
-
-  String _fmtInstant(DateTime instant) =>
-      DateFormat.yMMMd().add_jm().format(instant);
 
   String _daysSummary() {
     if (schedule.isDaily) return l10n.scheduleDaily;
