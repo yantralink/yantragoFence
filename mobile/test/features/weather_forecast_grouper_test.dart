@@ -80,6 +80,21 @@ void main() {
     expect(days.single.conditionCode, 500);
   });
 
+  test('icon comes from noon-closest slot, not first slot of day', () {
+    // Regression: the first slot of a future day is 00:00 → night icon
+    // '01n' (moon). The day's icon must come from the noon slot so
+    // isDay resolves true — otherwise every day but Today shows a moon.
+    final slots = [
+      slot('2026-11-06T00:00:00Z', 18, 800, icon: '01n'),
+      slot('2026-11-06T03:00:00Z', 18, 800, icon: '01n'),
+      slot('2026-11-06T09:00:00Z', 25, 800, icon: '01d'),
+      slot('2026-11-06T12:00:00Z', 30, 800, icon: '01d'),
+    ];
+    final days = groupForecastIntoDays(slots, now: now, localOf: utcOf);
+    expect(days.single.conditionIcon, '01d');
+    expect(days.single.isDay, isTrue);
+  });
+
   test('respects user local timezone, not UTC day', () {
     // Slot at 18:30 UTC = next day 00:00 in UTC+5:30.
     DateTime ist(DateTime d) =>

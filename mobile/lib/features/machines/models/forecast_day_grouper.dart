@@ -87,14 +87,16 @@ List<DailyForecast> groupForecastIntoDays(
   for (final v in daySlots) {
     final code = v.slot.conditionCode;
     if (code == null) continue;
-    iconByCode.putIfAbsent(code, () => v.slot.conditionIcon);
     firstSeen.putIfAbsent(code, () => order++);
     freq[code] = (freq[code] ?? 0) + 1;
     final minutes = v.local.hour * 60 + v.local.minute;
     final dist = Duration(minutes: (minutes - 12 * 60).abs());
-    noonDist[code] = noonDist.containsKey(code) && noonDist[code]!.compareTo(dist) <= 0
-        ? noonDist[code]!
-        : dist;
+    // Icon must come from the slot closest to noon — taking the first
+    // slot would always be a 00:00 night glyph ('01n') for future days.
+    if (!noonDist.containsKey(code) || dist < noonDist[code]!) {
+      noonDist[code] = dist;
+      iconByCode[code] = v.slot.conditionIcon;
+    }
   }
   if (freq.isEmpty) return null;
 
