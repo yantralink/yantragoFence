@@ -79,6 +79,11 @@ public class TelemetryForwardService implements GpsIngestService {
                 request.getIgnitionOn(), // ACC status from 0x22 ACC byte / 0x26 Terminal Info Bit1
                 timestamp
         );
+        // Alarm packets include a relay bit; GPS-only packets leave it null.
+        // Preserve that distinction so GPS cannot overwrite confirmed state.
+        if (request.getRelayOn() != null) {
+            telemetryMessage.setFencingState(request.getRelayOn() ? "ON" : "OFF");
+        }
         telemetryProducer.publishTelemetry(telemetryMessage);
 
         // Forward location

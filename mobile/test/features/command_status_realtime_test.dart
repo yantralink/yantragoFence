@@ -6,8 +6,13 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:stomp_dart_client/stomp_frame.dart';
 
 import 'package:yantrago/features/commands/providers/command_provider.dart';
+import 'package:yantrago/features/machines/providers/machine_provider.dart';
+import 'package:yantrago/features/machines/providers/telemetry_socket_provider.dart';
+import 'package:yantrago/models/machine.dart';
 import 'package:yantrago/models/command.dart';
 import 'package:yantrago/models/command_status_update.dart';
 
@@ -54,6 +59,53 @@ class _SeededNotifier extends CommandNotifier {
 }
 
 void main() {
+  test('relay frames refresh list and detail only when reported state changes', () async {
+    var detailReads = 0;
+    var listReads = 0;
+    final machine = Machine(
+      id: 'm1', machineId: 'YG1', name: 'Fence', status: 'ACTIVE',
+      isOnline: true, createdAt: DateTime(2026),
+    );
+    final container = ProviderContainer(overrides: [
+      machineDetailProvider('m1').overrideWith((ref) async {
+        detailReads++;
+        return machine;
+      }),
+      machineListProvider.overrideWith((ref) async {
+        listReads++;
+        return [machine];
+      }),
+      telemetrySocketProvider('m1').overrideWith((ref) =>
+          TelemetrySocketController(ref, 'm1', autoConnect: false)),
+    ]);
+    addTearDown(container.dispose);
+    container.listen(machineDetailProvider('m1'), (_, __) {});
+    container.listen(machineListProvider, (_, __) {});
+    container.listen(telemetrySocketProvider('m1'), (_, __) {});
+    Future<void> settle() async {
+      await container.read(machineDetailProvider('m1').future);
+      await container.read(machineListProvider.future);
+    }
+    await settle();
+    final socket = container.read(telemetrySocketProvider('m1').notifier);
+    void frame(String body) => socket.handleTelemetryFrame(
+        StompFrame(command: 'MESSAGE', headers: {}, body: body));
+    frame('{"machineId":"other","fencingState":"ON"}');
+    frame('{"machineId":"m1","ignitionOn":true}');
+    await settle();
+    expect((detailReads, listReads), (1, 1));
+    frame('{"machineId":"m1","fencingState":"ON"}');
+    await settle();
+    expect((detailReads, listReads), (2, 2));
+    frame('{"machineId":"m1","fencingState":"ON"}');
+    frame('{"machineId":"m1","voltage":12.0}');
+    await settle();
+    expect((detailReads, listReads), (2, 2));
+    frame('{"machineId":"m1","fencingState":"OFF"}');
+    await settle();
+    expect((detailReads, listReads), (3, 3));
+  });
+
   group('CommandStatusUpdate.fromJson', () {
     test('parses the backend broadcast payload', () {
       final update = CommandStatusUpdate.fromJson({

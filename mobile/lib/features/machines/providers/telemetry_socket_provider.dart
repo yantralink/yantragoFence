@@ -10,6 +10,7 @@ import 'package:yantrago/core/auth/auth_state.dart';
 import 'package:yantrago/core/auth/token_manager.dart';
 import 'package:yantrago/core/config/app_config.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
+import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/models/telemetry.dart';
 
 /// Real-time telemetry socket controller.
@@ -33,6 +34,7 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
   StompClient? _client;
   Timer? _reconnectTimer;
   bool _disposed = false;
+  String? _lastFencingState;
 
   TelemetrySocketController(
     this._ref,
@@ -89,9 +91,10 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
           // Clear any stale state carried over a reconnect — fresh frames
           // will repopulate it.
           state = null;
+          _lastFencingState = null;
           _client?.subscribe(
             destination: AppConfig.wsTopicTelemetryMachine(machineId),
-            callback: _onTelemetryFrame,
+            callback: handleTelemetryFrame,
           );
         },
         onDisconnect: (frame) {
@@ -124,12 +127,21 @@ class TelemetrySocketController extends StateNotifier<Telemetry?> {
     _client?.activate();
   }
 
-  void _onTelemetryFrame(StompFrame frame) {
+  @visibleForTesting
+  void handleTelemetryFrame(StompFrame frame) {
     try {
       if (frame.body == null) return;
       final json = jsonDecode(frame.body!) as Map<String, dynamic>;
       final frameMachineId = json['machineId'] as String?;
       if (frameMachineId != machineId) return;
+      final fencingState = json['fencingState'] as String?;
+      if (fencingState != null && fencingState != _lastFencingState) {
+        _lastFencingState = fencingState;
+        // Fetch the persisted, authorized snapshot only on state changes.
+        // Repeated heartbeats and GPS-only frames must not trigger requests.
+        _ref.invalidate(machineDetailProvider(machineId));
+        _ref.invalidate(machineListProvider);
+      }
       final incoming = Telemetry.fromJson(json);
       // Merge with existing state — GPS packets arrive with null for
       // battery/voltage/gsm/charging/ignition, so we keep the last known

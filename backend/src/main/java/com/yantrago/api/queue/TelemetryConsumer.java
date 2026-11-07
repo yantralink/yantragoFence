@@ -133,7 +133,8 @@ public class TelemetryConsumer {
             telemetryBroadcastService.broadcastTelemetry(
                     machineId, message.getDeviceId(),
                     message.getVoltage(), message.getBattery(), message.getGsmSignal(),
-                    message.getCharging(), message.getIgnitionOn(), recordedAt
+                    message.getCharging(), message.getIgnitionOn(), recordedAt,
+                    message.getFencingState()
             );
 
             // Battery-state transition detection (10% charging / 100% fault).

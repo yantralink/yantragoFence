@@ -10,6 +10,7 @@ import 'package:yantrago/core/locale/locale_sync_provider.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/l10n/generated/app_localizations.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
+import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/notifications/providers/notification_provider.dart';
 import 'package:yantrago/features/notifications/providers/notification_socket_provider.dart';
 import 'package:yantrago/features/push/providers/push_notification_provider.dart';
@@ -80,6 +81,10 @@ class _YantraGoAppState extends ConsumerState<YantraGoApp>
             );
       }
       ref.invalidate(commandHistoryProvider);
+      if (event.commandStatus == 'DONE') {
+        ref.invalidate(machineDetailProvider(event.machineId));
+        ref.invalidate(machineListProvider);
+      }
     });
 
     await pushService.initialize();
@@ -110,6 +115,8 @@ class _YantraGoAppState extends ConsumerState<YantraGoApp>
       // Phase 6: refresh command history on resume so a push that landed
       // while backgrounded is reflected in the UI.
       ref.invalidate(commandHistoryProvider);
+      ref.invalidate(machineDetailProvider);
+      ref.invalidate(machineListProvider);
       // Phase 5: re-attempt a pending language sync after reconnecting.
       ref.read(localeSyncProvider.notifier).resumed();
       // Phase 5: converge with the server's last-accepted preference.

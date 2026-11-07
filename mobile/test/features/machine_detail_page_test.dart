@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:yantrago/core/config/theme.dart';
+import 'package:yantrago/core/widgets/app_status_badge.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
 import 'package:yantrago/features/commands/providers/command_socket_provider.dart';
 import 'package:yantrago/features/machines/pages/machine_detail_page.dart';
@@ -201,17 +202,32 @@ void main() {
     expect(find.text('000000000000001'), findsOneWidget);
   });
 
-  testWidgets('shows online success badge for online machine', (tester) async {
+  testWidgets('shows running chip from confirmed relay ON', (tester) async {
     await _pump(
       tester,
       _overrides(machine: _machine(fencingState: 'ON', isOnline: true)),
     );
-    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('Machine Running'), findsOneWidget);
   });
 
-  testWidgets('shows offline neutral badge for offline machine', (tester) async {
-    await _pump(tester, _overrides(machine: _machine()));
-    expect(find.text('Offline'), findsOneWidget);
+  testWidgets('shows stopped chip from confirmed relay OFF even offline', (tester) async {
+    await _pump(tester, _overrides(machine: _machine(fencingState: 'OFF')));
+    expect(find.text('Machine Stopped'), findsOneWidget);
+  });
+
+  testWidgets('hides running chip without confirmed relay even with ACC on', (tester) async {
+    await _pump(tester, _overrides(
+      machine: _machine(),
+      liveTelemetry: Telemetry(ignitionOn: true, receivedAt: DateTime.now()),
+    ));
+    expect(find.descendant(
+      of: find.byType(AppStatusBadge),
+      matching: find.text('Machine Running'),
+    ), findsNothing);
+    expect(find.descendant(
+      of: find.byType(AppStatusBadge),
+      matching: find.text('Machine Stopped'),
+    ), findsNothing);
   });
 
   testWidgets('telemetry grid shows unavailable state, not fabricated values',

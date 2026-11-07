@@ -96,6 +96,18 @@ Future<void> _pump(
 }
 
 void main() {
+  testWidgets('relay chips show ON/OFF and hide unknown independently of connectivity', (tester) async {
+    await _pump(tester, machine: _machine(fencingState: 'ON', online: false));
+    expect(find.text('Machine Running'), findsOneWidget);
+    expect(find.text('Machine Stopped'), findsNothing);
+    await _pump(tester, machine: _machine(fencingState: 'OFF', online: true));
+    expect(find.text('Machine Stopped'), findsOneWidget);
+    expect(find.text('Machine Running'), findsNothing);
+    await _pump(tester, machine: _machine(fencingState: 'UNKNOWN'));
+    expect(find.text('Machine Running'), findsNothing);
+    expect(find.text('Machine Stopped'), findsNothing);
+  });
+
   testWidgets('shows real data and location tap preserves whole-card action', (
     tester,
   ) async {

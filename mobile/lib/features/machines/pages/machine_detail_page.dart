@@ -9,7 +9,6 @@ import 'package:yantrago/features/machines/providers/machine_address_provider.da
 import 'package:yantrago/features/machines/providers/machine_location_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/features/machines/providers/machine_telemetry_provider.dart';
-import 'package:yantrago/features/machines/providers/telemetry_socket_provider.dart';
 import 'package:yantrago/features/machines/widgets/location_card.dart';
 import 'package:yantrago/features/machines/widgets/machine_telemetry_grid.dart';
 import 'package:yantrago/features/machines/widgets/on_off_button.dart';
@@ -70,14 +69,9 @@ class MachineDetailPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                // Small chip with the machine's confirmed running state.
-                // fencingState is authoritative (Turn ON/OFF drives it);
-                // ACC ignition is only a fallback for legacy trackers.
+                // Only confirmed relay state determines machine operation.
                 _MachineRunningCard(
                   fencingState: m.fencingState,
-                  ignitionOn:
-                      ref.watch(telemetrySocketProvider(m.id))?.ignitionOn ??
-                          m.ignitionOn,
                 ),
                 const SizedBox(height: 8),
                 MachineTelemetryGrid(machine: m),
@@ -103,24 +97,19 @@ class MachineDetailPage extends ConsumerWidget {
   }
 }
 
-/// Small card with a single chip showing the machine's confirmed
-/// running state (ACC). Hidden until the device has reported ignition.
+/// Compact chip, hidden until the device has reported its relay state.
 class _MachineRunningCard extends StatelessWidget {
   final String? fencingState;
-  final bool? ignitionOn;
 
-  const _MachineRunningCard({this.fencingState, this.ignitionOn});
+  const _MachineRunningCard({this.fencingState});
 
   @override
   Widget build(BuildContext context) {
-    // Fence state wins; ACC only matters when fencingState is unknown.
     final on = fencingState == 'ON'
         ? true
         : fencingState == 'OFF'
             ? false
-            : ignitionOn == true
-                ? true
-                : null;
+            : null;
     if (on == null) return const SizedBox.shrink();
     final l10n = context.l10n;
     return Padding(

@@ -11,6 +11,7 @@ import 'package:yantrago/core/auth/token_manager.dart';
 import 'package:yantrago/core/config/app_config.dart';
 import 'package:yantrago/features/auth/providers/auth_provider.dart';
 import 'package:yantrago/features/commands/providers/command_provider.dart';
+import 'package:yantrago/features/machines/providers/machine_provider.dart';
 import 'package:yantrago/models/command_status_update.dart';
 
 /// Real-time command status socket controller.
@@ -128,6 +129,10 @@ class CommandSocketController extends StateNotifier<CommandSocketState> {
       if (update.machineId != machineId) return;
       _ref.read(commandProvider.notifier).applyStatusUpdate(update);
       _ref.invalidate(commandHistoryProvider);
+      if (update.status == 'DONE') {
+        _ref.invalidate(machineDetailProvider(machineId));
+        _ref.invalidate(machineListProvider);
+      }
     } catch (e) {
       // Never surface raw exceptions to the UI — log and swallow.
       // SEC-08: Don't log exception details — may contain command data.

@@ -47,6 +47,14 @@ public class TelemetryBroadcastService {
                                     Double voltage, Double battery, Integer gsmSignal,
                                     Boolean charging, Boolean ignitionOn,
                                     LocalDateTime recordedAt) {
+        broadcastTelemetry(machineId, deviceId, voltage, battery, gsmSignal,
+                charging, ignitionOn, recordedAt, null);
+    }
+
+    public void broadcastTelemetry(UUID machineId, UUID deviceId,
+                                    Double voltage, Double battery, Integer gsmSignal,
+                                    Boolean charging, Boolean ignitionOn,
+                                    LocalDateTime recordedAt, String fencingState) {
         if (machineId == null) {
             log.debug("Skipping telemetry broadcast: machineId is null (device={})", deviceId);
             return;
@@ -63,6 +71,7 @@ public class TelemetryBroadcastService {
         payload.put("gsmSignal", gsmSignal);
         payload.put("charging", charging);
         payload.put("ignitionOn", ignitionOn);
+        payload.put("fencingState", fencingState);
         payload.put("timestamp", recordedAt.toString());
 
         messagingTemplate.convertAndSend(destination, payload);

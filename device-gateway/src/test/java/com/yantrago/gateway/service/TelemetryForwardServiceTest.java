@@ -50,6 +50,21 @@ class TelemetryForwardServiceTest {
     }
 
     @Test
+    void ingestPreservesReportedRelayStateAndLeavesMissingStateUnset() {
+        for (Boolean relayOn : new Boolean[]{true, false, null}) {
+            GpsIngestRequest request = new GpsIngestRequest();
+            request.setDeviceId(deviceId.toString());
+            request.setRelayOn(relayOn);
+            telemetryForwardService.ingest(request);
+        }
+        ArgumentCaptor<TelemetryMessage> messages = ArgumentCaptor.forClass(TelemetryMessage.class);
+        verify(telemetryProducer, times(3)).publishTelemetry(messages.capture());
+        assertEquals("ON", messages.getAllValues().get(0).getFencingState());
+        assertEquals("OFF", messages.getAllValues().get(1).getFencingState());
+        assertNull(messages.getAllValues().get(2).getFencingState());
+    }
+
+    @Test
     @DisplayName("ingest should skip when deviceId is null")
     void ingest_shouldSkipWhenDeviceIdIsNull() {
         GpsIngestRequest request = new GpsIngestRequest();

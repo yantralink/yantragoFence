@@ -26,6 +26,8 @@ class CommandResultServiceTest {
     private CommandResultProducer commandResultProducer;
     private PendingCommandRegistry pendingCommandRegistry;
     private CommandResultService commandResultService;
+    private DeviceMappingCacheService deviceMappingCacheService;
+    private TelemetryForwardService telemetryForwardService;
 
     private final String imei = "123456789012345";
     private final UUID commandId = UUID.randomUUID();
@@ -34,7 +36,29 @@ class CommandResultServiceTest {
     void setUp() {
         commandResultProducer = mock(CommandResultProducer.class);
         pendingCommandRegistry = mock(PendingCommandRegistry.class);
-        commandResultService = new CommandResultService(commandResultProducer, pendingCommandRegistry);
+        deviceMappingCacheService = mock(DeviceMappingCacheService.class);
+        telemetryForwardService = mock(TelemetryForwardService.class);
+        commandResultService = new CommandResultService(commandResultProducer, pendingCommandRegistry,
+                deviceMappingCacheService, telemetryForwardService);
+    }
+
+    @Test
+    void heartbeatReportsBothRelayStatesWithoutCompletingACommand() {
+        UUID deviceId = UUID.randomUUID();
+        when(deviceMappingCacheService.getDeviceIdByImei(imei)).thenReturn(deviceId.toString());
+
+        commandResultService.updateLockStateFromHeartbeat(imei, true);
+        commandResultService.updateLockStateFromHeartbeat(imei, false);
+
+        verify(telemetryForwardService).forwardFencingState(deviceId, imei, "ON");
+        verify(telemetryForwardService).forwardFencingState(deviceId, imei, "OFF");
+        verifyNoInteractions(commandResultProducer, pendingCommandRegistry);
+    }
+
+    @Test
+    void heartbeatWithoutDeviceMappingDoesNotPublishState() {
+        commandResultService.updateLockStateFromHeartbeat(imei, false);
+        verifyNoInteractions(telemetryForwardService, commandResultProducer, pendingCommandRegistry);
     }
 
     @Test

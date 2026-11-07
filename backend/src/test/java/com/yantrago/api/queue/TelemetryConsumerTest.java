@@ -108,7 +108,7 @@ class TelemetryConsumerTest {
 
         verify(telemetryBroadcastService).broadcastTelemetry(
                 eq(machineId), eq(deviceId),
-                eq(null), eq(60.0), eq(3), eq(true), eq(null), any()
+                eq(null), eq(60.0), eq(3), eq(true), eq(null), any(), eq(null)
         );
     }
 
@@ -129,7 +129,7 @@ class TelemetryConsumerTest {
         // Verify broadcast carries ignitionOn = true
         verify(telemetryBroadcastService).broadcastTelemetry(
                 eq(machineId), eq(deviceId),
-                eq(null), eq(60.0), eq(3), eq(true), eq(true), any()
+                eq(null), eq(60.0), eq(3), eq(true), eq(true), any(), eq(null)
         );
     }
 
@@ -147,6 +147,9 @@ class TelemetryConsumerTest {
                 contains("INSERT INTO device_states"),
                 eq(deviceId), eq(orgId), eq(true), eq("OFF"), any()
         );
+        verify(telemetryBroadcastService).broadcastTelemetry(
+                eq(machineId), eq(deviceId), eq(null), eq(null), eq(null),
+                eq(null), eq(null), any(), eq("OFF"));
     }
 
     @Test

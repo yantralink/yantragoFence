@@ -124,16 +124,12 @@ class _MachineIdentity extends StatelessWidget {
   }
 
   Widget _badge(BuildContext context) {
-    // Green Running / red Stopped from the fence state (the Turn ON/OFF
-    // command target). ACC ignition is only a fallback for legacy
-    // trackers; hidden entirely when neither signal is known.
+    // ACC and connectivity do not establish relay state.
     final on = machine.isFencingOn
         ? true
         : machine.isFencingOff
             ? false
-            : machine.ignitionOn == true
-                ? true
-                : null;
+            : null;
     if (on == null) return const SizedBox.shrink();
     return AppStatusBadge(
       label: on ? context.l10n.machineRunning : context.l10n.machineStopped,

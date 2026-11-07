@@ -27,19 +27,31 @@ public class CommandResultService implements VehicleCommandService {
 
     private final CommandResultProducer commandResultProducer;
     private final PendingCommandRegistry pendingCommandRegistry;
+    private final DeviceMappingCacheService deviceMappingCacheService;
+    private final TelemetryForwardService telemetryForwardService;
 
     public CommandResultService(CommandResultProducer commandResultProducer,
-                                  PendingCommandRegistry pendingCommandRegistry) {
+                                  PendingCommandRegistry pendingCommandRegistry,
+                                  DeviceMappingCacheService deviceMappingCacheService,
+                                  TelemetryForwardService telemetryForwardService) {
         this.commandResultProducer = commandResultProducer;
         this.pendingCommandRegistry = pendingCommandRegistry;
+        this.deviceMappingCacheService = deviceMappingCacheService;
+        this.telemetryForwardService = telemetryForwardService;
     }
 
     @Override
     public void updateLockStateFromHeartbeat(String imei, boolean fuelCutOff) {
         log.debug("Lock state from heartbeat: imei={} fuelCutOff={}", imei, fuelCutOff);
-        // In a full implementation, this would update the device state in Redis
-        // and potentially trigger an alert if the state changed unexpectedly.
-        // The command result is not published here since this is a heartbeat, not a command reply.
+        String deviceId = deviceMappingCacheService.getDeviceIdByImei(imei);
+        if (deviceId == null) {
+            return;
+        }
+        // The existing Concox parser supplies terminal-info bit 7.
+        // Match dispatch polarity: RELAY,1# / fuel cut means machine ON.
+        // Report observed state via RabbitMQ; never synthesize a command ACK.
+        telemetryForwardService.forwardFencingState(
+                UUID.fromString(deviceId), imei, fuelCutOff ? "ON" : "OFF");
     }
 
     @Override
