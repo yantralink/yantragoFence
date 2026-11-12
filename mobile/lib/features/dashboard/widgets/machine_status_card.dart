@@ -28,8 +28,9 @@ class MachineStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final AppSemanticColors? semantic =
-        Theme.of(context).extension<AppSemanticColors>();
+    final AppSemanticColors? semantic = Theme.of(
+      context,
+    ).extension<AppSemanticColors>();
     final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme colors = Theme.of(context).colorScheme;
 
@@ -117,7 +118,8 @@ class _Count extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color foreground = semantic?.tone(tone) ?? colors.primary;
-    final Color background = semantic?.toneSoft(tone) ?? foreground.withValues(alpha: 0.12);
+    final Color background =
+        semantic?.toneSoft(tone) ?? foreground.withValues(alpha: 0.12);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),

@@ -31,8 +31,7 @@ int? voltageToExternalBatteryPct(double? voltage) {
   if (voltage == null || voltage <= 0) return null;
   final double window =
       kExternalBatteryMaxVoltage - kExternalBatteryMinVoltage; // 3.0 V
-  final double pct =
-      (voltage - kExternalBatteryMinVoltage) / window * 100.0;
+  final double pct = (voltage - kExternalBatteryMinVoltage) / window * 100.0;
   if (pct <= 0) return 0;
   if (pct >= 100) return 100;
   // Floor so charge is never overstated; the epsilon cancels binary
