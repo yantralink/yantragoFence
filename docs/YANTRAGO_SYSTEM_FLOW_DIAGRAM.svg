@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1640" viewBox="0 0 1500 1640" role="img" aria-labelledby="title description">
+  <title id="title">Yantrago solar-based smart Zhatka machine system flow</title>
+  <desc id="description">Solar power supplies a pulsed fence energizer to help deter animal intrusion and protect crops. GPS tracking, location history and movement/geofence alerts support equipment theft protection. An external weather provider supplies current weather and forecasts through the Yantrago platform. Remote commands are confirmed only after device acknowledgement.</desc>
+  <defs>
+    <marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#147d70"/></marker>
+    <marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#2463a6"/></marker>
+    <marker id="amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#b66b12"/></marker>
+    <style>
+      text { font-family: Arial, sans-serif; fill: #263746; }
+      .section { font-size: 32px; font-weight: 700; fill: #163b50; }
+      .heading { font-size: 30px; font-weight: 700; }
+      .detail { font-size: 27px; }
+      .note { font-size: 28px; }
+      .node { fill: white; stroke: #bccdd6; stroke-width: 2; }
+      .power { fill: #f0f8f5; stroke: #8abfb4; stroke-width: 2; }
+      .connector { fill: none; stroke-width: 4; }
+    </style>
+  </defs>
+  <rect width="1500" height="1640" fill="white"/>
+  <rect x="10" y="10" width="1480" height="365" rx="20" fill="#f5faf8"/>
+  <text class="section" x="40" y="65">01  CROP PROTECTION FROM ANIMAL INTRUSION</text>
+  <text class="note" x="40" y="112">Solar-powered pulsed fencing helps deter animal entry and reduce crop damage.</text>
+  <g text-anchor="middle">
+    <rect class="power" x="40" y="155" width="230" height="130" rx="12"/>
+    <text class="heading" x="155" y="204">Solar panel</text>
+    <text class="detail" x="155" y="247">Generates power</text>
+    <rect class="power" x="335" y="155" width="230" height="130" rx="12"/>
+    <text class="heading" x="450" y="202">Charge</text><text class="heading" x="450" y="238">controller</text>
+    <rect class="power" x="630" y="155" width="230" height="130" rx="12"/>
+    <text class="heading" x="745" y="204">Battery</text>
+    <text class="detail" x="745" y="247">Stores energy</text>
+    <rect class="power" x="925" y="155" width="230" height="130" rx="12"/>
+    <text class="heading" x="1040" y="202">Fence</text><text class="heading" x="1040" y="238">energizer</text>
+    <rect class="power" x="1220" y="155" width="240" height="130" rx="12"/>
+    <text class="heading" x="1340" y="204">Fence</text>
+    <text class="detail" x="1340" y="247">Animal deterrent</text>
+  </g>
+  <g class="connector" stroke="#147d70" marker-end="url(#green)">
+    <path d="M278 220 H323"/><path d="M573 220 H618"/><path d="M868 220 H913"/><path d="M1163 220 H1208"/>
+  </g>
+  <text class="note" x="40" y="337">Approved field power supply also supports the compatible communication unit.</text>
+  <rect x="10" y="395" width="1480" height="465" rx="20" fill="#f3f7fb"/>
+  <text class="section" x="40" y="450">02  GPS TRACKING, THEFT ALERTS &amp; CONTROL</text>
+  <path class="connector" d="M42 495 H105" stroke="#2463a6" marker-end="url(#blue)"/>
+  <text class="note" x="130" y="505">GPS location, telemetry and acknowledgements flow towards users</text>
+  <path class="connector" d="M105 545 H42" stroke="#b66b12" marker-end="url(#amber)"/>
+  <text class="note" x="130" y="555">Authorized ON/OFF commands flow towards the machine</text>
+  <g text-anchor="middle">
+    <rect class="node" x="40" y="605" width="290" height="170" rx="12"/>
+    <text class="heading" x="185" y="649">Machine + device</text>
+    <text class="detail" x="185" y="691">Control interface</text>
+    <text class="detail" x="185" y="730">Sensors / GPS</text>
+    <rect class="node" x="430" y="605" width="240" height="170" rx="12"/>
+    <text class="heading" x="550" y="654">Mobile network</text>
+    <text class="detail" x="550" y="701">SIM / data link</text>
+    <rect class="node" x="770" y="605" width="290" height="170" rx="12"/>
+    <text class="heading" x="915" y="649">Yantrago platform</text>
+    <text class="detail" x="915" y="691">Movement / geofence</text>
+    <text class="detail" x="915" y="730">Alerts + location history</text>
+    <rect class="node" x="1160" y="605" width="300" height="170" rx="12"/>
+    <text class="heading" x="1310" y="649">Authorized users</text>
+    <text class="detail" x="1310" y="691">Mobile application</text>
+    <text class="detail" x="1310" y="730">Department portal</text>
+  </g>
+  <g class="connector" stroke="#2463a6" marker-end="url(#blue)">
+    <path d="M340 665 H415"/><path d="M680 665 H755"/><path d="M1070 665 H1145"/>
+  </g>
+  <g class="connector" stroke="#b66b12" marker-end="url(#amber)">
+    <path d="M420 720 H345"/><path d="M760 720 H685"/><path d="M1150 720 H1075"/>
+  </g>
+  <text class="note" x="40" y="825">Remote operations, server schedules and alert delivery depend on connectivity.</text>
+  <rect x="10" y="880" width="1480" height="300" rx="20" fill="#f0f8f5"/>
+  <text class="section" x="40" y="928">03  CURRENT WEATHER &amp; FORECAST</text>
+  <text class="note" x="40" y="970">The platform uses the machine's GPS location to obtain weather information.</text>
+  <g text-anchor="middle">
+    <rect class="node" x="40" y="995" width="400" height="130" rx="12"/>
+    <text class="heading" x="240" y="1035">External weather service</text>
+    <text class="detail" x="240" y="1082">Conditions + forecast data</text>
+    <rect class="node" x="550" y="995" width="400" height="130" rx="12"/>
+    <text class="heading" x="750" y="1035">Yantrago platform</text>
+    <text class="detail" x="750" y="1082">Queries by GPS location</text>
+    <rect class="node" x="1060" y="995" width="400" height="130" rx="12"/>
+    <text class="heading" x="1260" y="1035">Mobile app weather view</text>
+    <text class="detail" x="1260" y="1082">Current + up to 5-day forecast</text>
+  </g>
+  <path class="connector" d="M450 1030 H535" stroke="#2463a6" marker-end="url(#blue)"/>
+  <path class="connector" d="M540 1090 H455" stroke="#147d70" marker-end="url(#green)"/>
+  <path class="connector" d="M960 1060 H1045" stroke="#2463a6" marker-end="url(#blue)"/>
+  <text class="detail" x="40" y="1162">Provider-supplied information; forecasts support planning and may change.</text>
+  <g transform="translate(0 320)">
+  <rect x="10" y="880" width="1480" height="430" rx="20" fill="#f5f7f9"/>
+  <text class="section" x="40" y="938">04  COMMAND CONFIRMATION</text>
+  <g text-anchor="middle">
+    <rect class="node" x="40" y="980" width="310" height="155" rx="12"/>
+    <text class="heading" x="195" y="1025">1. Request</text>
+    <text class="detail" x="195" y="1068">User action or</text><text class="detail" x="195" y="1104">configured schedule</text>
+    <rect class="node" x="410" y="980" width="310" height="155" rx="12"/>
+    <text class="heading" x="565" y="1025">2. Dispatch</text>
+    <text class="detail" x="565" y="1068">Platform records and</text><text class="detail" x="565" y="1104">sends the command</text>
+    <rect class="node" x="780" y="980" width="310" height="155" rx="12"/>
+    <text class="heading" x="935" y="1025">3. Device response</text>
+    <text class="detail" x="935" y="1068">Acknowledgement</text><text class="detail" x="935" y="1104">returns to the platform</text>
+    <rect class="node" x="1150" y="980" width="310" height="155" rx="12"/>
+    <text class="heading" x="1305" y="1025">4. Result</text>
+    <text class="detail" x="1305" y="1068">Confirmed outcome</text><text class="detail" x="1305" y="1104">shown and recorded</text>
+  </g>
+  <g class="connector" stroke="#2463a6" marker-end="url(#blue)">
+    <path d="M358 1058 H398"/><path d="M728 1058 H768"/><path d="M1098 1058 H1138"/>
+  </g>
+  <rect x="40" y="1170" width="1420" height="100" rx="12" fill="#fff6e7" stroke="#dfbd89" stroke-width="2"/>
+  <text class="heading" x="65" y="1211">No acknowledgement = no confirmed success</text>
+  <text class="note" x="65" y="1249">The request remains unconfirmed or is reported as failed / timed out, as applicable.</text>
+  </g>
+</svg>
