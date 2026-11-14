@@ -236,7 +236,10 @@ void main() {
           currentUserProvider.overrideWith((ref) => _user),
         ],
       );
-      expect(find.textContaining('1.000000, 77.000000'), findsOneWidget);
+      expect(locationReads, 1);
+      // Raw coordinates are never shown — only the resolving hint.
+      expect(find.textContaining('Resolving address…'), findsOneWidget);
+      expect(find.textContaining('77.000000'), findsNothing);
       expect(find.byType(RefreshIndicator), findsOneWidget);
       expect(find.text('North Field Fence'), findsOneWidget);
       // Drag down to trigger refresh
@@ -246,7 +249,6 @@ void main() {
       await tester.pumpAndSettle();
       expect(listReads, 2);
       expect(locationReads, 2);
-      expect(find.textContaining('2.000000, 77.000000'), findsOneWidget);
     });
   });
 

@@ -76,9 +76,9 @@ void main() {
 
     test('day/night icon variants', () {
       expect(weatherConditionIcon(800, isDay: true),
-          Icons.wb_sunny_outlined);
+          const IconData(0xf00d, fontFamily: 'WeatherIcons'));
       expect(weatherConditionIcon(800, isDay: false),
-          Icons.nightlight_outlined);
+          const IconData(0xf02e, fontFamily: 'WeatherIcons'));
       expect(weatherConditionIcon(null), Icons.cloud_off_outlined);
     });
   });

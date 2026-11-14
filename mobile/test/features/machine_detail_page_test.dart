@@ -195,11 +195,9 @@ class _StubTelemetrySocketController extends TelemetrySocketController {
 }
 
 void main() {
-  testWidgets('shows machine name in app bar and info card', (tester) async {
+  testWidgets('shows machine name in app bar', (tester) async {
     await _pump(tester, _overrides(machine: _machine()));
-    expect(find.text('North Field Fence'), findsNWidgets(2));
-    expect(find.text('YG-001'), findsOneWidget);
-    expect(find.text('000000000000001'), findsOneWidget);
+    expect(find.text('North Field Fence'), findsOneWidget);
   });
 
   testWidgets('shows running chip from confirmed relay ON', (tester) async {
@@ -354,7 +352,7 @@ void main() {
       _overrides(machine: _machine()),
       brightness: Brightness.dark,
     );
-    expect(find.text('North Field Fence'), findsNWidgets(2));
+    expect(find.text('North Field Fence'), findsOneWidget);
   });
 
   testWidgets('renders without overflow at 200% text scale', (tester) async {

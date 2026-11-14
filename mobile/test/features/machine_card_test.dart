@@ -115,7 +115,7 @@ void main() {
     await _pump(tester, onTap: () => taps++);
     expect(find.text('Accenture Machine 2'), findsOneWidget);
     expect(find.text('YG000009'), findsOneWidget);
-    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('Machine Stopped'), findsOneWidget);
     expect(find.text('Fence OFF · confirmed'), findsOneWidget);
     expect(find.byIcon(Icons.access_time), findsOneWidget);
     await tester.tap(find.text(_address.displayName));
@@ -126,27 +126,28 @@ void main() {
     tester,
   ) async {
     await _pump(tester, machine: _machine(fencingState: 'UNKNOWN'));
-    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('Machine Running'), findsNothing);
+    expect(find.text('Machine Stopped'), findsNothing);
     expect(find.textContaining('confirmed'), findsNothing);
     await _pump(tester, machine: _machine(fencingState: 'ON'));
-    expect(find.text('Online'), findsOneWidget);
+    expect(find.text('Machine Running'), findsOneWidget);
     expect(find.text('Fence ON · confirmed'), findsOneWidget);
   });
 
   testWidgets('offline retains and labels last-known location', (tester) async {
     await _pump(tester, machine: _machine(online: false));
-    expect(find.text('Offline'), findsOneWidget);
     expect(
       find.text('Last known location: ${_address.displayName}'),
       findsOneWidget,
     );
   });
 
-  testWidgets('coordinates remain when address resolution is unavailable', (
+  testWidgets('never shows raw coordinates when address is unavailable', (
     tester,
   ) async {
     await _pump(tester, address: null);
-    expect(find.text('12.970000, 77.590000'), findsOneWidget);
+    expect(find.text('Resolving address…'), findsOneWidget);
+    expect(find.textContaining('77.590000'), findsNothing);
     expect(find.byIcon(Icons.location_on_outlined), findsOneWidget);
   });
 
@@ -176,11 +177,11 @@ void main() {
     container.invalidate(machineAddressProvider('m1'));
     await tester.pumpAndSettle();
     expect(find.text(_address.displayName), findsNothing);
-    expect(find.text('12.970000, 77.590000'), findsOneWidget);
+    expect(find.text('Resolving address…'), findsOneWidget);
     pending.completeError(StateError('geocoder unavailable'));
     await tester.pumpAndSettle();
     expect(find.text(_address.displayName), findsNothing);
-    expect(find.text('12.970000, 77.590000'), findsOneWidget);
+    expect(find.text('Resolving address…'), findsOneWidget);
   });
 
   testWidgets('location loading and errors never hide the card', (
