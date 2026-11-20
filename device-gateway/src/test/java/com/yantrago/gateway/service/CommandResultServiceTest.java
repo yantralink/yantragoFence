@@ -50,8 +50,10 @@ class CommandResultServiceTest {
         commandResultService.updateLockStateFromHeartbeat(imei, true);
         commandResultService.updateLockStateFromHeartbeat(imei, false);
 
-        verify(telemetryForwardService).forwardFencingState(deviceId, imei, "ON");
-        verify(telemetryForwardService).forwardFencingState(deviceId, imei, "OFF");
+        // Fuel cut active (RELAY,1#) means the fence machine is OFF.
+        var inOrder = inOrder(telemetryForwardService);
+        inOrder.verify(telemetryForwardService).forwardFencingState(deviceId, imei, "OFF");
+        inOrder.verify(telemetryForwardService).forwardFencingState(deviceId, imei, "ON");
         verifyNoInteractions(commandResultProducer, pendingCommandRegistry);
     }
 

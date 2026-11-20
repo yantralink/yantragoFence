@@ -34,10 +34,13 @@ public class CommandDispatchService {
     // The device firmware interprets:
     //   RELAY,1# → "Cut off the fuel supply" → FuelCut: YES → LED ON (fuel cut indicator)
     //   RELAY,0# → "Restore fuel supply"    → FuelCut: NO  → LED OFF
-    // Turn ON  (machine ON)  → RELAY,1# → cut fuel   → FuelCut: YES → LED ON
-    // Turn OFF (machine OFF) → RELAY,0# → restore    → FuelCut: NO  → LED OFF
-    private static final String RELAY_ON_COMMAND = "RELAY,1#";
-    private static final String RELAY_OFF_COMMAND = "RELAY,0#";
+    // The fence machine is wired so it is energized while the relay is released:
+    // Turn ON  (machine ON)  → RELAY,0# → restore    → FuelCut: NO  → LED OFF
+    // Turn OFF (machine OFF) → RELAY,1# → cut fuel   → FuelCut: YES → LED ON
+    // CommandResultService and ConcoxV5ProtocolHandler map FuelCut back to
+    // ON/OFF with the same polarity — keep all three in sync.
+    private static final String RELAY_ON_COMMAND = "RELAY,0#";
+    private static final String RELAY_OFF_COMMAND = "RELAY,1#";
 
     private final DeviceConnectionRegistry connectionRegistry;
     private final CommandResultProducer commandResultProducer;

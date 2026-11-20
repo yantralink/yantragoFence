@@ -261,7 +261,7 @@ public class ConcoxV5ProtocolHandler implements ProtocolHandler {
             if (imei != null) {
                 try {
                     vehicleCommandService.processCommandReply(imei, success, text,
-                            fuelCutOff ? "ON" : null);
+                            fuelCutOff ? "OFF" : null);
                 } catch (Exception e) {
                     log.error("[V5] Failed to process command reply: {}", e.getMessage());
                 }

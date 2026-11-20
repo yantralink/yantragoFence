@@ -48,10 +48,10 @@ public class CommandResultService implements VehicleCommandService {
             return;
         }
         // The existing Concox parser supplies terminal-info bit 7.
-        // Match dispatch polarity: RELAY,1# / fuel cut means machine ON.
+        // Match dispatch polarity: RELAY,1# / fuel cut means machine OFF.
         // Report observed state via RabbitMQ; never synthesize a command ACK.
         telemetryForwardService.forwardFencingState(
-                UUID.fromString(deviceId), imei, fuelCutOff ? "ON" : "OFF");
+                UUID.fromString(deviceId), imei, fuelCutOff ? "OFF" : "ON");
     }
 
     @Override

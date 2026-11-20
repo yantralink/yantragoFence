@@ -123,6 +123,37 @@ class CommandDispatchServiceTest {
     }
 
     @Test
+    @DisplayName("Concox ON releases the relay (RELAY,0#) and OFF engages it (RELAY,1#)")
+    void dispatchCommand_shouldMapOnOffToRelayPolarity() {
+        when(connectionRegistry.isDeviceOnline(imei)).thenReturn(true);
+        when(concoxV5ProtocolHandler.buildCommandPacket(anyString())).thenReturn(new byte[]{(byte) 0x80, 0x01});
+        when(connectionRegistry.sendCommand(eq(imei), any(byte[].class))).thenReturn(true);
+
+        commandDispatchService.dispatchCommand(new CommandMessage(commandId, machineId, imei, "ON", Instant.now()));
+        verify(concoxV5ProtocolHandler).buildCommandPacket("RELAY,0#");
+
+        commandDispatchService.dispatchCommand(new CommandMessage(commandId, machineId, imei, "OFF", Instant.now()));
+        verify(concoxV5ProtocolHandler).buildCommandPacket("RELAY,1#");
+    }
+
+    @Test
+    @DisplayName("Fencing-protocol devices keep their dedicated ON/OFF opcodes")
+    void dispatchCommand_shouldKeepFencingProtocolMapping() {
+        when(connectionRegistry.isDeviceOnline(imei)).thenReturn(true);
+        when(connectionRegistry.getProtocolForImei(imei)).thenReturn("YANTRAGO_FENCING");
+        when(fencingEncoder.buildOnCommand()).thenReturn(new byte[]{(byte) 0x82});
+        when(fencingEncoder.buildOffCommand()).thenReturn(new byte[]{(byte) 0x83});
+        when(connectionRegistry.sendCommand(eq(imei), any(byte[].class))).thenReturn(true);
+
+        commandDispatchService.dispatchCommand(new CommandMessage(commandId, machineId, imei, "ON", Instant.now()));
+        verify(fencingEncoder).buildOnCommand();
+
+        commandDispatchService.dispatchCommand(new CommandMessage(commandId, machineId, imei, "OFF", Instant.now()));
+        verify(fencingEncoder).buildOffCommand();
+        verifyNoInteractions(concoxV5ProtocolHandler);
+    }
+
+    @Test
     @DisplayName("dispatchCommand should send command packet via connection registry for OFF command")
     void dispatchCommand_shouldSendPacketForOffCommand() {
         when(connectionRegistry.isDeviceOnline(imei)).thenReturn(true);
