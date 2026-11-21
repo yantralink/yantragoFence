@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yantrago/core/services/map_consent_service.dart';
 import 'package:yantrago/core/services/weather_service.dart';
@@ -6,6 +8,18 @@ import 'package:yantrago/features/machines/providers/machine_location_provider.d
 import 'package:yantrago/models/daily_forecast.dart';
 import 'package:yantrago/models/weather.dart';
 import 'package:yantrago/features/machines/models/forecast_day_grouper.dart';
+
+/// Refresh intervals match the backend cache buckets (30 min current,
+/// 3 h forecast), so each refresh lands in a new bucket and a screen
+/// left open never shows weather older than one bucket.
+const Duration weatherRefreshInterval = Duration(minutes: 30);
+const Duration weatherForecastRefreshInterval = Duration(hours: 3);
+
+/// Re-runs the provider after [interval] while it is still listened to.
+void _refreshAfter(Ref ref, Duration interval) {
+  final timer = Timer(interval, ref.invalidateSelf);
+  ref.onDispose(timer.cancel);
+}
 
 /// Machine weather provider — resolves current weather for a machine's
 /// location via the backend weather proxy.
@@ -26,6 +40,7 @@ final machineWeatherProvider = FutureProvider.autoDispose
           consent.valueOrNull != MapConsent.granted) {
         return null;
       }
+      _refreshAfter(ref, weatherRefreshInterval);
 
       final weatherService = ref.watch(weatherServiceProvider);
       // Share the existing location lookup and resolve again after its
@@ -58,6 +73,7 @@ final machineWeatherForecastProvider = FutureProvider.autoDispose
           consent.valueOrNull != MapConsent.granted) {
         return const [];
       }
+      _refreshAfter(ref, weatherForecastRefreshInterval);
 
       final weatherService = ref.watch(weatherServiceProvider);
       var disposed = false;

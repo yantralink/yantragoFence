@@ -195,7 +195,10 @@ class _MachineLocationMapPageState
                       : () => showWeatherDetailsSheet(
                           context, weatherAsync.valueOrNull!),
                   forecastDays: forecastAsync.valueOrNull ?? const [],
-                  forecastLoading: forecastAsync.isLoading,
+                  // Keep showing the previous rows during a background
+                  // refresh instead of flashing the loading state.
+                  forecastLoading:
+                      forecastAsync.isLoading && !forecastAsync.hasValue,
                 ),
               ),
             ),

@@ -77,10 +77,20 @@ String weatherConditionLabel(AppLocalizations l10n, int? code) {
   if (code >= 300 && code < 400) return l10n.weatherDrizzle;
   if (code >= 500 && code < 600) return l10n.weatherRain;
   if (code >= 600 && code < 700) return l10n.weatherSnow;
-  if (code >= 700 && code < 800) return l10n.weatherFog;
+  if (code >= 700 && code < 800) return _atmosphereLabel(l10n, code);
   if (code == 800) return l10n.weatherClear;
   return l10n.weatherClouds;
 }
+
+/// OWM 7xx covers distinct phenomena — labelling them all "Foggy"
+/// misreports the haze/mist/smoke that dominate Indian observations.
+String _atmosphereLabel(AppLocalizations l10n, int code) => switch (code) {
+  701 => l10n.weatherMist,
+  711 => l10n.weatherSmoke,
+  721 => l10n.weatherHaze,
+  731 || 751 || 761 => l10n.weatherDust,
+  _ => l10n.weatherFog,
+};
 
 /// Forecast-specific label — finer distinctions than the broad
 /// [weatherConditionLabel] groups (801/802 partly cloudy, light-rain

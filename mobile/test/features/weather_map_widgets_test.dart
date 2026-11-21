@@ -69,6 +69,13 @@ void main() {
       expect(weatherConditionLabel(l10n, 502), 'Rain');
       expect(weatherConditionLabel(l10n, 601), 'Snow');
       expect(weatherConditionLabel(l10n, 741), 'Foggy');
+      expect(weatherConditionLabel(l10n, 701), 'Mist');
+      expect(weatherConditionLabel(l10n, 711), 'Smoke');
+      expect(weatherConditionLabel(l10n, 721), 'Haze');
+      expect(weatherConditionLabel(l10n, 731), 'Dust');
+      expect(weatherConditionLabel(l10n, 751), 'Dust');
+      expect(weatherConditionLabel(l10n, 761), 'Dust');
+      expect(weatherConditionLabel(l10n, 771), 'Foggy');
       expect(weatherConditionLabel(l10n, 800), 'Clear');
       expect(weatherConditionLabel(l10n, 802), 'Cloudy');
       expect(weatherConditionLabel(l10n, null), 'Weather unavailable');
