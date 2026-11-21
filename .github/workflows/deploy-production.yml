@@ -130,13 +130,14 @@ jobs:
             systemctl restart yantrago-gateway
             sleep 10
             systemctl is-active yantrago-gateway
-            # Wait for the backend to come healthy (Flyway migrations run on boot)
-            for i in $(seq 1 30); do
+            # Wait for the backend to come healthy (Flyway migrations run on
+            # boot; ~5min covers slow boots on the Vultr box)
+            for i in $(seq 1 60); do
               if curl -sf http://localhost:8080/actuator/health | grep -q UP; then
                 echo "Backend healthy after ${i} checks"
                 break
               fi
-              if [ "$i" -eq 30 ]; then
+              if [ "$i" -eq 60 ]; then
                 echo "Backend failed to become healthy"
                 journalctl -u yantrago-backend -n 50 --no-pager
                 exit 1
