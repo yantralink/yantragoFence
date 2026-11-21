@@ -149,24 +149,14 @@ class _MachineState extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          machine.isFault ? Icons.warning_amber_rounded : Icons.fence,
-          color: machine.isFault
-              ? theme.colorScheme.error
-              : theme.colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (machineStateLabel(context.l10n, machine) !=
                   context.l10n.stateUnknown) ...[
-                Text(
-                  machineStateLabel(context.l10n, machine),
-                  style: theme.textTheme.bodyLarge,
-                ),
-                const SizedBox(height: AppSpacing.xs),
+                _stateLabel(context),
+                const SizedBox(height: AppSpacing.sm),
               ],
               _lastSeen(context),
             ],
@@ -177,17 +167,39 @@ class _MachineState extends StatelessWidget {
     );
   }
 
-  Widget _lastSeen(BuildContext context) {
+  Widget _stateLabel(BuildContext context) {
     final theme = Theme.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.access_time,
-          size: AppSpacing.lg,
-          color: theme.colorScheme.onSurfaceVariant,
+        if (machine.isFault) ...[
+          Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+          const SizedBox(width: AppSpacing.sm),
+        ],
+        Expanded(
+          child: Text(
+            machineStateLabel(context.l10n, machine),
+            style: theme.textTheme.bodyLarge,
+          ),
         ),
-        const SizedBox(width: AppSpacing.xs),
+      ],
+    );
+  }
+
+  Widget _lastSeen(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        // Same icon column and gap as the location row so both lines align.
+        SizedBox(
+          width: IconTheme.of(context).size,
+          child: Icon(
+            Icons.access_time,
+            size: AppSpacing.lg,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
             context.l10n.lastSeenAt(
