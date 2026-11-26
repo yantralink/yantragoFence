@@ -271,21 +271,40 @@ void main() {
       expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
     });
 
-    testWidgets('BatteryWidget 10 shows green glowing bulb', (tester) async {
+    testWidgets('BatteryWidget 80 shows green glowing bulb', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
-        home: const Scaffold(body: BatteryWidget(battery: 10, charging: true)),
+        home: const Scaffold(body: BatteryWidget(battery: 80, charging: true)),
       ));
       expect(find.byIcon(Icons.electrical_services), findsWidgets);
       expect(find.byIcon(Icons.lightbulb), findsWidgets);
     });
 
-    testWidgets('BatteryWidget non-10 shows off bulb', (tester) async {
+    testWidgets('BatteryWidget 0 shows green glowing bulb', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: const Scaffold(body: BatteryWidget(battery: 0, charging: true)),
+      ));
+      expect(find.byIcon(Icons.electrical_services), findsWidgets);
+      expect(find.byIcon(Icons.lightbulb), findsWidgets);
+    });
+
+    testWidgets('BatteryWidget non-charging level shows off bulb', (tester) async {
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.lightTheme,
         home: const Scaffold(body: BatteryWidget(battery: 50, charging: false)),
       ));
       expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
+    });
+
+    testWidgets('BatteryWidget 10 and 100 show off bulb', (tester) async {
+      for (final level in [10, 100]) {
+        await tester.pumpWidget(MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(body: BatteryWidget(battery: level)),
+        ));
+        expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
+      }
     });
 
     testWidgets('VoltageWidget null shows unavailable', (tester) async {
@@ -325,22 +344,24 @@ void main() {
       expect(find.text('No report received'), findsOneWidget);
     });
 
-    testWidgets('FaultsWidget 100 shows red glowing bulb', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: const Scaffold(body: FaultsWidget(batteryPct: 100)),
-      ));
-      expect(find.byIcon(Icons.fence), findsWidgets);
-      expect(find.byIcon(Icons.lightbulb), findsWidgets);
+    testWidgets('FaultsWidget fault levels show red glowing bulb', (tester) async {
+      for (final level in [0, 20, 40, 60]) {
+        await tester.pumpWidget(MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(body: FaultsWidget(batteryPct: level)),
+        ));
+        expect(find.byIcon(Icons.lightbulb), findsWidgets);
+      }
     });
 
-    testWidgets('FaultsWidget non-100 shows off bulb', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: const Scaffold(body: FaultsWidget(batteryPct: 10)),
-      ));
-      expect(find.byIcon(Icons.fence), findsWidgets);
-      expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
+    testWidgets('FaultsWidget non-fault levels show off bulb', (tester) async {
+      for (final level in [10, 80, 100]) {
+        await tester.pumpWidget(MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: Scaffold(body: FaultsWidget(batteryPct: level)),
+        ));
+        expect(find.byIcon(Icons.lightbulb_outline), findsWidgets);
+      }
     });
   });
 }

@@ -392,15 +392,15 @@ void main() {
       tester,
       _overrides(
         machine: _machine(),
-        restTelemetry: Telemetry(battery: 100, timestamp: now),
+        restTelemetry: Telemetry(battery: 40, timestamp: now),
         liveTelemetry: Telemetry(
-          battery: 10,
+          battery: 80,
           timestamp: now.subtract(const Duration(minutes: 3)),
           receivedAt: now,
         ),
       ),
     );
-    // REST battery=100 wins → Fence Fault icon red, Charging icon off.
+    // REST battery=40 wins → Fence Fault icon red, Charging icon off.
     expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.red)), findsWidgets);
     expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.green)), findsNothing);
   });
@@ -412,11 +412,11 @@ void main() {
       _overrides(
         machine: _machine(),
         restTelemetry:
-            Telemetry(battery: 100, timestamp: now.subtract(const Duration(minutes: 10))),
-        liveTelemetry: Telemetry(battery: 10, timestamp: now, receivedAt: now),
+            Telemetry(battery: 40, timestamp: now.subtract(const Duration(minutes: 10))),
+        liveTelemetry: Telemetry(battery: 80, timestamp: now, receivedAt: now),
       ),
     );
-    // Live battery=10 wins → Charging icon green, Fence Fault grey.
+    // Live battery=80 wins → Charging icon green, Fence Fault grey.
     expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.green)), findsWidgets);
     expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.red)), findsNothing);
   });
@@ -429,15 +429,15 @@ void main() {
       _overrides(
         machine: _machine(),
         restTelemetry:
-            Telemetry(battery: 100, timestamp: now.subtract(const Duration(minutes: 10))),
+            Telemetry(battery: 40, timestamp: now.subtract(const Duration(minutes: 10))),
         liveTelemetry: Telemetry(
-          battery: 10,
+          battery: 80,
           timestamp: now,
           receivedAt: now.subtract(const Duration(minutes: 6)),
         ),
       ),
     );
-    // Socket frame is stale → REST battery=100 wins → red fault icon.
+    // Socket frame is stale → REST battery=40 wins → red fault icon.
     expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.red)), findsWidgets);
     expect(find.byWidgetPredicate((w) => isMetricIcon(w, Colors.green)), findsNothing);
   });

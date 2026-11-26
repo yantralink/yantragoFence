@@ -7,14 +7,16 @@ import 'package:yantrago/l10n/l10n.dart';
 /// Fence Fault widget — bulb indicator based on internal battery.
 ///
 /// Composes [AppMetricCard]. The body bulb glows RED when the internal
-/// battery is exactly 100%, indicating a fence fault. Otherwise the bulb
-/// is off (grey outline). The small header icon is an electric fence.
-/// No value or status text is shown — only the bulb.
+/// battery is 0%, 20%, 40% or 60%, indicating a fence fault. Otherwise
+/// the bulb is off (grey outline). The small header icon is an electric
+/// fence. No value or status text is shown — only the bulb.
 ///
-/// - battery == 100  → bulb ON (red, Icons.lightbulb)
-/// - battery != 100  → bulb OFF (grey, Icons.lightbulb_outline)
+/// - battery ∈ {0, 20, 40, 60} → bulb ON (red, Icons.lightbulb)
+/// - battery ∉ {0, 20, 40, 60} → bulb OFF (grey, Icons.lightbulb_outline)
 /// - battery == null → unavailable
 class FaultsWidget extends StatelessWidget {
+  static const Set<int> _faultLevels = {0, 20, 40, 60};
+
   final int? batteryPct;
 
   const FaultsWidget({super.key, this.batteryPct});
@@ -34,7 +36,7 @@ class FaultsWidget extends StatelessWidget {
       );
     }
 
-    final bool isFault = batteryPct == 100;
+    final bool isFault = _faultLevels.contains(batteryPct);
     final IconData bodyIcon = isFault
         ? Icons.lightbulb
         : Icons.lightbulb_outline;

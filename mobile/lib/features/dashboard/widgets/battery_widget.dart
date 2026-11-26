@@ -7,12 +7,12 @@ import 'package:yantrago/l10n/l10n.dart';
 /// Charging Status widget — bulb indicator based on internal battery.
 ///
 /// Composes [AppMetricCard]. The body bulb glows GREEN when the internal
-/// battery is exactly 10%. Otherwise the bulb is off (grey outline). The
+/// battery is 0% or 80%. Otherwise the bulb is off (grey outline). The
 /// small header icon is an electrical-services symbol. No battery
 /// percentage or charging status text is shown — only the bulb.
 ///
-/// - battery == 10  → bulb ON (green, Icons.lightbulb)
-/// - battery != 10  → bulb OFF (grey, Icons.lightbulb_outline)
+/// - battery == 0 or 80 → bulb ON (green, Icons.lightbulb)
+/// - battery != 0 and != 80 → bulb OFF (grey, Icons.lightbulb_outline)
 /// - battery == null → unavailable
 class BatteryWidget extends StatelessWidget {
   final int? battery;
@@ -35,7 +35,7 @@ class BatteryWidget extends StatelessWidget {
       );
     }
 
-    final bool isOn = battery == 10;
+    final bool isOn = battery == 0 || battery == 80;
     final IconData bodyIcon = isOn ? Icons.lightbulb : Icons.lightbulb_outline;
     final Color bodyColor = isOn ? Colors.green : Colors.grey;
 
