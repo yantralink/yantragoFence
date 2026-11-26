@@ -5,9 +5,11 @@ import com.yantrago.api.dto.customer.CustomerDto;
 import com.yantrago.api.dto.customer.UpdateCustomerRequest;
 import com.yantrago.api.model.Customer;
 import com.yantrago.api.model.Machine;
+import com.yantrago.api.model.MachineAssignment;
 import com.yantrago.api.model.Role;
 import com.yantrago.api.model.User;
 import com.yantrago.api.repository.CustomerRepository;
+import com.yantrago.api.repository.MachineAssignmentRepository;
 import com.yantrago.api.repository.MachineRepository;
 import com.yantrago.api.repository.RoleRepository;
 import com.yantrago.api.repository.UserRepository;
@@ -21,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -38,6 +41,7 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final MachineRepository machineRepository;
+    private final MachineAssignmentRepository machineAssignmentRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final OwnerContextService ownerContextService;
@@ -50,6 +54,7 @@ public class CustomerService {
 
     public CustomerService(CustomerRepository customerRepository,
                            MachineRepository machineRepository,
+                           MachineAssignmentRepository machineAssignmentRepository,
                            UserRepository userRepository,
                            RoleRepository roleRepository,
                            OwnerContextService ownerContextService,
@@ -61,6 +66,7 @@ public class CustomerService {
                            AuditLogService auditLogService) {
         this.customerRepository = customerRepository;
         this.machineRepository = machineRepository;
+        this.machineAssignmentRepository = machineAssignmentRepository;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.ownerContextService = ownerContextService;
@@ -286,6 +292,23 @@ public class CustomerService {
         Machine machine = machineRepository.findById(machineId)
                 .orElseThrow(() -> new IllegalArgumentException("Machine not found: " + machineId));
         tenantGuard.validateTenantAccess(machine.getOrganizationId());
+
+        // Close any existing active assignment for this machine, then record
+        // the new one — notification fan-out reads machine_assignments, so
+        // machines.customer_id alone is not enough.
+        machineAssignmentRepository.findByMachineIdAndUnassignedAtIsNull(machine.getId())
+                .ifPresent(assignment -> {
+                    assignment.setUnassignedAt(LocalDateTime.now());
+                    machineAssignmentRepository.save(assignment);
+                });
+
+        MachineAssignment assignment = new MachineAssignment();
+        assignment.setOrganizationId(machine.getOrganizationId());
+        assignment.setMachineId(machine.getId());
+        assignment.setCustomerId(customerId);
+        assignment.setAssignedAt(LocalDateTime.now());
+        machineAssignmentRepository.save(assignment);
+
         machine.setCustomerId(customerId);
         machine.setStatus("ACTIVE");
         machineRepository.save(machine);
@@ -297,6 +320,13 @@ public class CustomerService {
         machineRepository.findAll().stream()
                 .filter(m -> customerId.equals(m.getCustomerId()))
                 .forEach(m -> {
+                    // Close the active assignment row too, otherwise
+                    // notifications keep resolving the old customer.
+                    machineAssignmentRepository.findByMachineIdAndUnassignedAtIsNull(m.getId())
+                            .ifPresent(assignment -> {
+                                assignment.setUnassignedAt(LocalDateTime.now());
+                                machineAssignmentRepository.save(assignment);
+                            });
                     m.setCustomerId(null);
                     m.setStatus("IN_STOCK");
                     machineRepository.save(m);
